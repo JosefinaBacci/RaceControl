@@ -13,12 +13,12 @@ Leyendo de arriba hacia abajo. Cada US se cierra con sus criterios de éxito ver
 |----|--------|----|-------|-------|-----|--------|
 | US1 | Selección de stack y configuración del entorno | 5 | 8 | 6h | 1.5h | ☑ |
 | US2 | Diseño del modelo de datos | 5 | 8 | 9h | 3.5h | ☑ |
-| US3 | Arquitectura, roles y seguridad | 5 | 8 | 9h | — | ☐ |
+| US3 | Arquitectura, roles y seguridad | 5 | 8 | 9h | 0.2h | ☑ |
 | US4 | Diseño de interfaz por rol | 5 | 8 | 8h | — | ☐ |
 | US5 | Login de usuarios | 3 | 13 | 9h | — | ☐ |
 | US6 | Gestión de usuarios | 8 | 21 | 12h | — | ☐ |
 
-**Total estimado:** 53h · **Total real:** 5h · **Desviación:** pendiente Sprint 2
+**Total estimado:** 53h · **Total real:** 5.2h · **Desviación:** pendiente Sprint 2
 
 > La cátedra pide comparar estimación vs. tiempo real por US para alimentar la estimación del
 > Sprint 2 con IA. Completar la columna **Real** al cerrar cada US.
@@ -118,20 +118,34 @@ de frameworks de backend.
 
 *Est. 9h · Real: — · SP 5 · Valor 8*
 
-- [ ] Definir arquitectura general: capas, servicios, módulos, comunicación
-- [ ] Definir el modelo de permisos por rol (FIA / escudería / público)
-- [ ] Establecer estándares de seguridad: autenticación, cifrado, políticas
-- [ ] Documentar → `docs/sprint1/03-arquitectura-roles-seguridad.md`
+- [x] Definir arquitectura general: capas, servicios, módulos, comunicación
+- [x] Definir el modelo de permisos por rol (FIA / escudería / público)
+- [x] Establecer estándares de seguridad: autenticación, cifrado, políticas
+- [x] Documentar → `docs/sprint1/03-arquitectura-roles-seguridad.md`
 
 **Capas:** `handler → service → repo`. El handler no tiene lógica de negocio ni SQL.
 
-**Estándares de seguridad a documentar**
+**Estándares de seguridad documentados**
 
-- [ ] Contraseñas con Argon2id (parámetros por hardware, salt por usuario)
-- [ ] Sesiones opacas: token 32 bytes aleatorios, en la BD solo el SHA-256; rotación en cada uso
-- [ ] Expiración por inactividad y absoluta
-- [ ] Revocación inmediata al desactivar o eliminar un usuario
-- [ ] Cookie `httpOnly; Secure; SameSite=Strict` en web; `expo-secure-store` en móvil
+- [x] Contraseñas con Argon2id (parámetros por hardware, salt por usuario, coste versionado en el hash)
+- [x] Sesiones opacas: token 32 bytes aleatorios, en la BD solo el SHA-256
+- [x] Rotación en login y cambio de privilegio; en cada uso se descartó porque dos peticiones
+      simultáneas se invalidarían mutuamente
+- [x] Expiración por inactividad y absoluta
+- [x] Revocación inmediata al desactivar un usuario, en la misma transacción
+- [x] Cookie `httpOnly; Secure; SameSite=Strict` en web; `expo-secure-store` en móvil
+
+**Decisiones que se apartan del enunciado por criterio propio**
+
+- Sin JWT: la revocación que pide el enunciado exige consultar la base en cada request
+- El público no es un valor de `users.role`: es la ausencia de sesión
+- El `team_id` del `team_admin` sale de la sesión, nunca del cuerpo de la petición
+
+**Hallazgo para la estimación del Sprint 2:** las historias de diseño (US1, US2, US3) se resolvieron
+muy por debajo de la estimación, y la desviación viene de la redacción, no del diseño. La matriz de
+permisos de la US3 son 13 filas y una tabla; el trabajo real fue decidir y justificar, y dejar por
+escrito lo que se descartó y por qué. Para el Sprint 2 conviene distinguir dentro de la estimación
+entre "escribir el documento" y "elegir la solución".
 - [ ] Rate limit y bloqueo por intentos fallidos de login
 - [ ] RBAC en middleware: ningún endpoint sensible sin chequeo de rol
 - [ ] Auditoría de eventos de autenticación

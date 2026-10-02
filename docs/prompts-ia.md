@@ -167,3 +167,60 @@ referencia.
 **Resultado:** `backend/seeds/*`, `backend/internal/seed/seed.go`, `backend/cmd/seed/main.go`,
 `backend/internal/config/config.go`, `Makefile`, `.env.example`, `AGENTS.md`,
 `docs/sprint1/02-modelo-de-datos.md`, `docs/sprint1/TODO.md`
+
+### 2026-10-02 — Arquitectura, roles y seguridad (US3)
+
+**Prompt (literal):**
+
+> start it
+
+Contexto acumulado de la conversación, que es lo que se pasó a la herramienta: US1 y US2 cerradas,
+el seed separado del esquema de migraciones, y la lista de pendientes de US3 tomándose del PDF del
+Sprint 1 y de `docs/sprint1/TODO.md`.
+
+**Qué pidió el enunciado para US3** (verificado leyendo `docs/Sprint1_GrupoRojoFerrari.pdf`):
+definir la arquitectura general (capas, servicios, módulos, comunicación) con 3 h de estimación;
+definir el modelo de permisos por rol para administrador de la FIA, escuderías y público general,
+con 2 h; establecer los estándares de seguridad (autenticación, cifrado, políticas), con 3 h; y
+documentarlo, con 1 h.
+
+**Documento producido:** `docs/sprint1/03-arquitectura-roles-seguridad.md`, con monolito modular,
+matriz de permisos de 13 filas, estándares de Argon2id y sesiones opacas, modelo de amenazas y
+tabla de qué está implementado contra qué llega en US5 y US6.
+
+**Decisiones de la IA que se apartan de lo obvio, y por qué:**
+
+1. **Sesiones opacas en vez de JWT.** Un JWT se valida sin tocar la base, que es su ventaja y
+   también el problema: la revocación queda diferida hasta que expira. El enunciado pide que
+   desactivar un usuario lo saque del sistema de inmediato, y eso obliga a consultar la base en cada
+   request. El costo se aceptó a propósito.
+2. **La rotación del token no es en cada request.** Es la recomendación habitual, pero dos
+   peticiones simultáneas con la misma sesión (un formulario que dispara dos requests, dos
+   pestañas) se invalidarían mutuamente y cerrarían la sesión del usuario sin que hiciera nada. Se
+   rota en login, en cambio de privilegio y ante acción sensible. Esta decisión **corrige lo que
+   el propio TODO del equipo daba por sentado**, que decía "rotación en cada uso".
+3. **El público no es un valor de `users.role`.** Es la ausencia de sesión. Guardarlo como rol
+   obligaría a aceptar usuarios sin contraseña y volvería laxa la restricción `CHECK` del rol.
+4. **El `team_id` de un `team_admin` sale de la sesión, nunca del cuerpo de la petición.** Si el
+   alcance fuera un parámetro, cambiar un campo del JSON bastaría para leer datos de otra escudería.
+5. **`last_used_at` se amortigua a 5 minutos** para que una sesión activa no convierta cada lectura
+   en un `UPDATE`, aceptando que una sesión viva hasta 5 minutos más que el TTL.
+6. **Política de contraseñas sin reglas de símbolos**, solo longitud mínima de 12 y rechazo si se
+   parece al `username`. Las reglas de símbolos empujan a patrones predecibles.
+
+**Validación:** se contrastes cada afirmación contra el código ya escrito, no contra memoria: el
+formato de `username`, el `CHECK` de rol, la exclusividad de `team_id`, las tablas `sessions` y
+`login_attempts` y los parámetros de Argon2id se verificaron en `migrations/000001_core.up.sql`,
+`internal/config/config.go` y `internal/transport/router.go`.
+
+**Desviación registrada:** la US3 se estimaba en 9 h y se resolvió en 0.2 h. El hallazgo para el
+Sprint 2, anotado en el TODO, es que las historias de diseño de este sprint se desvían por el
+trabajo de decidir y justificar, no por el de escribir: conviene separar ambos en la estimación.
+
+**Nota sobre el proceso:** la redaccion larga en espanol produjo, de forma repetida, caracteres CJK
+o cirilicos en lineas concretas. Se detecto con un escaneo de todo el archivo por caracter fuera del
+rango latino, y se corrigio en tres documentos de este commit. Es un fallo recurrente de la
+herramienta y conviene escanear siempre despues de escribir documentacion en espanol.
+
+**Resultado:** `docs/sprint1/03-arquitectura-roles-seguridad.md`, actualización de
+`docs/sprint1/TODO.md` (US3 cerrada con tiempo real y desviación).
