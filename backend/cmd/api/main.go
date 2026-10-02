@@ -9,8 +9,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/racecontrol/backend/internal/auth"
 	"github.com/racecontrol/backend/internal/config"
 	"github.com/racecontrol/backend/internal/db"
+	"github.com/racecontrol/backend/internal/db/dbgen"
+	"github.com/racecontrol/backend/internal/sessions"
 	"github.com/racecontrol/backend/internal/transport"
 )
 
@@ -29,9 +34,14 @@ func main() {
 	}
 	defer pool.Close()
 
+	router, err := buildRouter(cfg, pool)
+	if err != nil {
+		log.Fatalf("api: %v", err)
+	}
+
 	server := &http.Server{
 		Addr:              cfg.HTTPAddr,
-		Handler:           transport.NewRouter(pool),
+		Handler:           router,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
@@ -41,6 +51,27 @@ func main() {
 	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatalf("api: %v", err)
 	}
+}
+
+func buildRouter(cfg config.Config, pool *pgxpool.Pool) (http.Handler, error) {
+	hasher, err := auth.NewPasswordHasher(cfg.Argon2Params())
+	if err != nil {
+		return nil, err
+	}
+
+	queries := dbgen.New(pool)
+	sessionService := sessions.NewService(queries, sessions.Config{
+		IdleTTL:     cfg.SessionIdleTTL,
+		AbsoluteTTL: cfg.SessionAbsoluteTTL,
+	})
+
+	return transport.NewRouter(transport.Dependencies{
+		Pool:           pool,
+		Authenticator:  auth.NewAuthenticator(queries, hasher, sessionService),
+		Sessions:       sessionService,
+		Cookie:         transport.CookieConfig{Secure: cfg.IsProduction(), MaxAge: cfg.SessionAbsoluteTTL},
+		AllowedOrigins: cfg.CORSAllowedOrigins,
+	}), nil
 }
 
 func shutdownOnSignal(ctx context.Context, server *http.Server, logf func(string, ...any)) {

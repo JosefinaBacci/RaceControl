@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
+
+	"github.com/racecontrol/backend/internal/auth"
 )
 
 // Environment tells the process which deployment it is running in.
@@ -26,6 +29,7 @@ type Config struct {
 	SessionIdleTTL     time.Duration
 	SessionAbsoluteTTL time.Duration
 	SeedDemoPassword   string
+	CORSAllowedOrigins []string
 }
 
 // Load reads the configuration from the environment, failing fast on missing or
@@ -37,10 +41,11 @@ func Load() (Config, error) {
 	}
 
 	cfg := Config{
-		Environment:      environment,
-		DatabaseURL:      os.Getenv("DATABASE_URL"),
-		HTTPAddr:         os.Getenv("HTTP_ADDR"),
-		SeedDemoPassword: os.Getenv("SEED_DEMO_PASSWORD"),
+		Environment:        environment,
+		DatabaseURL:        os.Getenv("DATABASE_URL"),
+		HTTPAddr:           os.Getenv("HTTP_ADDR"),
+		SeedDemoPassword:   os.Getenv("SEED_DEMO_PASSWORD"),
+		CORSAllowedOrigins: listFromEnv("CORS_ALLOWED_ORIGINS", defaultDevelopmentOrigins),
 	}
 
 	if cfg.Argon2MemoryKiB, err = uintFromEnv("ARGON2_MEMORY_KIB", 65536); err != nil {
@@ -95,6 +100,14 @@ func (c Config) validateSeedSafety() error {
 	return nil
 }
 
+func (c Config) Argon2Params() auth.Argon2Params {
+	return auth.Argon2Params{
+		MemoryKiB:   c.Argon2MemoryKiB,
+		Iterations:  c.Argon2Iterations,
+		Parallelism: c.Argon2Parallelism,
+	}
+}
+
 // IsProduction reports whether the process runs in production.
 func (c Config) IsProduction() bool {
 	return c.Environment == EnvironmentProduction
@@ -113,6 +126,22 @@ func environmentFromEnv() (Environment, error) {
 		return "", fmt.Errorf("APP_ENV: %q is not one of %q or %q",
 			raw, EnvironmentDevelopment, EnvironmentProduction)
 	}
+}
+
+var defaultDevelopmentOrigins = []string{"http://localhost:8081", "http://localhost:19006"}
+
+func listFromEnv(name string, fallback []string) []string {
+	raw := strings.TrimSpace(os.Getenv(name))
+	if raw == "" {
+		return fallback
+	}
+	var values []string
+	for _, value := range strings.Split(raw, ",") {
+		if trimmed := strings.TrimSpace(value); trimmed != "" {
+			values = append(values, trimmed)
+		}
+	}
+	return values
 }
 
 func uintFromEnv(name string, fallback uint32) (uint32, error) {
