@@ -8,6 +8,7 @@ import { DriverCard, DriverGrid } from '@/features/DriverCard';
 import { EventList } from '@/features/EventList';
 import { MockNotice } from '@/features/MockNotice';
 import { categories, teamById } from '@/mocks/catalog';
+import { teamPhoto } from '@/photos';
 import { spacing } from '@/theme';
 
 export default function TeamDashboardScreen() {
@@ -22,7 +23,13 @@ export default function TeamDashboardScreen() {
 
   return (
     <Screen>
-      <HeroCard overline={`${categoryName} · ${team.country}`} title={team.name} accentColor={team.color}>
+      <HeroCard
+        overline={`${categoryName} · ${team.country}`}
+        title={team.name}
+        accentColor={team.color}
+        flag={team.flag}
+        photo={teamPhoto(team.id, team.category)}
+      >
         {pending > 0 ? (
           <View style={styles.heroAction}>
             <Button label={`${pending} pendientes de acuse`} icon="alert-circle-outline" compact onPress={() => router.push('/team/inbox')} />

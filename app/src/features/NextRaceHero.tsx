@@ -5,11 +5,12 @@ import { AppText, Card, Countdown, HeroCard } from '@/components';
 import { useNextRace } from '@/data/hooks';
 import { formatEventDate } from '@/format';
 import { CircuitMap, circuitKeyFor } from '@/illustrations';
+import { nextRacePhoto } from '@/photos';
 import { colors, spacing } from '@/theme';
 
 export function NextRaceHero({ children }: { children?: ReactNode }) {
   const { race, startsAt, facts } = useNextRace();
-  const mapWidth = useWindowDimensions().width < 480 ? 120 : 200;
+  const mapWidth = useWindowDimensions().width < 480 ? 110 : 150;
 
   return (
     <View style={styles.stack}>
@@ -18,7 +19,9 @@ export function NextRaceHero({ children }: { children?: ReactNode }) {
         title={race.name}
         subtitle={`${race.circuit} · ${formatEventDate(race.date)}`}
         flag={race.country}
-        illustration={<CircuitMap circuit={circuitKeyFor(race.circuit)} width={mapWidth} strokeWidth={5} color="rgba(255,255,255,0.85)" showStart />}
+        photo={nextRacePhoto(race.category)}
+        illustration={<CircuitMap circuit={circuitKeyFor(race.circuit)} width={mapWidth} strokeWidth={6} color="#FFFFFF" showStart halo />}
+        illustrationSide="left"
       >
         {children}
       </HeroCard>
