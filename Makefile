@@ -10,7 +10,7 @@ GO ?= go
 -include .env
 export
 
-.PHONY: help db-up db-down db-logs db-ps migrate migrate-down sqlc backend-run backend-test backend-lint tidy app-install app-start app-web app-lint check
+.PHONY: help db-up db-down db-logs db-ps migrate migrate-down db-reset seed sqlc backend-run backend-test backend-lint tidy app-install app-start app-web app-lint check
 
 help: ## Show available targets
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | sed 's/:.*## /\t/' | expand -t16
@@ -43,13 +43,14 @@ migrate: ## Apply database migrations
 migrate-down: ## Roll back the last migration
 	cd backend && $(GO) run ./cmd/migrate -down 1
 
-db-reset: ## Recreate the schema and re-run migrations from scratch
+db-reset: ## Drop the database, re-run migrations and re-seed from scratch
 	-podman exec racecontrol-db psql -U $(DB_USER) -d postgres -q -c 'DROP DATABASE IF EXISTS $(DB_NAME) WITH (FORCE);'
 	-podman exec racecontrol-db psql -U $(DB_USER) -d postgres -q -c 'CREATE DATABASE $(DB_NAME);'
 	$(MAKE) migrate
+	$(MAKE) seed
 
-seed: ## Re-run the deterministic seed data
-	$(MAKE) db-reset
+seed: ## Apply the idempotent reference data
+	cd backend && $(GO) run ./cmd/seed
 
 sqlc: ## Regenerate type-safe queries from SQL
 	cd backend && sqlc generate

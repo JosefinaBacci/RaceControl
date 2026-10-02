@@ -117,5 +117,53 @@ También se verificó contra la base real que las ocho restricciones `CHECK` rec
 inválido, que `make migrate` es idempotente, que `make migrate-down` revierte, y que
 `make db-reset` reproduce los mismos ids de seed.
 
-**Resultado:** `backend/migrations/000001_core.*`, `backend/migrations/000002_seed_reference.*`,
-`backend/sqlc.yaml`, `backend/sql/users.sql`, `docs/sprint1/02-modelo-de-datos.md`
+**Resultado:** `backend/migrations/000001_core.*`, `backend/sqlc.yaml`, `backend/sql/users.sql`,
+`docs/sprint1/02-modelo-de-datos.md`
+
+> Corrección posterior: el seed `000002_seed_reference` de esta entrada fue eliminado en el
+> commit *Separar esquema y datos de referencia* (ver la entrada de abajo).
+
+### 2026-10-02 — Separación de esquema y datos de referencia
+
+**Prompt (literal):**
+
+> Why did you put the seeds in the migrations directory?
+
+**Respuesta de la IA:** se señaló que el seed se había metido como migración `000002` por comodidad
+(`make db-reset` dejaba la base poblada en un solo comando), y que esa comodidad era un error de
+diseño. Se resumieron tres consecuencias concretas: la cadena de migraciones se ejecuta también
+en producción, con lo que las cuentas de demo de US5 con contraseña conocida se desplegarían; un
+archivo de seed ya aplicado no se puede editar, de modo que cada corrección del dato de demo
+agregaba una migración y la cadena terminaba siendo mayoritariamente datos; y `migrate-down 1`
+borraba filas de forma silenciosa porque el seed era la última migración.
+
+Se propuso la separación: `migrations/` queda solo con DDL y `seeds/` con datos idempotentes
+(`ON CONFLICT DO NOTHING`) fuera de `schema_migrations`, con `make db-reset = drop + migrate + seed`.
+
+**Decisión del equipo:** se eligió la variante **migraciones solo DDL**, es decir, también las
+cuatro categorías pasan a las seeds; y las cuentas de demo se crean con un seed exclusivo de
+desarrollo, con la contraseña tomada de una variable de entorno y nunca presente en producción.
+
+**Implementación:** se borró `000002_seed_reference.*`; se creó `backend/seeds/reference.sql`
+(idempotente, con `setval` sobre el `max(id)` vivo), `backend/seeds/embed.go`,
+`backend/internal/seed/` y `backend/cmd/seed/`. Se agregó `APP_ENV` y `SEED_DEMO_PASSWORD` a la
+configuración, con una validación que **impide arrancar** si `SEED_DEMO_PASSWORD` está presente
+con `APP_ENV=production`. `make seed` pasó a ser `go run ./cmd/seed` y `make db-reset` quedó como
+drop + migrate + seed.
+
+**Validación:** se comprobó contra la base real que `make db-reset` reproduce `categories` 1–4 y
+`equipos` 1–8, que `make seed` corrido dos veces no duplica filas, y que no hay retroceso de
+secuencia: tras insertar un equipo desde la aplicación (id 9) y reejecutar el seed, el siguiente
+insert recibió el id 10.
+
+**Corrección de la IA (asumida explícitamente):** la IA predijo que
+`make migrate-down 1` dejaría las filas intactas. Fue **incorrecto**: con migraciones solo DDL ese
+comando tira el esquema entero, tablas y filas incluidas. El comportamiento real verificado es que
+`make migrate` no inserta datos y la recuperación es `make migrate` + `make seed`, que devuelve los
+mismos ids. El beneficio real del cambio no es "el rollback no borra filas" sino que desaparece el
+estado intermedio confuso del diseño anterior, donde quedaba un esquema válido pero sin datos de
+referencia.
+
+**Resultado:** `backend/seeds/*`, `backend/internal/seed/seed.go`, `backend/cmd/seed/main.go`,
+`backend/internal/config/config.go`, `Makefile`, `.env.example`, `AGENTS.md`,
+`docs/sprint1/02-modelo-de-datos.md`, `docs/sprint1/TODO.md`

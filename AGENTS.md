@@ -27,6 +27,7 @@ diseño. La comisión de Análisis y Management trabaja en otro repositorio.
 backend/
   cmd/api           API HTTP
   cmd/migrate       Runner de migraciones
+  cmd/seed          Aplica los datos de referencia idempotentes
   internal/config   Configuración desde el entorno
   internal/db       Pool de pgx, runner de migraciones, queries generadas por sqlc
   internal/db/dbgen Código generado por sqlc; nunca editar a mano
@@ -35,7 +36,9 @@ backend/
   internal/sessions Creación, rotación y revocación de sesiones
   internal/users    Servicio de gestión de usuarios
   internal/transport Handlers, middlewares, routing (chi)
-  migrations/       Archivos .sql numerados + embed.go
+  migrations/       Archivos .sql numerados (solo DDL) + embed.go
+  seeds/            Datos de referencia idempotentes + embed.go
+  internal/seed     Aplica las seeds
   sql/              Queries que sqlc convierte en Go
   sqlc.yaml         Configuración de sqlc
 app/
@@ -99,6 +102,11 @@ evaluación.
 - El paquete de HTTP se llama `transport`, no `http`: dentro de él `http` siempre
   significa `net/http`.
 - Migraciones: solo archivos nuevos en `backend/migrations/`, nunca edites una ya aplicada.
+- **Las migraciones son solo DDL.** Los datos de referencia y de demo van en `backend/seeds/`,
+  que es idempotente (`ON CONFLICT DO NOTHING`) y no se registra en `schema_migrations`.
+  Consecuencia deliberada: `make migrate` nunca inserta filas, y `make migrate-down` tira el
+  esquema entero. Los datos se regeneran siempre con `make seed`.
+- **Producción corre `make seed` como paso de deploy.** Sin eso la app arranca sin categorías.
 - Timeouts y contextos: los handlers heredan el `*http.Request` context; las queries usan
   contexto.
 - Nada de `panic` fuera de `main` y de los tests.
@@ -112,9 +120,10 @@ evaluación.
 - Idempotencia: los nombres únicos donde aplique (`users.username`, `users.email`).
 - **Claves primarias:** `bigint GENERATED ALWAYS AS IDENTITY`. `ALWAYS` impide que
   cualquier código asigne un id a mano, que es lo que desincroniza la secuencia.
-- **Datos de ejemplo con ids fijos** en las migraciones de seed, con `setval` al final.
-  Por eso los conflictos entre ramas se resuelven con `make db-reset`, nunca fusionando
-  filas: las migraciones se fusionan, los datos se regeneran.
+- **Datos de ejemplo con ids fijos** en `backend/seeds/`, con `setval` al final tomando el
+  `max(id)` vivo para no retroceder la secuencia si alguien insertó desde la app. Por eso los
+  conflictos entre ramas se resuelven con `make db-reset`, nunca fusionando filas: las
+  migraciones se fusionan, los datos se regeneran.
 - **Baja lógica siempre:** `is_active` + `deactivated_at`. Nunca `DELETE` sobre una fila
   referenciada, así los ids nunca se reciclan.
 
@@ -129,7 +138,9 @@ evaluación.
 
 ```bash
 make db-up        # Postgres en contenedor
-make migrate      # Aplicar migraciones
+make migrate      # Aplicar el esquema (solo DDL)
+make seed         # Cargar datos de referencia (idempotente)
+make db-reset     # Recrear base desde cero: drop + migrate + seed
 make sqlc         # Regenerar queries tras editar backend/sql
 make backend-run  # Levantar la API
 make backend-test # Tests del backend

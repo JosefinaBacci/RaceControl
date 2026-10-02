@@ -7,8 +7,17 @@ import (
 	"time"
 )
 
+// Environment tells the process which deployment it is running in.
+type Environment string
+
+const (
+	EnvironmentDevelopment Environment = "development"
+	EnvironmentProduction  Environment = "production"
+)
+
 // Config holds every runtime setting, read once from the environment.
 type Config struct {
+	Environment        Environment
 	DatabaseURL        string
 	HTTPAddr           string
 	Argon2MemoryKiB    uint32
@@ -16,17 +25,24 @@ type Config struct {
 	Argon2Parallelism  uint8
 	SessionIdleTTL     time.Duration
 	SessionAbsoluteTTL time.Duration
+	SeedDemoPassword   string
 }
 
 // Load reads the configuration from the environment, failing fast on missing or
 // malformed values so a misconfigured process never starts.
 func Load() (Config, error) {
-	cfg := Config{
-		DatabaseURL: os.Getenv("DATABASE_URL"),
-		HTTPAddr:    os.Getenv("HTTP_ADDR"),
+	environment, err := environmentFromEnv()
+	if err != nil {
+		return Config{}, err
 	}
 
-	var err error
+	cfg := Config{
+		Environment:      environment,
+		DatabaseURL:      os.Getenv("DATABASE_URL"),
+		HTTPAddr:         os.Getenv("HTTP_ADDR"),
+		SeedDemoPassword: os.Getenv("SEED_DEMO_PASSWORD"),
+	}
+
 	if cfg.Argon2MemoryKiB, err = uintFromEnv("ARGON2_MEMORY_KIB", 65536); err != nil {
 		return Config{}, err
 	}
@@ -60,8 +76,43 @@ func Load() (Config, error) {
 	if cfg.HTTPAddr == "" {
 		return Config{}, fmt.Errorf("HTTP_ADDR is required")
 	}
+	if err := cfg.validateSeedSafety(); err != nil {
+		return Config{}, err
+	}
 
 	return cfg, nil
+}
+
+// validateSeedSafety refuses to start when demo credentials are configured in
+// production, so a leaked .env cannot create a predictable admin account.
+func (c Config) validateSeedSafety() error {
+	if c.Environment != EnvironmentProduction {
+		return nil
+	}
+	if c.SeedDemoPassword != "" {
+		return fmt.Errorf("SEED_DEMO_PASSWORD must not be set when APP_ENV=production")
+	}
+	return nil
+}
+
+// IsProduction reports whether the process runs in production.
+func (c Config) IsProduction() bool {
+	return c.Environment == EnvironmentProduction
+}
+
+func environmentFromEnv() (Environment, error) {
+	raw := os.Getenv("APP_ENV")
+	if raw == "" {
+		return EnvironmentDevelopment, nil
+	}
+
+	switch Environment(raw) {
+	case EnvironmentDevelopment, EnvironmentProduction:
+		return Environment(raw), nil
+	default:
+		return "", fmt.Errorf("APP_ENV: %q is not one of %q or %q",
+			raw, EnvironmentDevelopment, EnvironmentProduction)
+	}
 }
 
 func uintFromEnv(name string, fallback uint32) (uint32, error) {

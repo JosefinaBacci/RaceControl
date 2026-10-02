@@ -2,7 +2,7 @@
 
 **Comisión:** Grupo Rojo Ferrari (Sevenants Antonio, Tourn Felipe)
 **Story points:** 5 · **Business value:** 8
-**Estado:** modelo completo designed; implementado el corte del Sprint 1 (migraciones `000001` y `000002`).
+**Estado:** modelo completo diseñado; implementado el corte del Sprint 1 (migración `000001` + `seeds/reference.sql`).
 
 ## Objetivo
 
@@ -147,22 +147,52 @@ El problema real no son las claves sino las **filas**. La regla del equipo:
 
 > Las migraciones se fusionan. Los datos se regeneran.
 
-- Los archivos `.sql` numerados son lo único que se versiona y se mergea.
-- El seed usa **ids fijos** y termina con `setval`, así que todos los entornos comparten los mismos
-  ids para las mismas filas: `categories` 1–4, `teams` 1–8, `seasons` 1.
+- Los archivos `.sql` numerados de `backend/migrations/` son lo único que se versiona y se mergea,
+  y contienen **solo DDL**. Ninguna migración inserta filas.
+- Los datos de referencia viven en `backend/seeds/reference.sql`, son **idempotentes**
+  (`ON CONFLICT DO NOTHING`) y **no se registran en `schema_migrations`**. Por eso `make seed`
+  se puede correr las veces que haga falta.
+- El seed usa **ids fijos** y termina con `setval` tomando el `max(id)` vivo, así que todos los
+  entornos comparten los mismos ids para las mismas filas (`categories` 1–4, `teams` 1–8,
+  `seasons` 1) y una fila insertada desde la app nunca hace retroceder la secuencia.
 - Ante un conflicto de seed no se fusiona el archivo: se corre `make db-reset`. Ninguna fila hay
   que preservarla, porque el seed es regenerable.
 
-Verificado: `make db-reset` reproduce exactamente los mismos ids.
+Verificado: `make db-reset` reproduce exactamente los mismos ids, y `make seed` corrido dos veces
+seguidas no duplica ninguna fila.
+
+### Por qué los datos no viven en las migraciones
+
+La primera versión de este modelo metía el seed como migración `000002`. Eso tenía tres
+consecuencias que se descartaron:
+
+| Problema | Consecuencia |
+|----------|--------------|
+| La cadena de migraciones se ejecuta en producción | Las cuentas de demo con contraseña conocida se habrían desplegado |
+| Un seed aplicado no se puede editar | Cada corrección del dato de demo agregaba una migración, y la cadena terminaba siendo mayoritariamente datos |
+| `migrate-down 1` borraba filas | Revertir el esquema eliminaba datos de forma silenciosa |
+
+Ahora la separación es explícita: **`make migrate` solo crea el esquema y `make seed` carga los
+datos.** Como producción corre `make seed` como paso de deploy, hay que recordar ese paso: sin él
+la aplicación arranca sin categorías y todas las pantallas salen vacías.
+
+Efecto secundario que conviene tener presente: `make migrate-down` ahora tira el esquema entero
+(tablas y filas). Es un borrado explícito y total, no el estado intermedio confuso del diseño
+anterior, donde quedaba un esquema válido pero sin datos de referencia.
 
 ## 8. Verificaciones ejecutadas
 
 ```
-$ make migrate            # aplica 000001 y 000002
-$ make migrate            # segunda vez: idempotente
-$ make migrate-down       # vuelve a versión 1 y borra el seed
-$ make migrate            # reaplica y los ids vuelven a ser 1..4 y 1..8
+$ make db-reset           # drop + migrate + seed: categorías 1..4 y equipos 1..8
+$ make migrate            # segunda vez: idempotente, no inserta filas
+$ make seed               # segunda vez: idempotente, no duplica filas
+$ make migrate-down       # tira el esquema entero; se recupera con migrate + seed
+$ make seed               # tras un rollback, los ids vuelven a ser 1..4 y 1..8
 ```
+
+Comprobado además que `make seed` no retrocede la secuencia cuando hay filas insertadas desde la
+aplicación: se insertó un equipo (id 9), se reejecutó el seed y el siguiente insert recibió el
+id 10.
 
 Restricciones comprobadas contra la base real (todas rechazan el dato inválido):
 
@@ -191,3 +221,4 @@ Restricciones comprobadas contra la base real (todas rechazan el dato inválido)
 | Los ids de las tablas no son contiguos | Las secuencias de identidad no participan del rollback transaccional: un `INSERT` que falla consume el valor | Es el comportamiento estándar de PostgreSQL y **nadie debe asumir que los ids son correlativos** |
 | `teams.category_id` asume una categoría por escudería | El enunciado no pide participación por temporada | `team_seasons` se agrega como tabla nueva, sin tocar `teams` |
 | No hay `deleted_at` en `sessions` | Una sesión revocada no se borra: `revoked_at` alcanza | — |
+| `make migrate` no inserta datos | Consecuencia de separar esquema y datos | `make seed` es paso obligatorio del deploy |

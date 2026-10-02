@@ -80,7 +80,8 @@ de frameworks de backend.
 - [x] Identificar relaciones y dependencias
 - [x] Justificar relacional vs. NoSQL frente al stack de US1
 - [x] Documentar el modelo final → `docs/sprint1/02-modelo-de-datos.md` (con ERD mermaid)
-- [x] Migraciones en `backend/migrations/`: `000001_core` (6 tablas) + `000002_seed_reference`
+- [x] Migraciones solo DDL en `backend/migrations/`: `000001_core` (6 tablas)
+- [x] Datos de referencia en `backend/seeds/` (idempotentes, fuera de `schema_migrations`)
 - [x] Queries en `backend/sql/` + `make sqlc` (sqlc v1.31.1 lee el esquema de las migraciones)
 - [x] Tests de integración contra Postgres real
 
