@@ -11,14 +11,14 @@ Leyendo de arriba hacia abajo. Cada US se cierra con sus criterios de éxito ver
 
 | US | Nombre | SP | Valor | Est. | Real | Estado |
 |----|--------|----|-------|-------|-----|--------|
-| US1 | Selección de stack y configuración del entorno | 5 | 8 | 6h | — | ☐ |
+| US1 | Selección de stack y configuración del entorno | 5 | 8 | 6h | 1.5h | ☑ |
 | US2 | Diseño del modelo de datos | 5 | 8 | 9h | — | ☐ |
 | US3 | Arquitectura, roles y seguridad | 5 | 8 | 9h | — | ☐ |
 | US4 | Diseño de interfaz por rol | 5 | 8 | 8h | — | ☐ |
 | US5 | Login de usuarios | 3 | 13 | 9h | — | ☐ |
 | US6 | Gestión de usuarios | 8 | 21 | 12h | — | ☐ |
 
-**Total estimado:** 53h · **Total real:** — · **Desviación:** —
+**Total estimado:** 53h · **Total real:** 1.5h · **Desviación:** pendiente Sprint 2
 
 > La cátedra pide comparar estimación vs. tiempo real por US para alimentar la estimación del
 > Sprint 2 con IA. Completar la columna **Real** al cerrar cada US.
@@ -40,11 +40,11 @@ Leyendo de arriba hacia abajo. Cada US se cierra con sus criterios de éxito ver
 
 *Est. 6h · Real: — · SP 5 · Valor 8*
 
-- [ ] Comparar alternativas de frontend, backend, base de datos e infraestructura cloud
-- [ ] Definir el framework de desarrollo móvil (nativo / híbrido / multiplataforma)
-- [ ] Documentar el stack elegido con justificación por decisión → `docs/sprint1/01-stack.md`
-- [ ] Repositorio creado y accesible para el equipo
-- [ ] Entornos de desarrollo configurados y operativos
+- [x] Comparar alternativas de frontend, backend, base de datos e infraestructura cloud
+- [x] Definir el framework de desarrollo móvil (nativo / híbrido / multiplataforma)
+- [x] Documentar el stack elegido con justificación por decisión → `docs/sprint1/01-stack.md`
+- [x] Repositorio creado y accesible para el equipo
+- [x] Entornos de desarrollo configurados y operativos (`make db-up` verificado, Postgres 18.6)
 
 **Decisiones ya tomadas en la sesión de diseño** (documentar el porqué en el doc):
 
@@ -63,7 +63,12 @@ Leyendo de arriba hacia abajo. Cada US se cierra con sus criterios de éxito ver
 
 - [x] El stack queda documentado con justificación por decisión
 - [x] Repositorios accesibles para el equipo
-- [ ] Entornos configurados y operativos (falta levantar el contenedor y correr migraciones)
+- [x] Entornos configurados y operativos
+
+**Decisión pendiente de confirmación del equipo:** `expo-router` como router de la app.
+Alternativa con la misma cantidad de dependencias: `react-navigation` nativo. La decisión de
+Go + chi ya está firme. Pendiente también completar en el informe final la matriz ponderada
+de frameworks de backend.
 
 ---
 
