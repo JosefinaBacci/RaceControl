@@ -13,7 +13,6 @@ import {
 import { roleHome } from '@/auth/roles';
 import { useSession } from '@/auth/SessionProvider';
 import { AppText, Button, Logo, Notice, TextField } from '@/components';
-import { RaceCar } from '@/illustrations';
 import { FullScreenSpinner } from '@/navigation/RoleGate';
 import { loginPhoto } from '@/photos';
 import { colors, spacing } from '@/theme';
@@ -22,7 +21,8 @@ const splitLayoutBreakpoint = 900;
 
 export default function LoginScreen() {
   const session = useSession();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
+  const isSplitLayout = width >= splitLayoutBreakpoint;
   const passwordRef = useRef<TextInput>(null);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -62,16 +62,15 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.screen}>
-      {width >= splitLayoutBreakpoint ? <BrandPanel /> : null}
+      {isSplitLayout ? <BrandPanel /> : null}
       <KeyboardAvoidingView style={styles.formSide} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.formScroll} keyboardShouldPersistTaps="handled">
-          <View style={styles.form}>
-            {width < splitLayoutBreakpoint ? (
-              <View style={styles.compactCar}>
-                <RaceCar color={colors.accent} width={Math.min(width - spacing.xl * 2, 400)} showSpeedLines />
-              </View>
-            ) : null}
-            <Logo size="lg" />
+        <ScrollView
+          contentContainerStyle={isSplitLayout ? styles.formScroll : styles.formScrollCompact}
+          keyboardShouldPersistTaps="handled"
+        >
+          {isSplitLayout ? null : <MobileHero height={Math.min(height * 0.44, 380)} />}
+          <View style={[styles.form, !isSplitLayout && styles.formCompact]}>
+            {isSplitLayout ? <Logo size="lg" /> : null}
             <View style={styles.heading}>
               <AppText variant="title" accessibilityRole="header">
                 Iniciar sesión
@@ -136,12 +135,12 @@ export default function LoginScreen() {
   );
 }
 
-function BrandPanel() {
+function PhotoBackdrop({ fadesIntoForm }: { fadesIntoForm: boolean }) {
   return (
-    <View style={styles.brandPanel}>
+    <>
       <Image source={loginPhoto.source} style={styles.photo} resizeMode="cover" accessibilityIgnoresInvertColors />
       <LinearGradient
-        colors={['rgba(90,0,0,0.25)', 'rgba(170,0,0,0.45)', 'rgba(70,0,0,0.88)', 'rgba(11,11,15,0.97)']}
+        colors={['rgba(90,0,0,0.25)', 'rgba(170,0,0,0.45)', 'rgba(70,0,0,0.88)', colors.background]}
         locations={[0, 0.4, 0.72, 1]}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
@@ -153,12 +152,14 @@ function BrandPanel() {
         end={{ x: 0.8, y: 0.2 }}
         style={StyleSheet.absoluteFill}
       />
-      <LinearGradient
-        colors={['transparent', colors.background]}
-        start={{ x: 0.85, y: 0.5 }}
-        end={{ x: 1, y: 0.5 }}
-        style={StyleSheet.absoluteFill}
-      />
+      {fadesIntoForm ? (
+        <LinearGradient
+          colors={['transparent', colors.background]}
+          start={{ x: 0.85, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={StyleSheet.absoluteFill}
+        />
+      ) : null}
       <View style={styles.stripes} pointerEvents="none">
         {[0, 1, 2, 3, 4].map((index) => (
           <View key={index} style={[styles.stripe, { opacity: 0.04 + index * 0.02 }]} />
@@ -167,6 +168,14 @@ function BrandPanel() {
       <AppText variant="caption" style={styles.credit}>
         {loginPhoto.credit}
       </AppText>
+    </>
+  );
+}
+
+function BrandPanel() {
+  return (
+    <View style={styles.brandPanel}>
+      <PhotoBackdrop fadesIntoForm />
       <View style={styles.brandContent}>
         <AppText variant="overline" style={styles.tagline}>
           Speed · Data · Passion
@@ -180,15 +189,37 @@ function BrandPanel() {
   );
 }
 
+function MobileHero({ height }: { height: number }) {
+  return (
+    <View style={[styles.mobileHero, { height }]}>
+      <PhotoBackdrop fadesIntoForm={false} />
+      <LinearGradient
+        colors={['transparent', 'rgba(11,11,15,0.75)', colors.background]}
+        locations={[0.35, 0.75, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={styles.mobileHeroContent}>
+        <Logo size="lg" />
+        <AppText variant="overline" style={styles.tagline}>
+          Speed · Data · Passion
+        </AppText>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   screen: { flex: 1, flexDirection: 'row', backgroundColor: colors.background },
   brandPanel: { flex: 1, overflow: 'hidden', justifyContent: 'flex-end' },
   photo: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' },
   stripes: { position: 'absolute', top: -80, right: 40, flexDirection: 'row', gap: 22, transform: [{ skewX: '-24deg' }] },
   stripe: { width: 46, height: 1400, backgroundColor: colors.text },
+  mobileHero: { width: '100%', overflow: 'hidden', justifyContent: 'flex-end' },
+  mobileHeroContent: { padding: spacing.xl, paddingBottom: spacing.xxl, gap: spacing.sm },
+  formScrollCompact: { flexGrow: 1 },
+  formCompact: { marginTop: -spacing.lg, paddingHorizontal: spacing.xl, paddingBottom: spacing.xxl },
   credit: { position: 'absolute', top: spacing.md, left: spacing.lg, color: 'rgba(255,255,255,0.7)', fontSize: 10 },
   shadowed: { textShadowColor: 'rgba(0,0,0,0.7)', textShadowRadius: 10, textShadowOffset: { width: 0, height: 1 } },
-  compactCar: { alignItems: 'center', marginBottom: spacing.sm },
   brandContent: { padding: spacing.xxl * 1.5, gap: spacing.lg, maxWidth: 560 },
   brandHeadline: { lineHeight: 40 },
   tagline: { color: colors.text, letterSpacing: 6, opacity: 0.85 },
