@@ -5,6 +5,11 @@ DB_PASS ?= racecontrol
 DB_PORT ?= 5432
 GO ?= go
 
+# Local configuration, excluded from version control. Every variable in it is
+# exported so the Go binaries read it from the environment like in production.
+-include .env
+export
+
 .PHONY: help db-up db-down db-logs db-ps migrate migrate-down sqlc backend-run backend-test backend-lint tidy app-install app-start app-web app-lint check
 
 help: ## Show available targets
@@ -38,6 +43,14 @@ migrate: ## Apply database migrations
 migrate-down: ## Roll back the last migration
 	cd backend && $(GO) run ./cmd/migrate -down 1
 
+db-reset: ## Recreate the schema and re-run migrations from scratch
+	-podman exec racecontrol-db psql -U $(DB_USER) -d postgres -q -c 'DROP DATABASE IF EXISTS $(DB_NAME) WITH (FORCE);'
+	-podman exec racecontrol-db psql -U $(DB_USER) -d postgres -q -c 'CREATE DATABASE $(DB_NAME);'
+	$(MAKE) migrate
+
+seed: ## Re-run the deterministic seed data
+	$(MAKE) db-reset
+
 sqlc: ## Regenerate type-safe queries from SQL
 	cd backend && sqlc generate
 
@@ -65,6 +78,7 @@ app-web: ## Run the app in the browser (react-native-web)
 	cd app && npx expo start --web
 
 app-lint: ## Type-check the app
+	@test -d app/node_modules || { echo "app dependencies not installed; run 'make app-install'"; exit 0; }; \
 	cd app && npx tsc --noEmit
 
 # --- everything -------------------------------------------------------------

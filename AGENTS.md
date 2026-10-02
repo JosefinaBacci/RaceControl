@@ -28,14 +28,16 @@ backend/
   cmd/api           API HTTP
   cmd/migrate       Runner de migraciones
   internal/config   Configuración desde el entorno
-  internal/db       Pool de pgx, migraciones, queries generadas por sqlc
+  internal/db       Pool de pgx, runner de migraciones, queries generadas por sqlc
+  internal/db/dbgen Código generado por sqlc; nunca editar a mano
   internal/domain   Entidades y errores de dominio (sin dependencias de infraestructura)
   internal/auth     Hashing de contraseñas, middleware RBAC
   internal/sessions Creación, rotación y revocación de sesiones
   internal/users    Servicio de gestión de usuarios
-  internal/http     Handlers, middlewares, routing
-  migrations/       Archivos .sql numerados
+  internal/transport Handlers, middlewares, routing (chi)
+  migrations/       Archivos .sql numerados + embed.go
   sql/              Queries que sqlc convierte en Go
+  sqlc.yaml         Configuración de sqlc
 app/
   app/              Rutas (expo-router)
   src/api           Cliente HTTP
@@ -94,6 +96,8 @@ evaluación.
   errores de dominio con `errors.Is`. Los errores esperados (no encontrado, conflicto,
   no autorizado) se traducen a respuestas HTTP en una sola capa.
 - Queries: todo el SQL vive en `backend/sql/`. Después de tocarlo, correr `make sqlc`.
+- El paquete de HTTP se llama `transport`, no `http`: dentro de él `http` siempre
+  significa `net/http`.
 - Migraciones: solo archivos nuevos en `backend/migrations/`, nunca edites una ya aplicada.
 - Timeouts y contextos: los handlers heredan el `*http.Request` context; las queries usan
   contexto.
@@ -106,6 +110,13 @@ evaluación.
 - Claves foráneas con `ON DELETE` explícito; nunca borrados en cascada silenciosos sobre datos
   históricos de sanctiones o puntajes.
 - Idempotencia: los nombres únicos donde aplique (`users.username`, `users.email`).
+- **Claves primarias:** `bigint GENERATED ALWAYS AS IDENTITY`. `ALWAYS` impide que
+  cualquier código asigne un id a mano, que es lo que desincroniza la secuencia.
+- **Datos de ejemplo con ids fijos** en las migraciones de seed, con `setval` al final.
+  Por eso los conflictos entre ramas se resuelven con `make db-reset`, nunca fusionando
+  filas: las migraciones se fusionan, los datos se regeneran.
+- **Baja lógica siempre:** `is_active` + `deactivated_at`. Nunca `DELETE` sobre una fila
+  referenciada, así los ids nunca se reciclan.
 
 ### App (TypeScript / React Native)
 

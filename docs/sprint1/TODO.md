@@ -12,13 +12,13 @@ Leyendo de arriba hacia abajo. Cada US se cierra con sus criterios de éxito ver
 | US | Nombre | SP | Valor | Est. | Real | Estado |
 |----|--------|----|-------|-------|-----|--------|
 | US1 | Selección de stack y configuración del entorno | 5 | 8 | 6h | 1.5h | ☑ |
-| US2 | Diseño del modelo de datos | 5 | 8 | 9h | — | ☐ |
+| US2 | Diseño del modelo de datos | 5 | 8 | 9h | 3.5h | ☑ |
 | US3 | Arquitectura, roles y seguridad | 5 | 8 | 9h | — | ☐ |
 | US4 | Diseño de interfaz por rol | 5 | 8 | 8h | — | ☐ |
 | US5 | Login de usuarios | 3 | 13 | 9h | — | ☐ |
 | US6 | Gestión de usuarios | 8 | 21 | 12h | — | ☐ |
 
-**Total estimado:** 53h · **Total real:** 1.5h · **Desviación:** pendiente Sprint 2
+**Total estimado:** 53h · **Total real:** 5h · **Desviación:** pendiente Sprint 2
 
 > La cátedra pide comparar estimación vs. tiempo real por US para alimentar la estimación del
 > Sprint 2 con IA. Completar la columna **Real** al cerrar cada US.
@@ -74,15 +74,15 @@ de frameworks de backend.
 
 ## US2 — Diseño del modelo de datos
 
-*Est. 9h · Real: — · SP 5 · Valor 8*
+*Est. 9h · Real: 3.5h · SP 5 · Valor 8*
 
-- [ ] Identificar entidades del dominio y sus atributos
-- [ ] Identificar relaciones y dependencias
-- [ ] Justificar relacional vs. NoSQL frente al stack de US1
-- [ ] Documentar el modelo final → `docs/sprint1/02-modelo-de-datos.md` (con ERD mermaid)
-- [ ] Migraciones en `backend/migrations/`
-- [ ] Queries en `backend/sql/` + `make sqlc`
-- [ ] Tests del repo contra Postgres real
+- [x] Identificar entidades del dominio y sus atributos
+- [x] Identificar relaciones y dependencias
+- [x] Justificar relacional vs. NoSQL frente al stack de US1
+- [x] Documentar el modelo final → `docs/sprint1/02-modelo-de-datos.md` (con ERD mermaid)
+- [x] Migraciones en `backend/migrations/`: `000001_core` (6 tablas) + `000002_seed_reference`
+- [x] Queries en `backend/sql/` + `make sqlc` (sqlc v1.31.1 lee el esquema de las migraciones)
+- [x] Tests de integración contra Postgres real
 
 **Entidades del dominio (borrador inicial)**
 
@@ -92,9 +92,24 @@ de frameworks de backend.
 
 **Criterios de éxito**
 
-- [ ] Tipo de BD justificado según el dominio
-- [ ] Entidades definidas y relacionadas
-- [ ] El modelo escala a nuevas categorías/escuderías sin cambios estructurales
+- [x] Tipo de BD justificado según el dominio
+- [x] Entidades definidas y relacionadas
+- [x] El modelo escala a nuevas categorías/escuderías sin cambios estructurales
+
+**Decisiones tomadas**
+
+- PK `bigint GENERATED ALWAYS AS IDENTITY`; `ALWAYS` impide asignar ids a mano y desincronizar
+  la secuencia.
+- Roles y estados con `CHECK`, no `ENUM`: agregar un valor es una migración aditiva.
+- Sin cuentas para el público: solo `fia_admin` y `team_admin`, el público lee sin autenticarse.
+- Conflictos entre ramas: las migraciones se fusionan, los datos se regeneran con `make db-reset`.
+
+**Pendiente para el Sprint 2:** 7 tablas más del dominio (`drivers`, `events`, `score_entries`,
+`technical_controls`, `sanctions`, y sus acuses, `notifications`). Ya están diseñadas en el doc.
+
+**Entidades del dominio implementadas (corte Sprint 1)**
+
+`categories`, `seasons`, `teams`, `users`, `sessions`, `login_attempts`
 
 ---
 
