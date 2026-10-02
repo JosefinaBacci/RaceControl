@@ -2,6 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { Flag, type FlagCode } from '@/illustrations';
 import { colors, radius, spacing } from '@/theme';
 
 import { AppText } from './AppText';
@@ -11,10 +12,12 @@ type HeroCardProps = {
   title: string;
   subtitle?: string;
   accentColor?: string;
+  flag?: FlagCode;
+  illustration?: ReactNode;
   children?: ReactNode;
 };
 
-export function HeroCard({ overline, title, subtitle, accentColor = colors.accent, children }: HeroCardProps) {
+export function HeroCard({ overline, title, subtitle, accentColor = colors.accent, flag, illustration, children }: HeroCardProps) {
   return (
     <View style={styles.card}>
       <LinearGradient
@@ -29,9 +32,10 @@ export function HeroCard({ overline, title, subtitle, accentColor = colors.accen
           <View key={index} style={[styles.stripe, { opacity: 0.08 + index * 0.04 }]} />
         ))}
       </View>
+      {illustration ? <View style={styles.illustration} pointerEvents="none">{illustration}</View> : null}
       <View style={styles.content}>
         <View style={styles.overline}>
-          <View style={[styles.flag, { backgroundColor: accentColor }]} />
+          {flag ? <Flag code={flag} width={22} /> : <View style={[styles.flag, { backgroundColor: accentColor }]} />}
           <AppText variant="overline" color="text">
             {overline}
           </AppText>
@@ -65,6 +69,7 @@ const styles = StyleSheet.create({
     transform: [{ skewX: '-24deg' }],
   },
   stripe: { width: 26, height: 260, backgroundColor: colors.text },
+  illustration: { position: 'absolute', top: spacing.lg, right: spacing.lg, opacity: 0.9 },
   content: { padding: spacing.xl, gap: spacing.sm },
   overline: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   flag: { width: 18, height: 12, borderRadius: 2 },
