@@ -7,7 +7,72 @@ package dbgen
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const createUser = `-- name: CreateUser :one
+INSERT INTO users (username, email, password_hash, role, team_id)
+VALUES (lower($1), lower($2), $3, $4, $5)
+RETURNING id, username, email, password_hash, role, team_id, is_active, deactivated_at, created_at, updated_at
+`
+
+type CreateUserParams struct {
+	Username     string
+	Email        pgtype.Text
+	PasswordHash string
+	Role         string
+	TeamID       pgtype.Int8
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, createUser,
+		arg.Username,
+		arg.Email,
+		arg.PasswordHash,
+		arg.Role,
+		arg.TeamID,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.PasswordHash,
+		&i.Role,
+		&i.TeamID,
+		&i.IsActive,
+		&i.DeactivatedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const createUserIfAbsent = `-- name: CreateUserIfAbsent :exec
+INSERT INTO users (username, email, password_hash, role, team_id)
+VALUES (lower($1), lower($2), $3, $4, $5)
+ON CONFLICT (username) DO NOTHING
+`
+
+type CreateUserIfAbsentParams struct {
+	Username     string
+	Email        pgtype.Text
+	PasswordHash string
+	Role         string
+	TeamID       pgtype.Int8
+}
+
+func (q *Queries) CreateUserIfAbsent(ctx context.Context, arg CreateUserIfAbsentParams) error {
+	_, err := q.db.Exec(ctx, createUserIfAbsent,
+		arg.Username,
+		arg.Email,
+		arg.PasswordHash,
+		arg.Role,
+		arg.TeamID,
+	)
+	return err
+}
 
 const getUserByID = `-- name: GetUserByID :one
 SELECT id, username, email, password_hash, role, team_id, is_active, deactivated_at, created_at, updated_at
@@ -55,4 +120,20 @@ func (q *Queries) GetUserByUsername(ctx context.Context, lower string) (User, er
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const updateUserPasswordHash = `-- name: UpdateUserPasswordHash :exec
+UPDATE users
+SET password_hash = $2
+WHERE id = $1
+`
+
+type UpdateUserPasswordHashParams struct {
+	ID           int64
+	PasswordHash string
+}
+
+func (q *Queries) UpdateUserPasswordHash(ctx context.Context, arg UpdateUserPasswordHashParams) error {
+	_, err := q.db.Exec(ctx, updateUserPasswordHash, arg.ID, arg.PasswordHash)
+	return err
 }

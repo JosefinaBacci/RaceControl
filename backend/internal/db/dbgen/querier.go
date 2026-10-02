@@ -9,8 +9,18 @@ import (
 )
 
 type Querier interface {
+	CountFailuresSinceLastSuccess(ctx context.Context, arg CountFailuresSinceLastSuccessParams) (int64, error)
+	CreateSession(ctx context.Context, arg CreateSessionParams) (int64, error)
+	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	CreateUserIfAbsent(ctx context.Context, arg CreateUserIfAbsentParams) error
+	GetActiveSessionByTokenHash(ctx context.Context, arg GetActiveSessionByTokenHashParams) (GetActiveSessionByTokenHashRow, error)
 	GetUserByID(ctx context.Context, id int64) (User, error)
 	GetUserByUsername(ctx context.Context, lower string) (User, error)
+	InsertLoginAttempt(ctx context.Context, arg InsertLoginAttemptParams) error
+	RevokeSessionByTokenHash(ctx context.Context, tokenHash string) error
+	RevokeUserSessions(ctx context.Context, userID int64) error
+	TouchSession(ctx context.Context, arg TouchSessionParams) error
+	UpdateUserPasswordHash(ctx context.Context, arg UpdateUserPasswordHashParams) error
 }
 
 var _ Querier = (*Queries)(nil)
