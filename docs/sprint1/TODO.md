@@ -38,7 +38,7 @@ Leyendo de arriba hacia abajo. Cada US se cierra con sus criterios de éxito ver
 
 ## US1 — Selección de stack y configuración del entorno
 
-*Est. 6h · Real: — · SP 5 · Valor 8*
+*Est. 6h · Real: 1.5h · SP 5 · Valor 8*
 
 - [x] Comparar alternativas de frontend, backend, base de datos e infraestructura cloud
 - [x] Definir el framework de desarrollo móvil (nativo / híbrido / multiplataforma)

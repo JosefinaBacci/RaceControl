@@ -40,7 +40,7 @@ enunciado: la misma funcionalidad debe existir como sistema web y como app móvi
 > FIA / escudería / público, la misma funcionalidad en web y móvil, y foco en seguridad de
 > autenticación porque hay que poder desactivar usuarios. El equipo viene de TypeScript. Evaluar
 > frameworks de backend en Go, base de datos, framework de app móvil multiplataforma, y
-> mechanisms de autenticación (JWT vs. sesiones). Recomendar una opción por área justificando el
+> mecanismos de autenticación (JWT vs. sesiones). Recomendar una opción por área justificando el
 > porqué de los descartes.
 
 **Validación:** se ajustó de la recomendación inicial. La IA propuso sesiones en servidor por
@@ -69,7 +69,7 @@ carpetas, el layout de capas del backend y las convenciones de código antes de 
 > nomenclatura de tablas y columnas. Incluir qué carpetas corresponden a qué user story del
 > Sprint 1.
 
-**Validación:** la estructura se ajustó a mano para corren las reglas de clean code del curso
+**Validación:** la estructura se ajustó a mano para cumplir las reglas de clean code del curso
 (funciones cortas, sin singletons, errores envueltos con contexto). Se descartó la propuesta de
 generar los modelos de dominio por reflexión a partir de las structs de sqlc, y quedó
 documentado que los errores de dominio se definen en el service y se chequean con `errors.Is`.
