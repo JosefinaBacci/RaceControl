@@ -141,10 +141,16 @@ function BrandPanel() {
     <View style={styles.brandPanel}>
       <Image source={loginPhoto.source} style={styles.photo} resizeMode="cover" accessibilityIgnoresInvertColors />
       <LinearGradient
-        colors={['rgba(11,11,15,0)', 'rgba(11,11,15,0.15)', 'rgba(11,11,15,0.9)']}
-        locations={[0, 0.55, 1]}
+        colors={['rgba(90,0,0,0.25)', 'rgba(170,0,0,0.45)', 'rgba(70,0,0,0.88)', 'rgba(11,11,15,0.97)']}
+        locations={[0, 0.4, 0.72, 1]}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+      <LinearGradient
+        colors={['rgba(225,6,0,0.35)', 'transparent']}
+        start={{ x: 0, y: 1 }}
+        end={{ x: 0.8, y: 0.2 }}
         style={StyleSheet.absoluteFill}
       />
       <LinearGradient
@@ -153,6 +159,11 @@ function BrandPanel() {
         end={{ x: 1, y: 0.5 }}
         style={StyleSheet.absoluteFill}
       />
+      <View style={styles.stripes} pointerEvents="none">
+        {[0, 1, 2, 3, 4].map((index) => (
+          <View key={index} style={[styles.stripe, { opacity: 0.04 + index * 0.02 }]} />
+        ))}
+      </View>
       <AppText variant="caption" style={styles.credit}>
         {loginPhoto.credit}
       </AppText>
@@ -173,6 +184,8 @@ const styles = StyleSheet.create({
   screen: { flex: 1, flexDirection: 'row', backgroundColor: colors.background },
   brandPanel: { flex: 1, overflow: 'hidden', justifyContent: 'flex-end' },
   photo: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' },
+  stripes: { position: 'absolute', top: -80, right: 40, flexDirection: 'row', gap: 22, transform: [{ skewX: '-24deg' }] },
+  stripe: { width: 46, height: 1400, backgroundColor: colors.text },
   credit: { position: 'absolute', top: spacing.md, left: spacing.lg, color: 'rgba(255,255,255,0.7)', fontSize: 10 },
   shadowed: { textShadowColor: 'rgba(0,0,0,0.7)', textShadowRadius: 10, textShadowOffset: { width: 0, height: 1 } },
   compactCar: { alignItems: 'center', marginBottom: spacing.sm },
