@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { Redirect, router } from 'expo-router';
 import { useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View, useWindowDimensions, type TextInput } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View, useWindowDimensions, type TextInput } from 'react-native';
 
 import {
   describeLoginFailure,
@@ -13,7 +13,9 @@ import {
 import { roleHome } from '@/auth/roles';
 import { useSession } from '@/auth/SessionProvider';
 import { AppText, Button, Logo, Notice, TextField } from '@/components';
+import { RaceCar } from '@/illustrations';
 import { FullScreenSpinner } from '@/navigation/RoleGate';
+import { loginPhoto } from '@/photos';
 import { colors, spacing } from '@/theme';
 
 const splitLayoutBreakpoint = 900;
@@ -64,6 +66,11 @@ export default function LoginScreen() {
       <KeyboardAvoidingView style={styles.formSide} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.formScroll} keyboardShouldPersistTaps="handled">
           <View style={styles.form}>
+            {width < splitLayoutBreakpoint ? (
+              <View style={styles.compactCar}>
+                <RaceCar color={colors.accent} width={Math.min(width - spacing.xl * 2, 400)} showSpeedLines />
+              </View>
+            ) : null}
             <Logo size="lg" />
             <View style={styles.heading}>
               <AppText variant="title" accessibilityRole="header">
@@ -132,26 +139,31 @@ export default function LoginScreen() {
 function BrandPanel() {
   return (
     <View style={styles.brandPanel}>
+      <Image source={loginPhoto.source} style={styles.photo} resizeMode="cover" accessibilityIgnoresInvertColors />
       <LinearGradient
-        colors={['#5A0000', colors.accent, colors.background]}
-        locations={[0, 0.35, 1]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        colors={['rgba(11,11,15,0)', 'rgba(11,11,15,0.15)', 'rgba(11,11,15,0.9)']}
+        locations={[0, 0.55, 1]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
-      <View style={styles.stripes}>
-        {[0, 1, 2, 3, 4].map((index) => (
-          <View key={index} style={[styles.stripe, { opacity: 0.06 + index * 0.03 }]} />
-        ))}
-      </View>
+      <LinearGradient
+        colors={['transparent', colors.background]}
+        start={{ x: 0.85, y: 0.5 }}
+        end={{ x: 1, y: 0.5 }}
+        style={StyleSheet.absoluteFill}
+      />
+      <AppText variant="caption" style={styles.credit}>
+        {loginPhoto.credit}
+      </AppText>
       <View style={styles.brandContent}>
         <AppText variant="overline" style={styles.tagline}>
           Speed · Data · Passion
         </AppText>
-        <AppText variant="hero" style={styles.brandHeadline}>
+        <AppText variant="hero" style={[styles.brandHeadline, styles.shadowed]}>
           Calendario, puntajes y sanciones en un solo lugar.
         </AppText>
-        <AppText color="textMuted">F1 · F2 · F3 · F1 Academy</AppText>
+        <AppText style={styles.shadowed}>F1 · F2 · F3 · F1 Academy</AppText>
       </View>
     </View>
   );
@@ -160,8 +172,10 @@ function BrandPanel() {
 const styles = StyleSheet.create({
   screen: { flex: 1, flexDirection: 'row', backgroundColor: colors.background },
   brandPanel: { flex: 1, overflow: 'hidden', justifyContent: 'flex-end' },
-  stripes: { position: 'absolute', top: -80, right: 40, flexDirection: 'row', gap: 22, transform: [{ skewX: '-24deg' }] },
-  stripe: { width: 46, height: 1400, backgroundColor: colors.text },
+  photo: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' },
+  credit: { position: 'absolute', top: spacing.md, left: spacing.lg, color: 'rgba(255,255,255,0.7)', fontSize: 10 },
+  shadowed: { textShadowColor: 'rgba(0,0,0,0.7)', textShadowRadius: 10, textShadowOffset: { width: 0, height: 1 } },
+  compactCar: { alignItems: 'center', marginBottom: spacing.sm },
   brandContent: { padding: spacing.xxl * 1.5, gap: spacing.lg, maxWidth: 560 },
   brandHeadline: { lineHeight: 40 },
   tagline: { color: colors.text, letterSpacing: 6, opacity: 0.85 },
