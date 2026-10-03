@@ -249,3 +249,24 @@ muestra la cantidad real de cuentas activas.
 - [ ] Alojar el backend con Postgres (`make migrate` + `make seed` como pasos del deploy)
 - [x] Correr `make check` con `DATABASE_URL`: los 16 tests de integración pasan contra Postgres 18
 - [ ] Registrar en `docs/prompts-ia.md` los prompts usados en US4, US5 y el deploy en Vercel
+
+---
+
+## Backlog para el Sprint 2
+
+Ideas y pendientes que surgieron durante el Sprint 1 y quedan fuera de su alcance.
+
+- **Foto de perfil propia.** Que cada usuario suba su foto desde "Mi cuenta" y la pueda quitar.
+  Hoy la app muestra las iniciales, salvo las cuatro cuentas demo, que muestran el logo de su
+  organización. Hace falta: guardar la imagen (tabla `user_avatars`), endpoints `PUT` y `DELETE
+  /account/avatar` y `GET /users/{id}/avatar`, validar la imagen por su contenido y no por la
+  extensión, limitar el tamaño y re-codificarla a 256 px antes de guardarla para no servir nunca el
+  archivo tal como se subió, y `expo-image-picker` en la app. Suma dos dependencias
+  (`golang.org/x/image` y `expo-image-picker`). Estimación inicial: 3 h con tests.
+- **Logos del resto de las escuderías** (McLaren, ART, PREMA, Campos, FDA), con el nombre de su
+  código del seed en `app/assets/logos/`.
+- **Purga periódica de `login_attempts`**, registrada como deuda técnica en US3.
+- **Bloqueo por IP** a partir de los datos de `login_attempts`, como prevé US3.
+- **Matriz ponderada de frameworks de backend** para el informe final, prometida en US1.
+- **Deploy:** decidir cómo se sirve la app web para que la cookie de sesión llegue a la API (ver
+  "Pendientes de infraestructura").

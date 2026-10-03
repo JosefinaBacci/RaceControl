@@ -713,3 +713,34 @@ desarrollo se eliminan con `make db-reset`.
 
 **Resultado:** `backend/internal/testdb/testdb.go`, `Makefile`, `.env.example`, `README.md`,
 `AGENTS.md`.
+
+---
+
+### 2026-10-03 — Logos como avatar de las cuentas demo y backlog del Sprint 2
+
+**Contexto:** después de que los avatares de las personas volvieran a mostrar iniciales, el
+equipo pidió que las cuentas demo de cada organización (`fia.admin`, `ferrari.admin`,
+`redbull.admin`, `mercedes.admin`) usen su logo como foto de perfil, y que la idea de que cada
+usuario suba su propia foto quede registrada para más adelante.
+
+**Prompt:**
+
+> Asignar el logo de cada organización como foto de perfil de su cuenta demo, sin que el resto de
+> las cuentas pierda sus iniciales, y registrar la subida de fotos de perfil como pendiente para
+> el Sprint 2.
+
+**Respuesta de la IA:** un mapa en `app/src/logos.ts` asocia cada usuario demo con el logo de su
+organización; el avatar usa esa imagen si existe y, si no, las iniciales. La subida de fotos
+propias y el resto de los pendientes que estaban dispersos por la documentación se reunieron en
+una sección "Backlog para el Sprint 2" del `TODO.md`.
+
+**Validación:** la primera versión de la herramienta resolvía el pedido con una migración nueva
+(`users.avatar_key`), un campo más en la API y cambios en una veintena de archivos, justificados
+como base para la futura subida de fotos. El equipo la rechazó por desproporcionada: era un
+cambio cosmético sobre cuatro cuentas de demostración, y la subida de fotos ya estaba postergada
+con un diseño propio (una tabla `user_avatars`) que esa columna ni siquiera anticipaba. Se
+descartó todo antes de commitear, se revirtió la migración en la base de tests, y se reemplazó
+por el mapa en la app, sin tocar el backend. `tsc` en verde y `expo export -p web` compila.
+
+**Resultado:** `app/src/logos.ts`, el listado de usuarios, el menú de usuario,
+`docs/sprint1/TODO.md`.

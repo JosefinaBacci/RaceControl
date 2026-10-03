@@ -8,6 +8,7 @@ import { roleHome, roleLabel } from '@/auth/roles';
 import { useSession } from '@/auth/SessionProvider';
 import { AppText, Avatar } from '@/components';
 import { RoleIcon } from '@/features/accounts/RoleIcon';
+import { avatarImage } from '@/logos';
 import { teamName } from '@/mocks/catalog';
 import { colors, radius, spacing } from '@/theme';
 
@@ -54,7 +55,7 @@ export function UserMenu({ user }: { user: SessionUser }) {
         hitSlop={8}
         style={({ pressed }) => [styles.trigger, pressed && styles.pressed]}
       >
-        <Avatar name={user.username} size={32} color={colors.accent} />
+        <Avatar name={user.username} size={32} color={colors.accent} image={avatarImage(user.username)} />
         <Ionicons name="chevron-down" size={14} color={colors.textMuted} />
       </Pressable>
       <Modal visible={isOpen} transparent animationType="fade" onRequestClose={() => setIsOpen(false)}>
