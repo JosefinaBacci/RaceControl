@@ -1,9 +1,9 @@
-import { ApiError } from '@/api/client';
+import { describeFormFailure, hasFieldErrors, type FieldErrors, type FormFailure } from '@/api/formFailure';
 
-export type LoginFieldErrors = {
-  username?: string;
-  password?: string;
-};
+const loginFields = ['username', 'password'] as const;
+type LoginField = (typeof loginFields)[number];
+
+export type LoginFieldErrors = FieldErrors<LoginField>;
 
 const usernamePattern = /^[a-z0-9._-]{3,32}$/;
 const maxPasswordLength = 128;
@@ -30,18 +30,8 @@ export function validateLoginForm(username: string, password: string): LoginFiel
   return errors;
 }
 
-export function hasErrors(errors: LoginFieldErrors): boolean {
-  return Object.values(errors).some(Boolean);
-}
+export const hasErrors = hasFieldErrors<LoginField>;
 
-export type LoginFailure = { fieldErrors: LoginFieldErrors; message: string | null };
-
-export function describeLoginFailure(error: unknown): LoginFailure {
-  if (!(error instanceof ApiError)) {
-    return { fieldErrors: {}, message: 'Ocurrió un error inesperado. Intentá de nuevo.' };
-  }
-  if (error.code === 'validation' && (error.field === 'username' || error.field === 'password')) {
-    return { fieldErrors: { [error.field]: error.message }, message: null };
-  }
-  return { fieldErrors: {}, message: error.message };
+export function describeLoginFailure(error: unknown): FormFailure<LoginField> {
+  return describeFormFailure(error, loginFields);
 }
