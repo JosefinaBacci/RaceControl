@@ -1,0 +1,131 @@
+package auth
+
+import (
+	"crypto/rand"
+	"crypto/subtle"
+	"encoding/base64"
+	"errors"
+	"fmt"
+	"strings"
+
+	"golang.org/x/crypto/argon2"
+)
+
+const (
+	argon2SaltLength = 16
+	argon2KeyLength  = 32
+	argon2Prefix     = "argon2id"
+)
+
+var ErrMalformedHash = errors.New("malformed argon2id hash")
+
+type Argon2Params struct {
+	MemoryKiB   uint32
+	Iterations  uint32
+	Parallelism uint8
+}
+
+func (p Argon2Params) isWeakerThan(target Argon2Params) bool {
+	return p.MemoryKiB < target.MemoryKiB ||
+		p.Iterations < target.Iterations ||
+		p.Parallelism < target.Parallelism
+}
+
+type PasswordCheck struct {
+	Matches     bool
+	NeedsRehash bool
+}
+
+type PasswordHasher struct {
+	params    Argon2Params
+	decoyHash string
+}
+
+func NewPasswordHasher(params Argon2Params) (*PasswordHasher, error) {
+	hasher := &PasswordHasher{params: params}
+
+	decoyPassword := make([]byte, argon2KeyLength)
+	if _, err := rand.Read(decoyPassword); err != nil {
+		return nil, fmt.Errorf("generate decoy password: %w", err)
+	}
+	decoyHash, err := hasher.Hash(base64.RawStdEncoding.EncodeToString(decoyPassword))
+	if err != nil {
+		return nil, fmt.Errorf("build decoy hash: %w", err)
+	}
+	hasher.decoyHash = decoyHash
+
+	return hasher, nil
+}
+
+func (h *PasswordHasher) Hash(password string) (string, error) {
+	salt := make([]byte, argon2SaltLength)
+	if _, err := rand.Read(salt); err != nil {
+		return "", fmt.Errorf("generate salt: %w", err)
+	}
+
+	key := deriveKey(password, salt, h.params, argon2KeyLength)
+
+	return fmt.Sprintf("$%s$v=%d$m=%d,t=%d,p=%d$%s$%s",
+		argon2Prefix, argon2.Version,
+		h.params.MemoryKiB, h.params.Iterations, h.params.Parallelism,
+		base64.RawStdEncoding.EncodeToString(salt),
+		base64.RawStdEncoding.EncodeToString(key),
+	), nil
+}
+
+func (h *PasswordHasher) Verify(password, encodedHash string) (PasswordCheck, error) {
+	stored, err := decodeHash(encodedHash)
+	if err != nil {
+		return PasswordCheck{}, err
+	}
+
+	candidate := deriveKey(password, stored.salt, stored.params, uint32(len(stored.key)))
+	if subtle.ConstantTimeCompare(candidate, stored.key) != 1 {
+		return PasswordCheck{}, nil
+	}
+
+	return PasswordCheck{Matches: true, NeedsRehash: stored.params.isWeakerThan(h.params)}, nil
+}
+
+// The decoy hash is built by this process and always decodes, so the error is impossible.
+func (h *PasswordHasher) BurnDecoy(password string) {
+	_, _ = h.Verify(password, h.decoyHash)
+}
+
+func deriveKey(password string, salt []byte, params Argon2Params, keyLength uint32) []byte {
+	return argon2.IDKey([]byte(password), salt, params.Iterations, params.MemoryKiB, params.Parallelism, keyLength)
+}
+
+type decodedHash struct {
+	params Argon2Params
+	salt   []byte
+	key    []byte
+}
+
+func decodeHash(encodedHash string) (decodedHash, error) {
+	parts := strings.Split(encodedHash, "$")
+	if len(parts) != 6 || parts[1] != argon2Prefix {
+		return decodedHash{}, ErrMalformedHash
+	}
+
+	var version int
+	if _, err := fmt.Sscanf(parts[2], "v=%d", &version); err != nil || version != argon2.Version {
+		return decodedHash{}, fmt.Errorf("%w: unsupported version", ErrMalformedHash)
+	}
+
+	var params Argon2Params
+	if _, err := fmt.Sscanf(parts[3], "m=%d,t=%d,p=%d", &params.MemoryKiB, &params.Iterations, &params.Parallelism); err != nil {
+		return decodedHash{}, fmt.Errorf("%w: parameters: %w", ErrMalformedHash, err)
+	}
+
+	salt, err := base64.RawStdEncoding.DecodeString(parts[4])
+	if err != nil {
+		return decodedHash{}, fmt.Errorf("%w: salt: %w", ErrMalformedHash, err)
+	}
+	key, err := base64.RawStdEncoding.DecodeString(parts[5])
+	if err != nil || len(key) == 0 {
+		return decodedHash{}, fmt.Errorf("%w: key", ErrMalformedHash)
+	}
+
+	return decodedHash{params: params, salt: salt, key: key}, nil
+}

@@ -1,0 +1,8 @@
+DROP TABLE IF EXISTS login_attempts;
+DROP TABLE IF EXISTS sessions;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS teams;
+DROP TABLE IF EXISTS seasons;
+DROP TABLE IF EXISTS categories;
+
+DROP FUNCTION IF EXISTS set_updated_at;
