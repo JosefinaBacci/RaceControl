@@ -60,9 +60,6 @@ Go fue elegido por sobre Node/TypeScript y Java/Spring porque:
 - El tipado estático y la explicititud hacen que la lógica de permisos sea fácil de auditar, que es
   un requisito del proyecto.
 
-> Nota: la comparación completa de alternativas de backend, con la matriz de criterios
-> ponderados, se completa en el informe final.
-
 ---
 
 ## 2. Base de datos: PostgreSQL 18 + pgx + sqlc
@@ -117,7 +114,7 @@ tocar un `.sql`. Es aceptable porque el Makefile lo automatiza y `AGENTS.md` lo 
 SQL embebido en el binario con `golang-migrate`, aplicado con un comando propio
 (`make migrate`, que corre `cmd/migrate`) y no en el arranque de la API: así el deploy decide
 cuándo cambia el esquema y dos réplicas de la API nunca compiten por migrar. El esquema queda
-versionado en el repositorio como código y cada entorno aplica exactamente los mismos archivos. **Nunca se edita una migración ya aplicada**: los cambios son migraciones nuevas.
+versionado en el repositorio como código y cada entorno aplica exactamente los mismos archivos.
 
 ---
 
@@ -250,27 +247,3 @@ $ make db-up
 $ psql $DATABASE_URL -tAc 'select version();'
 PostgreSQL 18.6 ...
 ```
-
-El contenedor levanta en ~3 segundos y responde `pg_isready` correctamente.
-
----
-
-## Criterios de éxito
-
-| Criterio | Estado |
-|----------|--------|
-| El stack tecnológico queda documentado y aprobado por el equipo | ✅ este documento |
-| Los repositorios están creados y son accesibles para el equipo | ✅ `RaceControl` en Git, rama `main` |
-| Los entornos están configurados y operativos | ✅ Postgres 18.6 en contenedor, verificado |
-
-## Consecuencias aceptadas
-
-1. **Costo del bundle web** por usar React Native para web. Se acepta a cambio de una sola base
-   de código.
-2. **Un paso de generación** (`make sqlc`) que hay que recordar después de tocar un `.sql`.
-   Mitigado con el target del Makefile y con la instrucción en `AGENTS.md`.
-3. **Enums como CHECK en vez de tipos ENUM de PostgreSQL**, para que agregar un valor sea una
-   migración y no un lock de reescritura de tabla.
-4. **El equipo tiene que aprender Expo**, que es una capa adicional sobre React Native. Se
-   mitiga con que la documentación de Expo es mayoritaria y el routing por archivos elimina
-   configuración.
