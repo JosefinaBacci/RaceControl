@@ -744,3 +744,42 @@ por el mapa en la app, sin tocar el backend. `tsc` en verde y `expo export -p we
 
 **Resultado:** `app/src/logos.ts`, el listado de usuarios, el menú de usuario,
 `docs/sprint1/TODO.md`.
+
+---
+
+### 2026-10-03 — Documentación de interfaces (US4) y horas reales del sprint
+
+**Contexto:** la única tarea abierta de US4 era documentar las funcionalidades por rol; las
+pantallas y el sistema de diseño ya estaban implementados. Además faltaba cargar las horas reales
+de US4, US5 y US6, que la cátedra pide comparar con la estimación para el Sprint 2. El equipo
+aportó el historial de commits del repositorio como fuente para las horas.
+
+**Prompt:**
+
+> Redactar `docs/sprint1/04-interfaces.md` a partir de lo implementado: qué ve y qué puede hacer
+> cada rol, la navegación, el sistema de diseño y las decisiones de interacción, indicando qué
+> pantallas ya usan datos reales. Calcular las horas reales de US4, US5 y US6 a partir del
+> historial de commits y completar la tabla del sprint.
+
+**Respuesta de la IA:** el documento se armó leyendo cada pantalla y cada valor del tema, no de
+memoria: una tabla por rol con la columna de datos reales o de ejemplo, la navegación (pestañas
+inferiores en el teléfono y barra lateral en la web desde 1024 px), los tokens de color,
+tipografía y espaciado, los componentes, las decisiones de interacción y la accesibilidad. Los
+contrastes de color se calcularon con la fórmula de WCAG en lugar de afirmarse: casi todo el texto
+cumple AA o AAA, pero el rojo de acento como texto chico queda en 4,0:1, por debajo del 4,5:1 de
+AA, y se registró como deuda con su solución. Las horas se midieron con las marcas de tiempo
+exactas de los commits; donde dos historias compartieron sesión (US4 y US5) el tiempo se repartió
+según el momento de cada commit, y el método quedó escrito junto a la tabla.
+
+**Validación:** se verificaron contra el código las afirmaciones del documento que no surgían de
+leer una sola pantalla (la cuenta regresiva y los datos del circuito en la portada, el mensaje de
+bloqueo del login, las regiones accesibles). El criterio "interfaz clara e intuitiva" queda sin
+marcar en el `TODO.md`, porque lo valida el profesor en la demo y no el equipo.
+
+**Desviación para el Sprint 2:** 8,5 h reales contra 53 h estimadas (−84 %). Confirma el hallazgo
+de US3: las estimaciones del Sprint 1 midieron el trabajo como si se hiciera sin asistencia, y la
+IA redujo sobre todo el tiempo de escritura de código y documentación. Para el Sprint 2 conviene
+estimar por separado decidir, implementar y validar, porque la validación (tests, revisión,
+pruebas manuales) es lo que menos se acelera.
+
+**Resultado:** `docs/sprint1/04-interfaces.md`, `docs/sprint1/TODO.md`.

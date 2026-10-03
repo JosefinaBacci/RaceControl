@@ -14,11 +14,17 @@ Leyendo de arriba hacia abajo. Cada US se cierra con sus criterios de éxito ver
 | US1 | Selección de stack y configuración del entorno | 5 | 8 | 6h | 1.5h | ☑ |
 | US2 | Diseño del modelo de datos | 5 | 8 | 9h | 3.5h | ☑ |
 | US3 | Arquitectura, roles y seguridad | 5 | 8 | 9h | 0.2h | ☑ |
-| US4 | Diseño de interfaz por rol | 5 | 8 | 8h | — | ◐ |
-| US5 | Login de usuarios | 3 | 13 | 9h | — | ☑ |
-| US6 | Gestión de usuarios | 8 | 21 | 12h | — | ☐ |
+| US4 | Diseño de interfaz por rol | 5 | 8 | 8h | 1.1h | ☑ |
+| US5 | Login de usuarios | 3 | 13 | 9h | 1.0h | ☑ |
+| US6 | Gestión de usuarios | 8 | 21 | 12h | 1.2h | ☑ |
 
-**Total estimado:** 53h · **Total real:** 5.2h (faltan US4 y US5) · **Desviación:** pendiente Sprint 2
+**Total estimado:** 53h · **Total real:** 8.5h · **Desviación:** −84 % (lo real fue el 16 % de lo estimado)
+
+Las horas reales de US4, US5 y US6 salen de las marcas de tiempo de los commits: desde el último
+commit de la historia anterior hasta el último commit de la propia. Donde varias historias se
+trabajaron en la misma sesión (US4 y US5), el tiempo se repartió según cuándo se hizo el commit de
+cada una. Es una medición aproximada: no incluye el tiempo de lectura ni de pruebas manuales fuera
+de la sesión de commits.
 
 ☑ cerrada · ◐ en curso · ☐ sin empezar
 
@@ -166,13 +172,13 @@ entre "escribir el documento" y "elegir la solución".
 
 ## US4 — Diseño de interfaz por rol
 
-*Est. 8h · Real: — · SP 5 · Valor 8*
+*Est. 8h · Real: 1.1h · SP 5 · Valor 8*
 
 - [x] Definir alcance de la interfaz de cada rol (pantallas pública, FIA y escudería)
 - [x] Sistema de diseño común: colores, tipografías, componentes reutilizables (`app/src/theme`,
       `app/src/components`)
 - [x] Versión inicial de cada interfaz (con datos mockeados)
-- [ ] Documentar funcionalidades por rol → `docs/sprint1/04-interfaces.md`
+- [x] Documentar funcionalidades por rol → `docs/sprint1/04-interfaces.md`
 
 **Criterios de éxito**
 
@@ -183,7 +189,7 @@ entre "escribir el documento" y "elegir la solución".
 
 ## US5 — Login de usuarios
 
-*Est. 9h · Real: — · SP 3 · Valor 13*
+*Est. 9h · Real: 1.0h · SP 3 · Valor 13*
 
 - [x] Interfaz de login con usuario y contraseña
 - [x] Validación de datos ingresados (en la app y, de nuevo, en el backend)
@@ -201,13 +207,11 @@ por intentos, cookie `httpOnly` en web y token en `expo-secure-store` en móvil.
 - [x] Interfaz clara y fácil de usar
 - [x] La plataforma identifica correctamente el rol al iniciar sesión
 
-**Pendiente:** cargar la columna **Real** de US4 y US5 en la tabla de estado.
-
 ---
 
 ## US6 — Gestión de usuarios
 
-*Est. 12h · Real: — · SP 8 · Valor 21*
+*Est. 12h · Real: 1.2h · SP 8 · Valor 21*
 
 - [x] Alta de usuarios
 - [x] Modificación de datos de un usuario existente
