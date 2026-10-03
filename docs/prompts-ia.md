@@ -676,3 +676,40 @@ uso académico que las fotos.
 
 **Resultado:** `app/assets/logos/`, `app/src/logos.ts`, `app/src/components/Avatar.tsx`, el
 listado de usuarios, la pantalla de resultados y el menú de usuario.
+
+> Corrección posterior del equipo: con los logos en el avatar, cualquier cuenta mostraba el logo
+> de su organización en lugar de algo propio, incluidas las cuentas de prueba. Un logo representa
+> a una organización, no a una persona. Se decidió que los avatares de las personas vuelvan a
+> mostrar sus iniciales, y que el logo aparezca como ícono junto al rol ("Administrador de
+> escudería · Scuderia Ferrari") en el listado de usuarios y en el menú, mediante un componente
+> `RoleIcon` que usa el ícono genérico cuando la organización no tiene logo. La pantalla de
+> resultados conserva los logos porque sus filas son escuderías.
+
+---
+
+### 2026-10-03 — Base de datos propia para los tests de integración
+
+**Contexto:** al probar la gestión de usuarios, el equipo encontró en el listado decenas de cuentas
+con nombres como `t108965040125.1`. Eran usuarios creados por los tests de integración: `make
+check` toma `DATABASE_URL` de `.env`, así que los tests corrían contra la misma base que usa la app
+y cada corrida dejaba cuentas nuevas.
+
+**Prompt:**
+
+> Explicar de dónde salen las cuentas de prueba que aparecen en la gestión de usuarios y evitar que
+> los tests escriban en la base de desarrollo.
+
+**Respuesta de la IA:** los tests pasan a usar una base propia, `racecontrol_test`, en el mismo
+contenedor de Postgres, configurada con una variable aparte, `TEST_DATABASE_URL`. El cambio de
+código es uno solo, en `testdb.Pool`, que usan todos los tests de integración. Un target nuevo,
+`make test-db`, crea esa base si no existe y le aplica las migraciones y los datos de referencia
+(sin cuentas demo); `make backend-test` y `make check` lo ejecutan solos cuando la variable está
+definida. Sin la variable, los tests de integración se omiten, nunca caen sobre la base de la app.
+
+**Validación:** se contó la cantidad de usuarios de la base de desarrollo antes y después de
+correr `make check`: quedó igual (247), mientras los usuarios de los tests se crearon en
+`racecontrol_test`. Todos los tests en verde. Las cuentas que ya habían quedado en la base de
+desarrollo se eliminan con `make db-reset`.
+
+**Resultado:** `backend/internal/testdb/testdb.go`, `Makefile`, `.env.example`, `README.md`,
+`AGENTS.md`.

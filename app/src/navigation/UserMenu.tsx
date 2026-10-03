@@ -7,7 +7,7 @@ import type { SessionUser } from '@/api/auth';
 import { roleHome, roleLabel } from '@/auth/roles';
 import { useSession } from '@/auth/SessionProvider';
 import { AppText, Avatar } from '@/components';
-import { accountLogo } from '@/logos';
+import { RoleIcon } from '@/features/accounts/RoleIcon';
 import { teamName } from '@/mocks/catalog';
 import { colors, radius, spacing } from '@/theme';
 
@@ -54,7 +54,7 @@ export function UserMenu({ user }: { user: SessionUser }) {
         hitSlop={8}
         style={({ pressed }) => [styles.trigger, pressed && styles.pressed]}
       >
-        <Avatar name={user.username} size={32} color={colors.accent} image={accountLogo(user.role, user.teamId)} />
+        <Avatar name={user.username} size={32} color={colors.accent} />
         <Ionicons name="chevron-down" size={14} color={colors.textMuted} />
       </Pressable>
       <Modal visible={isOpen} transparent animationType="fade" onRequestClose={() => setIsOpen(false)}>
@@ -64,9 +64,12 @@ export function UserMenu({ user }: { user: SessionUser }) {
               <AppText variant="bodyStrong" numberOfLines={1}>
                 {user.username}
               </AppText>
-              <AppText variant="caption" color="textMuted" numberOfLines={1}>
-                {subtitle}
-              </AppText>
+              <View style={styles.role}>
+                <RoleIcon role={user.role} teamId={user.teamId} />
+                <AppText variant="caption" color="textMuted" numberOfLines={1} style={styles.roleText}>
+                  {subtitle}
+                </AppText>
+              </View>
             </View>
             {items.map((item) => (
               <Pressable
@@ -102,6 +105,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   header: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, gap: 2, borderBottomWidth: 1, borderBottomColor: colors.border },
+  role: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  roleText: { flexShrink: 1 },
   item: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   itemPressed: { backgroundColor: colors.surfaceMuted },
 });

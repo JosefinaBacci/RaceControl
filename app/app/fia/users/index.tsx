@@ -1,4 +1,3 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
@@ -9,9 +8,9 @@ import { roleLabel } from '@/auth/roles';
 import { useSession } from '@/auth/SessionProvider';
 import { AppText, Avatar, Badge, Button, Card, ChipGroup, IconButton, Screen, TextField } from '@/components';
 import { useAccounts } from '@/data/accounts';
+import { RoleIcon } from '@/features/accounts/RoleIcon';
 import { useStatusToggle } from '@/features/accounts/useStatusToggle';
 import { RemoteContent } from '@/features/RemoteContent';
-import { accountLogo } from '@/logos';
 import { teamById } from '@/mocks/catalog';
 import { colors, spacing } from '@/theme';
 
@@ -103,7 +102,7 @@ function AccountRow({ account, showsTable, onChanged }: { account: Account; show
   return (
     <View style={styles.row}>
       <View style={[columnStyleList[0], styles.userCell]}>
-        <Avatar name={account.username} color={avatarColor} image={accountLogo(account.role, account.teamId)} />
+        <Avatar name={account.username} color={avatarColor} />
         <View style={styles.userText}>
           <AppText variant="bodyStrong" numberOfLines={1}>
             {account.username}
@@ -116,7 +115,7 @@ function AccountRow({ account, showsTable, onChanged }: { account: Account; show
       {showsTable ? (
         <>
           <View style={[columnStyleList[1], styles.roleCell]}>
-            <Ionicons name={account.role === 'fia_admin' ? 'shield-checkmark-outline' : 'car-sport-outline'} size={16} color={colors.textMuted} />
+            <RoleIcon role={account.role} teamId={account.teamId} />
             <AppText variant="caption" color="textMuted" numberOfLines={1} style={styles.userText}>
               {roleText}
             </AppText>
