@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/racecontrol/backend/internal/auth"
+	"github.com/racecontrol/backend/internal/domain"
 )
 
 const requestTimeout = 15 * time.Second
@@ -23,6 +24,8 @@ type Dependencies struct {
 	Pool              *pgxpool.Pool
 	Authenticator     Authenticator
 	Sessions          SessionService
+	Users             UserManager
+	Teams             TeamCatalog
 	Cookie            CookieConfig
 	AllowedOrigins    []string
 	TrustProxyHeaders bool
@@ -43,6 +46,19 @@ func NewRouter(deps Dependencies) http.Handler {
 	authRoutes := &authHandlers{authenticator: deps.Authenticator, sessions: deps.Sessions, cookie: deps.Cookie}
 
 	router.Get("/healthz", healthHandler(deps.Pool))
+
+	router.Get("/teams", listTeamsHandler(deps.Teams))
+
+	userRoutes := &userHandlers{users: deps.Users}
+	router.Route("/users", func(r chi.Router) {
+		r.Use(sessionGuard.RequireSession, sessionGuard.RequireRole(domain.RoleFIAAdmin))
+		r.Get("/", userRoutes.list)
+		r.Post("/", userRoutes.create)
+		r.Get("/{id}", userRoutes.get)
+		r.Patch("/{id}", userRoutes.update)
+		r.Post("/{id}/deactivate", userRoutes.deactivate)
+		r.Post("/{id}/reactivate", userRoutes.reactivate)
+	})
 
 	router.Route("/auth", func(r chi.Router) {
 		r.Post("/login", authRoutes.login)

@@ -71,28 +71,3 @@ func TestSessionExpiry(t *testing.T) {
 		})
 	}
 }
-
-func TestRevokeAllForUserEndsEverySession(t *testing.T) {
-	queries := dbgen.New(testdb.Pool(t))
-	service := sessions.NewService(queries, sessions.Config{IdleTTL: time.Hour, AbsoluteTTL: 2 * time.Hour})
-	userID := newUserID(t, queries)
-
-	var tokens []string
-	for range 2 {
-		token, err := service.Issue(context.Background(), userID, sessions.Client{})
-		if err != nil {
-			t.Fatalf("Issue: %v", err)
-		}
-		tokens = append(tokens, token)
-	}
-
-	if err := service.RevokeAllForUser(context.Background(), userID); err != nil {
-		t.Fatalf("RevokeAllForUser: %v", err)
-	}
-
-	for _, token := range tokens {
-		if _, err := service.Resolve(context.Background(), token); !errors.Is(err, domain.ErrUnauthenticated) {
-			t.Fatalf("Resolve after revoke = %v, want ErrUnauthenticated", err)
-		}
-	}
-}

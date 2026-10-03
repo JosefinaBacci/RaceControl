@@ -16,7 +16,9 @@ import (
 	"github.com/racecontrol/backend/internal/db"
 	"github.com/racecontrol/backend/internal/db/dbgen"
 	"github.com/racecontrol/backend/internal/sessions"
+	"github.com/racecontrol/backend/internal/teams"
 	"github.com/racecontrol/backend/internal/transport"
+	"github.com/racecontrol/backend/internal/users"
 )
 
 const (
@@ -74,6 +76,8 @@ func buildRouter(cfg config.Config, pool *pgxpool.Pool) (http.Handler, error) {
 		Pool:              pool,
 		Authenticator:     auth.NewAuthenticator(queries, hasher, sessionService),
 		Sessions:          sessionService,
+		Users:             users.NewService(queries, db.NewTransactor(pool), hasher),
+		Teams:             teams.NewService(queries),
 		Cookie:            transport.CookieConfig{Secure: cfg.IsProduction(), MaxAge: cfg.Sessions.Absolute},
 		AllowedOrigins:    cfg.CORSAllowedOrigins,
 		TrustProxyHeaders: cfg.TrustProxyHeaders,

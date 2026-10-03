@@ -74,22 +74,48 @@ func (q *Queries) CreateUserIfAbsent(ctx context.Context, arg CreateUserIfAbsent
 	return err
 }
 
-const getUserByID = `-- name: GetUserByID :one
-SELECT id, username, email, password_hash, role, team_id, is_active, deactivated_at, created_at, updated_at
-FROM users
-WHERE id = $1
+const deactivateUser = `-- name: DeactivateUser :exec
+UPDATE users
+SET deactivated_at = now()
+WHERE id = $1 AND deactivated_at IS NULL
 `
 
-func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
-	row := q.db.QueryRow(ctx, getUserByID, id)
-	var i User
+func (q *Queries) DeactivateUser(ctx context.Context, id int64) error {
+	_, err := q.db.Exec(ctx, deactivateUser, id)
+	return err
+}
+
+const getAccount = `-- name: GetAccount :one
+SELECT u.id, u.username, u.email, u.role, u.team_id, t.name AS team_name,
+       u.is_active, u.deactivated_at, u.created_at, u.updated_at
+FROM users u
+LEFT JOIN teams t ON t.id = u.team_id
+WHERE u.id = $1
+`
+
+type GetAccountRow struct {
+	ID            int64
+	Username      string
+	Email         pgtype.Text
+	Role          string
+	TeamID        pgtype.Int8
+	TeamName      pgtype.Text
+	IsActive      bool
+	DeactivatedAt pgtype.Timestamptz
+	CreatedAt     pgtype.Timestamptz
+	UpdatedAt     pgtype.Timestamptz
+}
+
+func (q *Queries) GetAccount(ctx context.Context, id int64) (GetAccountRow, error) {
+	row := q.db.QueryRow(ctx, getAccount, id)
+	var i GetAccountRow
 	err := row.Scan(
 		&i.ID,
 		&i.Username,
 		&i.Email,
-		&i.PasswordHash,
 		&i.Role,
 		&i.TeamID,
+		&i.TeamName,
 		&i.IsActive,
 		&i.DeactivatedAt,
 		&i.CreatedAt,
@@ -120,6 +146,105 @@ func (q *Queries) GetUserByUsername(ctx context.Context, lower string) (User, er
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const listAccounts = `-- name: ListAccounts :many
+SELECT u.id, u.username, u.email, u.role, u.team_id, t.name AS team_name,
+       u.is_active, u.deactivated_at, u.created_at, u.updated_at
+FROM users u
+LEFT JOIN teams t ON t.id = u.team_id
+WHERE ($1::text IS NULL
+       OR u.username LIKE '%' || $1 || '%'
+       OR u.email LIKE '%' || $1 || '%')
+  AND ($2::text IS NULL OR u.role = $2)
+  AND ($3::boolean IS NULL OR u.is_active = $3)
+ORDER BY u.username
+`
+
+type ListAccountsParams struct {
+	Search   pgtype.Text
+	Role     pgtype.Text
+	IsActive pgtype.Bool
+}
+
+type ListAccountsRow struct {
+	ID            int64
+	Username      string
+	Email         pgtype.Text
+	Role          string
+	TeamID        pgtype.Int8
+	TeamName      pgtype.Text
+	IsActive      bool
+	DeactivatedAt pgtype.Timestamptz
+	CreatedAt     pgtype.Timestamptz
+	UpdatedAt     pgtype.Timestamptz
+}
+
+func (q *Queries) ListAccounts(ctx context.Context, arg ListAccountsParams) ([]ListAccountsRow, error) {
+	rows, err := q.db.Query(ctx, listAccounts, arg.Search, arg.Role, arg.IsActive)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAccountsRow{}
+	for rows.Next() {
+		var i ListAccountsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Username,
+			&i.Email,
+			&i.Role,
+			&i.TeamID,
+			&i.TeamName,
+			&i.IsActive,
+			&i.DeactivatedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const reactivateUser = `-- name: ReactivateUser :exec
+UPDATE users
+SET deactivated_at = NULL
+WHERE id = $1
+`
+
+func (q *Queries) ReactivateUser(ctx context.Context, id int64) error {
+	_, err := q.db.Exec(ctx, reactivateUser, id)
+	return err
+}
+
+const updateAccount = `-- name: UpdateAccount :exec
+UPDATE users
+SET email = lower($1), role = $2, team_id = $3, password_hash = $4
+WHERE id = $5
+`
+
+type UpdateAccountParams struct {
+	Email        pgtype.Text
+	Role         string
+	TeamID       pgtype.Int8
+	PasswordHash string
+	ID           int64
+}
+
+func (q *Queries) UpdateAccount(ctx context.Context, arg UpdateAccountParams) error {
+	_, err := q.db.Exec(ctx, updateAccount,
+		arg.Email,
+		arg.Role,
+		arg.TeamID,
+		arg.PasswordHash,
+		arg.ID,
+	)
+	return err
 }
 
 const updateUserPasswordHash = `-- name: UpdateUserPasswordHash :exec

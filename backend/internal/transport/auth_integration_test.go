@@ -16,11 +16,14 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/racecontrol/backend/internal/auth"
+	"github.com/racecontrol/backend/internal/db"
 	"github.com/racecontrol/backend/internal/db/dbgen"
 	"github.com/racecontrol/backend/internal/domain"
 	"github.com/racecontrol/backend/internal/sessions"
+	"github.com/racecontrol/backend/internal/teams"
 	"github.com/racecontrol/backend/internal/testdb"
 	"github.com/racecontrol/backend/internal/transport"
+	"github.com/racecontrol/backend/internal/users"
 )
 
 const (
@@ -51,6 +54,8 @@ func newHarness(t *testing.T) *harness {
 		Pool:           pool,
 		Authenticator:  auth.NewAuthenticator(queries, hasher, sessionService),
 		Sessions:       sessionService,
+		Users:          users.NewService(queries, db.NewTransactor(pool), hasher),
+		Teams:          teams.NewService(queries),
 		Cookie:         transport.CookieConfig{MaxAge: 24 * time.Hour},
 		AllowedOrigins: []string{"http://localhost:8081"},
 	})

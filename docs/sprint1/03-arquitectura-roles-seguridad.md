@@ -119,6 +119,7 @@ público sin mirar la tabla `users`, y el `CHECK users_role_valid` sigue siendo 
 
 | Recurso | `fia_admin` | `team_admin` | Público |
 |---------|-------------|--------------|---------|
+| Escuderías (catálogo) | R | R | R |
 | Calendario (eventos) | C R U D | R Desc | R Desc |
 | Reglamentos | C R U D | R Desc | R Desc |
 | Puntajes | C R U | R A | R |
@@ -127,7 +128,7 @@ público sin mirar la tabla `users`, y el `CHECK users_role_valid` sigue siendo 
 | Sanciones | C R U | R A | R |
 | Pruebas de neumáticos | C R U | R | R |
 | Notificaciones | C (emitir) R | R (recibir) | — |
-| Cuentas de usuario | C R U D + búsqueda | — | — |
+| Cuentas de usuario | C R U D (baja lógica) + búsqueda | — | — |
 | Perfil propio | R U | R U | — |
 
 Tres filas de esa matriz merecen justificación:
@@ -149,8 +150,8 @@ Tres reglas que hacen que la matriz sea real y no decorativa:
    cuerpo de la petición: el service lo toma del token de sesión y lo inyecta en el `WHERE`. Si el
    alcance fuera un parámetro, bastaría cambiar un campo del JSON para leer datos de otra escudería.
 3. **Denegar por defecto.** Una ruta sin permiso explícito no se expone. Las rutas públicas son una
-   lista corta y consciente (`GET` de calendario, puntajes, pilotos, sanciones), no "todo lo que no
-   tenga middleware".
+   lista corta y consciente (`GET` del catálogo de escuderías, calendario, puntajes, pilotos y
+   sanciones), no "todo lo que no tenga middleware".
 
 El middleware de RBAC resuelve el permiso de la ruta; el service resuelve el alcance por fila. Las
 dos capas hacen falta: el middleware evita el trabajo inútil, pero un `team_admin` que pide un recurso
@@ -333,8 +334,12 @@ La US3 es de diseño, pero varias decisiones ya tienen código detrás. La tabla
 | Login, logout y redirección por rol | Implementado (US5) | `internal/transport`, `app/src/auth` |
 | Cabeceras de seguridad y CORS | Implementado (US5) | `internal/transport` |
 | Bloqueo por intentos e igualación de tiempos | Implementado (US5) | `internal/auth` |
-| Alcance por escudería y baja que revoca sesiones | US6 | `internal/users` |
-| Revocación de sesiones al cambiar rol, escudería o estado | US6 | `internal/users` |
+| Gestión de cuentas solo para `fia_admin` | Implementado (US6) | `internal/users`, `internal/transport` |
+| Baja lógica que revoca sesiones en la misma transacción | Implementado (US6) | `internal/users`, `internal/db` |
+| Revocación de sesiones al cambiar rol, escudería o contraseña | Implementado (US6) | `internal/users` |
+| Un administrador no puede desactivarse ni quitarse el rol | Implementado (US6) | `internal/users` |
+| Cambio de la contraseña propia ("Perfil propio U" de la matriz) | Pendiente | — |
+| Alcance por fila para recursos de escudería | Sprint 2 | módulos de pilotos, puntajes y sanciones |
 | Purga de `login_attempts` | Pendiente | — |
 
 ## Criterios de éxito
@@ -354,4 +359,4 @@ La US3 es de diseño, pero varias decisiones ya tienen código detrás. La tabla
 | El bloqueo por IP no se implementa en el Sprint 1 | Sin volumen real no se sabe el umbral razonable que sirve | Se registra todo intento con su IP, así el Sprint 2 parte de datos y no de intuición |
 | La matriz de permisos está en un documento, no en código | Una tabla en Go o SQL se desactualiza igual de rápido que un `.md` | Cada fila de la matriz se convierte en un caso de test de autorización en US5/US6; es el test el que la hace verdadera |
 | La app web desplegada en Vercel no comparte sitio con la API | La cookie `SameSite=Strict` no viaja entre sitios distintos, así que el login web no se sostiene en ese deploy | Pendiente de decisión del equipo: proxy desde Vercel hacia la API, dominio propio compartido, o servir la app desde la API |
-| El alcance por escudería todavía no está probado | Es la fila de la matriz con más riesgo de fuga | US6 agrega el caso de cruce de escuderías antes de dar por buena la US |
+| El alcance por fila todavía no está probado | US6 solo expone cuentas, que son exclusivas de la FIA: un `team_admin` recibe `403` en todas sus rutas, y eso sí está probado | Los recursos de escudería del Sprint 2 (pilotos, acuses) agregan el caso de cruce de escuderías antes de darse por buenos |

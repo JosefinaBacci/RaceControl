@@ -34,6 +34,7 @@ var errorMappings = []errorMapping{
 	{target: domain.ErrAccountLocked, status: http.StatusTooManyRequests, code: "account_locked", message: "Demasiados intentos fallidos. Probá de nuevo en 15 minutos", retryAfter: auth.LockoutWindow},
 	{target: domain.ErrForbidden, status: http.StatusForbidden, code: "forbidden", message: "No tenés permiso para esta operación"},
 	{target: domain.ErrNotFound, status: http.StatusNotFound, code: "not_found", message: "No encontrado"},
+	{target: domain.ErrSelfLockout, status: http.StatusConflict, code: "self_lockout", message: "No podés desactivar tu propia cuenta ni cambiar tu propio rol"},
 	{target: domain.ErrConflict, status: http.StatusConflict, code: "conflict", message: "El recurso ya existe"},
 }
 
@@ -41,6 +42,11 @@ func writeError(w http.ResponseWriter, r *http.Request, err error) {
 	var validationErr *domain.ValidationError
 	if errors.As(err, &validationErr) {
 		writeJSON(w, http.StatusBadRequest, errorBody{Code: "validation", Message: validationErr.Message, Field: validationErr.Field})
+		return
+	}
+	var conflictErr *domain.ConflictError
+	if errors.As(err, &conflictErr) {
+		writeJSON(w, http.StatusConflict, errorBody{Code: "conflict", Message: conflictErr.Message, Field: conflictErr.Field})
 		return
 	}
 

@@ -91,12 +91,20 @@ func (h *authHandlers) logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *authHandlers) me(w http.ResponseWriter, r *http.Request) {
-	identity, found := auth.IdentityFromContext(r.Context())
-	if !found {
-		writeError(w, r, domain.ErrUnauthenticated)
+	identity, err := identityFrom(r)
+	if err != nil {
+		writeError(w, r, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, toUserResponse(identity))
+}
+
+func identityFrom(r *http.Request) (domain.Identity, error) {
+	identity, found := auth.IdentityFromContext(r.Context())
+	if !found {
+		return domain.Identity{}, domain.ErrUnauthenticated
+	}
+	return identity, nil
 }
 
 func (h *authHandlers) sessionCookie(value string, maxAgeSeconds int) *http.Cookie {

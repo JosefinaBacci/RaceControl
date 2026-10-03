@@ -13,13 +13,19 @@ type Querier interface {
 	CreateSession(ctx context.Context, arg CreateSessionParams) (int64, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateUserIfAbsent(ctx context.Context, arg CreateUserIfAbsentParams) error
+	DeactivateUser(ctx context.Context, id int64) error
+	GetAccount(ctx context.Context, id int64) (GetAccountRow, error)
 	GetActiveSessionByTokenHash(ctx context.Context, arg GetActiveSessionByTokenHashParams) (GetActiveSessionByTokenHashRow, error)
-	GetUserByID(ctx context.Context, id int64) (User, error)
 	GetUserByUsername(ctx context.Context, lower string) (User, error)
 	InsertLoginAttempt(ctx context.Context, arg InsertLoginAttemptParams) error
+	ListAccounts(ctx context.Context, arg ListAccountsParams) ([]ListAccountsRow, error)
+	ListTeams(ctx context.Context) ([]ListTeamsRow, error)
+	ReactivateUser(ctx context.Context, id int64) error
 	RevokeSessionByTokenHash(ctx context.Context, tokenHash string) error
 	RevokeUserSessions(ctx context.Context, userID int64) error
+	TeamExists(ctx context.Context, id int64) (bool, error)
 	TouchSession(ctx context.Context, arg TouchSessionParams) error
+	UpdateAccount(ctx context.Context, arg UpdateAccountParams) error
 	UpdateUserPasswordHash(ctx context.Context, arg UpdateUserPasswordHashParams) error
 }
 

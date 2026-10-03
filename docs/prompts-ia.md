@@ -343,8 +343,8 @@ redactan los prompts.
 ### 2026-10-02 — Corrección del CHECK de sanciones y revisión de la migración inicial
 
 **Contexto:** segundo bug de la revisión general: el `CHECK` de exclusividad de `sanctions`,
-documentado en US2 pero todavía no migrado. Como el error estaba en el diseño del esquema, se
-aprovechó para revisar con el mismo criterio la migración que ya existe, `000001_core.up.sql`.
+documentado en US2 pero todavía no migrado. Además, el equipo señaló que la migración existente,
+`000001_core.up.sql`, no le parecía prolija y pidió revisarla con el mismo criterio.
 
 **Prompt:**
 
@@ -382,9 +382,14 @@ función.
 produjo exactamente el mismo código que antes. Para eso `is_active` conserva su posición en la
 tabla: con la columna movida, sqlc dejaba de mapear las consultas al struct `User`. El test que
 desactivaba usuarios escribiendo `is_active` se ajustó para marcar solo `deactivated_at`.
-`go vet`, `gofmt` y `go test ./...` en verde. Las restricciones no se pudieron ejecutar contra
-una base real en esta sesión: queda pendiente correr `make db-reset` y los tests de integración
-con `DATABASE_URL`.
+`go vet`, `gofmt` y `go test ./...` en verde.
+
+Verificación posterior contra Postgres 18 (`make db-reset` y `make check` con `DATABASE_URL`):
+la migración y el seed se aplican sin errores y los 16 tests de integración pasan. Además se
+probaron las restricciones directamente con `psql`: `is_active` pasa de `true` a `false` al cargar
+`deactivated_at` y PostgreSQL rechaza escribirla a mano; un `username` en mayúsculas y un
+`team_admin` sin escudería se rechazan; y el `CHECK` de sanciones, probado sobre una tabla
+temporal, acepta exactamente los dos casos válidos de los cuatro.
 
 **Resultado:** `backend/migrations/000001_core.up.sql`, `backend/migrations/000001_core.down.sql`,
 `backend/internal/transport/auth_integration_test.go`, `docs/sprint1/02-modelo-de-datos.md`,
@@ -460,7 +465,7 @@ En el código, los cambios fueron:
 **Validación:** `make check` en verde (`go vet`, `gofmt`, `go test` y `tsc`), y `expo export -p
 web` compila el bundle sin errores. Se agregaron tests de integración para el logout sin sesión y
 para el login móvil sin cookie; como el resto de los tests de integración, se omiten sin
-`DATABASE_URL` y quedan pendientes de correr contra una base real. Se escanearon todos los
+`DATABASE_URL`; corridos después contra Postgres 18, los 16 pasan. Se escanearon todos los
 documentos modificados en busca de caracteres fuera del rango latino.
 
 **Resultado:** `docs/sprint1/01-stack.md`, `docs/sprint1/02-modelo-de-datos.md`,
@@ -468,3 +473,73 @@ documentos modificados en busca de caracteres fuera del rango latino.
 `README.md`, `compose.yaml`, `.env.example`, `backend/` (config, transport, cmd, db, testdb,
 `go.mod`) y `app/` (`src/features`, `src/data`, `src/mocks/catalog.ts` y las pantallas que los
 usan).
+
+---
+
+### 2026-10-03 — Gestión de usuarios: backend (US6)
+
+**Contexto:** con la base revisada y verificada contra Postgres, se arrancó US6 por el backend.
+Antes de implementar se extrajeron a funciones compartidas la validación de `username`, la
+detección de violaciones de unicidad y las conversiones de tipos de `pgtype`, que ya estaban
+repetidas en `auth`, `sessions` y `create-admin` (commit propio, separado de la funcionalidad).
+
+**Prompt:**
+
+> Implementar el backend de US6: alta, modificación, baja lógica, listado y búsqueda de usuarios,
+> con asignación de un rol válido, solo para el administrador FIA. Respetar el diseño de US3: la
+> baja y los cambios de privilegio revocan las sesiones del usuario en la misma transacción.
+> Reutilizar las consultas y helpers existentes antes de escribir nuevos, mantener los
+> comentarios consistentes con el estilo de cada paquete, y cubrir cada regla con tests de
+> integración contra la base real.
+
+**Respuesta de la IA:** un módulo `internal/users` con su service y un `internal/teams` mínimo
+para el formulario de asignación. Decisiones que vale la pena justificar:
+
+1. **Reutilizar antes que escribir** (a partir de la primera corrección del equipo, ver
+   **Validación**). El cambio de contraseña usa la consulta existente
+   `UpdateUserPasswordHash` y la revocación usa `RevokeUserSessions`; la nueva `UpdateAccount`
+   solo toca email, rol y escudería. `GetUserByID` quedó sin uso y se eliminó en favor de
+   `GetAccount`, que además trae el nombre de la escudería. También se eliminó
+   `sessions.RevokeAllForUser`: la revocación ocurre dentro de la transacción de US6, así que el
+   método quedaba sin uso.
+2. **Transacciones explícitas.** Un `db.Transactor` agrupa la actualización y la revocación de
+   sesiones: o se aplican las dos, o ninguna.
+3. **La escudería sigue al rol.** Pasar una cuenta a `fia_admin` le quita la escudería sin que el
+   cliente tenga que indicarlo, y pasarla a `team_admin` exige una escudería existente.
+4. **Ningún administrador puede bloquearse a sí mismo.** No puede desactivar su cuenta ni cambiar
+   su propio rol. Como cada administrador solo puede dar de baja a otros, siempre queda al menos
+   uno activo.
+5. **Qué revoca sesiones.** Un cambio de rol, escudería o contraseña y la baja revocan todas las
+   sesiones; un cambio de email no, porque no altera privilegios.
+6. **Búsqueda segura.** El texto de búsqueda se escapa antes de usarse en `LIKE`, porque los
+   nombres de usuario admiten `_`, que `LIKE` interpretaría como comodín.
+7. **Errores con campo.** Un `username` o email repetido responde `409` indicando el campo, para
+   que la app marque el input correcto.
+
+**Validación:** el equipo corrigió dos veces a la herramienta durante la implementación.
+
+- **Código duplicado.** La primera versión del service escribía su propia validación de
+  `username`, su propia detección de unicidad y sus propias conversiones de `pgtype`, y la consulta
+  de actualización reescribía también la contraseña aunque ya existía `UpdateUserPasswordHash`. El
+  equipo frenó la implementación para exigir que se revisara lo existente antes de escribir nada
+  nuevo. De esa revisión salieron los helpers compartidos (en un commit de refactor propio), la
+  reutilización de `UpdateUserPasswordHash` y `RevokeUserSessions`, y la eliminación de
+  `GetUserByID` y `sessions.RevokeAllForUser`.
+- **Comentarios inconsistentes.** El equipo preguntó si los comentarios nuevos seguían el estilo
+  del código existente. No lo hacían: los paquetes de dominio, servicios y transporte no tienen
+  comentarios, y la herramienta había agregado bloques explicativos en esos paquetes. Se
+  eliminaron o se redujeron a una línea donde explican un porqué no evidente, y en el paquete
+  `db`, que sí documenta cada función exportada, se completaron los que faltaban.
+
+12 tests de integración nuevos contra Postgres 18 cubren los permisos (`401` sin
+sesión, `403` para `team_admin`), el alta con normalización del email, siete casos de validación,
+los duplicados, la búsqueda y sus filtros (incluido el `%` literal), la revocación de sesiones por
+cambio de rol, contraseña y baja en dos dispositivos a la vez, que un cambio de email no las
+revoca, el bloqueo de uno mismo y el catálogo de escuderías. `make check` en verde con los 25
+tests de integración de `transport` corriendo, sin omitidos.
+
+**Resultado:** `backend/internal/users/`, `backend/internal/teams/`,
+`backend/internal/db/transactor.go`, `backend/internal/domain/errors.go`, `backend/sql/users.sql`,
+`backend/sql/teams.sql`, `backend/internal/transport/` (handlers, rutas, errores y tests),
+`backend/cmd/api/main.go`, `docs/sprint1/03-arquitectura-roles-seguridad.md`,
+`docs/sprint1/TODO.md`.

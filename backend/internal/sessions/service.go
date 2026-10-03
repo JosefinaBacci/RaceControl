@@ -29,7 +29,6 @@ type Store interface {
 	GetActiveSessionByTokenHash(ctx context.Context, arg dbgen.GetActiveSessionByTokenHashParams) (dbgen.GetActiveSessionByTokenHashRow, error)
 	TouchSession(ctx context.Context, arg dbgen.TouchSessionParams) error
 	RevokeSessionByTokenHash(ctx context.Context, tokenHash string) error
-	RevokeUserSessions(ctx context.Context, userID int64) error
 }
 
 type Config struct {
@@ -103,13 +102,6 @@ func (s *Service) Resolve(ctx context.Context, token string) (domain.Identity, e
 func (s *Service) Revoke(ctx context.Context, token string) error {
 	if err := s.store.RevokeSessionByTokenHash(ctx, hashToken(token)); err != nil {
 		return fmt.Errorf("revoke session: %w", err)
-	}
-	return nil
-}
-
-func (s *Service) RevokeAllForUser(ctx context.Context, userID int64) error {
-	if err := s.store.RevokeUserSessions(ctx, userID); err != nil {
-		return fmt.Errorf("revoke sessions of user %d: %w", userID, err)
 	}
 	return nil
 }

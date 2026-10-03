@@ -209,17 +209,26 @@ por intentos, cookie `httpOnly` en web y token en `expo-secure-store` en móvil.
 
 *Est. 12h · Real: — · SP 8 · Valor 21*
 
-- [ ] Alta de usuarios
-- [ ] Modificación de datos de un usuario existente
-- [ ] Baja (eliminación o desactivación) de un usuario
-- [ ] Listado y búsqueda de usuarios (solo administrador FIA)
-- [ ] Asignación de un rol válido
+- [x] Alta de usuarios
+- [x] Modificación de datos de un usuario existente
+- [x] Baja (eliminación o desactivación) de un usuario
+- [x] Listado y búsqueda de usuarios (solo administrador FIA)
+- [x] Asignación de un rol válido
+- [ ] Pantalla de gestión de usuarios de la app conectada a la API
+
+**Backend:** `GET /users` (búsqueda por usuario o email, filtros por rol y estado),
+`POST /users`, `GET /users/{id}`, `PATCH /users/{id}`, `POST /users/{id}/deactivate`,
+`POST /users/{id}/reactivate`, todas solo para `fia_admin`; `GET /teams` público para el
+formulario de asignación. Un cambio de rol, escudería o contraseña y la baja revocan las sesiones
+del usuario en la misma transacción. Un administrador no puede desactivarse ni cambiar su propio
+rol, así que siempre queda al menos uno activo.
 
 **Criterios de éxito**
 
 - [ ] El admin FIA crea, modifica y elimina usuarios, les asigna un rol válido, los busca y lista
-- [ ] Los cambios se reflejan de manera consistente
-- [ ] Un usuario sin permisos de rol no puede acceder ni usar la funcionalidad
+- [x] Los cambios se reflejan de manera consistente (sesiones revocadas en la misma transacción)
+- [x] Un usuario sin permisos de rol no puede acceder ni usar la funcionalidad (`401` sin sesión,
+      `403` para `team_admin`, probado)
 
 ---
 
@@ -230,5 +239,5 @@ por intentos, cookie `httpOnly` en web y token en `expo-secure-store` en móvil.
 - [ ] Decidir el deploy de la app web: en Vercel la cookie de sesión no llega a la API (ver la
       deuda técnica de `03-arquitectura-roles-seguridad.md`)
 - [ ] Alojar el backend con Postgres (`make migrate` + `make seed` como pasos del deploy)
-- [ ] Correr `make check` con `DATABASE_URL`: sin base, los tests de integración se omiten
+- [x] Correr `make check` con `DATABASE_URL`: los 16 tests de integración pasan contra Postgres 18
 - [ ] Registrar en `docs/prompts-ia.md` los prompts usados en US4, US5 y el deploy en Vercel
