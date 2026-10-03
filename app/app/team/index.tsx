@@ -7,7 +7,7 @@ import { useTeamDrivers, useTeamInbox, useTeamPoints, useUpcomingEvents } from '
 import { DriverCard, DriverGrid } from '@/features/DriverCard';
 import { EventList } from '@/features/EventList';
 import { MockNotice } from '@/features/MockNotice';
-import { categories, teamById } from '@/mocks/catalog';
+import { categoryLabel, teamById } from '@/mocks/catalog';
 import { teamPhoto } from '@/photos';
 import { spacing } from '@/theme';
 
@@ -16,15 +16,13 @@ export default function TeamDashboardScreen() {
   const team = teamById(teamId);
   const drivers = useTeamDrivers(teamId);
   const points = useTeamPoints(teamId);
-  const { items } = useTeamInbox(teamId);
-  const pending = items.filter((item) => !item.acknowledged).length;
+  const { pendingCount: pending } = useTeamInbox(teamId);
   const upcoming = useUpcomingEvents(3);
-  const categoryName = categories.find((category) => category.value === team.category)?.label ?? '';
 
   return (
     <Screen>
       <HeroCard
-        overline={`${categoryName} · ${team.country}`}
+        overline={`${categoryLabel(team.category)} · ${team.country}`}
         title={team.name}
         accentColor={team.color}
         flag={team.flag}

@@ -27,7 +27,6 @@ export default function PublicHomeScreen() {
           <SanctionList
             title="Últimas sanciones"
             sanctions={latestSanctions}
-            showAcknowledgement={false}
             action={<CardLink label="Ver todas" onPress={() => router.push('/sanctions')} />}
           />
         </View>

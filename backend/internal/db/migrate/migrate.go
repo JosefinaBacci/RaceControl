@@ -33,12 +33,12 @@ func New(databaseURL string) (*Migrator, error) {
 
 	driver, err := migratepgx.WithInstance(db, &migratepgx.Config{})
 	if err != nil {
-		return nil, errors.Join(fmt.Errorf("create migration driver: %w", db.Close()))
+		return nil, errors.Join(fmt.Errorf("create migration driver: %w", err), db.Close())
 	}
 
 	engine, err := migrate.NewWithInstance("iofs", source, "pgx5", driver)
 	if err != nil {
-		return nil, errors.Join(fmt.Errorf("create migrator: %w", db.Close()))
+		return nil, errors.Join(fmt.Errorf("create migrator: %w", err), db.Close())
 	}
 
 	return &Migrator{engine: engine, db: db}, nil

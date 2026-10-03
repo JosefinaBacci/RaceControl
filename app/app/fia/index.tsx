@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { useSession } from '@/auth/SessionProvider';
 import { Button, Card, CardLink, Screen, StatRow, StatTile } from '@/components';
-import { useManagedUsers, useSanctions, useScoreNotices, useUpcomingEvents } from '@/data/hooks';
+import { useActiveAccountCount, usePendingAcknowledgements, useUpcomingEvents } from '@/data/hooks';
 import { EventList } from '@/features/EventList';
 import { MockNotice } from '@/features/MockNotice';
 import { spacing } from '@/theme';
@@ -11,17 +11,16 @@ import { spacing } from '@/theme';
 export default function FiaDashboardScreen() {
   const session = useSession();
   const upcoming = useUpcomingEvents(4);
-  const pendingSanctions = useSanctions('all').filter((sanction) => !sanction.acknowledged).length;
-  const pendingScores = useScoreNotices().filter((notice) => !notice.acknowledged).length;
-  const activeAccounts = useManagedUsers('', 'all').filter((user) => user.isActive).length;
+  const pending = usePendingAcknowledgements();
+  const activeAccounts = useActiveAccountCount();
 
   return (
     <Screen title={`Hola, ${session.user?.username ?? ''}`} subtitle="Administración central de la FIA.">
       <MockNotice />
       <StatRow>
         <StatTile label="Próximos eventos" value={upcoming.length} />
-        <StatTile label="Sanciones sin acuse" value={pendingSanctions} highlight={pendingSanctions > 0} />
-        <StatTile label="Puntajes sin acuse" value={pendingScores} highlight={pendingScores > 0} />
+        <StatTile label="Sanciones sin acuse" value={pending.sanctions} highlight={pending.sanctions > 0} />
+        <StatTile label="Puntajes sin acuse" value={pending.scores} highlight={pending.scores > 0} />
         <StatTile label="Cuentas activas" value={activeAccounts} />
       </StatRow>
       <Card title="Acciones rápidas">

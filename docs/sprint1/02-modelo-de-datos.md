@@ -49,8 +49,21 @@ integridad referencial y las consultas requieren `WHERE` con `OR` sobre columnas
 En su lugar usamos **dos FK opcionales con un `CHECK` de exclusividad**:
 
 ```sql
-CHECK ((driver_id IS NULL) <> (team_id IS NOT NULL))  -- exactamente uno
+CONSTRAINT sanctions_single_subject CHECK (num_nonnulls(driver_id, team_id) = 1)
 ```
+
+`num_nonnulls` cuenta cuántos argumentos no son nulos, así que la restricción se lee igual que la
+regla: exactamente un sancionado. Se prefirió a la comparación de booleanos
+`(driver_id IS NULL) <> (team_id IS NULL)`, que es equivalente pero fácil de escribir mal: una
+versión anterior de este documento usaba `team_id IS NOT NULL` en el lado derecho, lo que invertía
+la regla y rechazaba justamente los dos casos válidos.
+
+| `driver_id` | `team_id` | Resultado |
+|-------------|-----------|-----------|
+| con valor | nulo | aceptada |
+| nulo | con valor | aceptada |
+| con valor | con valor | rechazada |
+| nulo | nulo | rechazada |
 
 Una sola tabla, integridad referencial completa, y cada consulta es directa.
 
@@ -61,10 +74,8 @@ Las tablas marcadas como *(S2)* se implementan en el Sprint 2; las demás ya est
 ```mermaid
 erDiagram
     categories ||--o{ teams : "agrupa"
-    categories ||--o{ users : "equipo de"
     teams ||--o{ users : "administra"
     teams ||--o{ drivers : "inscribe"
-    categories ||--o{ drivers : "compite en"
     seasons ||--o{ events : "programa"
     event_types ||--o{ events : "clasifica"
     categories ||--o{ events : "disciplina"
@@ -100,6 +111,10 @@ UNIQUE (`category_id`, `code`)
 `id`, `username` (UNIQUE), `email` (UNIQUE, nullable), `password_hash`, `role`, `team_id`
 (nullable), `is_active`, `deactivated_at`, `created_at`, `updated_at`
 
+`is_active` es una columna generada (`deactivated_at IS NULL`): la baja se registra solo con la
+fecha, y el estado se deriva de ella. Así los dos campos no pueden contradecirse y el modelo
+respeta la regla de no guardar datos derivables.
+
 ### `sessions` — sesiones opacas del lado del servidor
 `id`, `user_id` → `users`, `token_hash` (UNIQUE), `created_at`, `last_used_at`,
 `absolute_expires_at`, `revoked_at`, `ip`, `user_agent`
@@ -109,26 +124,28 @@ UNIQUE (`category_id`, `code`)
 
 ## 5. Entidades del Sprint 2 (diseñadas)
 
-- **`drivers`** *(S2)* — `id`, `teams_id`, `categories_id`, `first_name`, `last_name`,
-  `license_number` (UNIQUE), `is_titular` (titular o suplente), `is_active`.
-  El enunciado distingue piloto titular de suplente, así que es un atributo, no otra entidad.
+- **`drivers`** *(S2)* — `id`, `team_id`, `first_name`, `last_name`, `license_number` (UNIQUE),
+  `is_starter` (titular o suplente), `deactivated_at` e `is_active` generada, como en `users`.
+  El enunciado distingue piloto titular de suplente, así que es un atributo, no otra entidad. La
+  categoría no se guarda: se deriva de la escudería (`teams.category_id`), y guardarla dos veces
+  permitiría un piloto de F2 en una escudería de F1.
 - **`event_types`** *(S2)* — catálogo: `race`, `tyre_test`, `technical_control`. Permite sumar tipos
   sin cambiar el esquema.
-- **`events`** *(S2)* — calendario. `id`, `event_types_id`, `seasons_id`, `categories_id`,
+- **`events`** *(S2)* — calendario. `id`, `event_type_id`, `season_id`, `category_id`,
   `name`, `starts_at`, `ends_at`, `location`, `circuit`, `round`. Un solo tipo de tabla para
   carreras y pruebas de neumáticos: difieren en atributos, no en estructura.
-- **`score_entries`** *(S2)* — `id`, `events_id`, `drivers_id`, `teams_id` (desnormalizado a
-  propósito), `position`, `points`. UNIQUE (`events_id`, `drivers_id`).
-- **`score_acknowledgements`** *(S2)* — `id`, `events_id`, `teams_id`, `acknowledged_by` → `users`,
-  `acknowledged_at`. UNIQUE (`events_id`, `teams_id`): una escudería acusa una vez por carrera.
-- **`technical_controls`** *(S2)* — `id`, `events_id`, `name`, `control_type`.
-- **`technical_control_results`** *(S2)* — `id`, `technical_controls_id`, `teams_id`, `passed`,
+- **`score_entries`** *(S2)* — `id`, `event_id`, `driver_id`, `team_id` (desnormalizado a
+  propósito), `position`, `points`. UNIQUE (`event_id`, `driver_id`).
+- **`score_acknowledgements`** *(S2)* — `id`, `event_id`, `team_id`, `acknowledged_by` → `users`,
+  `acknowledged_at`. UNIQUE (`event_id`, `team_id`): una escudería acusa una vez por carrera.
+- **`technical_controls`** *(S2)* — `id`, `event_id`, `name`, `control_type`.
+- **`technical_control_results`** *(S2)* — `id`, `technical_control_id`, `team_id`, `passed`,
   `notes`.
-- **`sanctions`** *(S2)* — `id`, `events_id`, `drivers_id` (nullable), `teams_id` (nullable),
+- **`sanctions`** *(S2)* — `id`, `event_id`, `driver_id` (nullable), `team_id` (nullable),
   `reason`, `description`, `points_penalty`, `issued_at`. CHECK de exactamente un sancionado.
-- **`sanction_acknowledgements`** *(S2)* — `id`, `sanctions_id`, `teams_id`, `acknowledged_by`,
+- **`sanction_acknowledgements`** *(S2)* — `id`, `sanction_id`, `team_id`, `acknowledged_by`,
   `acknowledged_at`.
-- **`notifications`** *(S2)* — `id`, `users_id`, `kind`, `title`, `body`, `read_at`.
+- **`notifications`** *(S2)* — `id`, `user_id`, `kind`, `title`, `body`, `read_at`.
 
 ## 6. Claves primarias y por qué `GENERATED ALWAYS`
 
@@ -204,7 +221,9 @@ Restricciones comprobadas contra la base real (todas rechazan el dato inválido)
 | `username = 'Admin'` (mayúsculas) | rechazado por `users_username_format` |
 | `username = 'ad min!'` | rechazado por `users_username_format` |
 | `INSERT` con `id` explícito | rechazado: *cannot insert a non-DEFAULT value* |
-| `is_active = false` sin `deactivated_at` | rechazado por `users_deactivation_timestamped` |
+
+El caso "usuario inactivo sin fecha de baja" ya no necesita una restricción propia: como
+`is_active` se deriva de `deactivated_at`, no se puede representar.
 
 ## Criterios de éxito
 

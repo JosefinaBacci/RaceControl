@@ -14,7 +14,7 @@ Diseñar tres cosas que el enunciado exige que estén resueltas **desde el dise�
    componente.
 3. Los estándares de seguridad: autenticación, cifrado y políticas.
 
-Las tres se decidiron juntas a propósito: el modelo de permisos determina la forma de las sesiones,
+Las tres se decidieron juntas a propósito: el modelo de permisos determina la forma de las sesiones,
 y las sesiones determinan cómo viaja la identidad por la app. Diseñarlas por partes produce
 autenticación que no puede soportar el permiso que hace falta.
 
@@ -71,7 +71,7 @@ Un paquete por módulo del enunciado. Cada uno aporta sus tres capas cuando le t
 | Módulo | Responsabilidad | Sprint |
 |--------|-----------------|--------|
 | `auth` | Hashing de contraseñas (Argon2id), middleware de identidad y RBAC | US5 |
-| `sessions` | Creación, rotación, expiración y revocación de sesiones | US5 |
+| `sessions` | Creación, expiración y revocación de sesiones | US5 |
 | `users` | Alta, modificación, baja lógica, búsqueda y listado de cuentas | US6 |
 | `calendar` | Eventos: carreras, pruebas de neumáticos, controles técnicos | S2 |
 | `scores` | Puntajes por carrera y acuses de recibo de las escuderías | S2 |
@@ -82,7 +82,7 @@ Un paquete por módulo del enunciado. Cada uno aporta sus tres capas cuando le t
 
 `sessions` y `users` quedan separados a propósito: la sesión es infraestructura de seguridad con
 reglas propias de expiración, y el usuario es una entidad de negocio que la US6 administra. Unificar
-los dos haria que la baja de una cuenta pudiera decidir por error la política de expiración.
+los dos haría que la baja de una cuenta pudiera decidir por error la política de expiración.
 
 ### 1.3 Comunicación
 
@@ -109,7 +109,7 @@ los dos haria que la baja de una cuenta pudiera decidir por error la política d
 | Público | **No** | Nadie: es la ausencia de sesión |
 
 El público **no es un valor de `users.role`**. Es una decisión de diseño, no una comodidad: si fuera
-un rol almacenado, habría que aceitar usuarios sin contraseña, y el `CHECK` del rol se volvería una
+un rol almacenado, habría que aceptar usuarios sin contraseña, y el `CHECK` del rol se volvería una
 excepción permanentemente abierta. Como el público no tiene sesión, el backend responde a un endpoint
 público sin mirar la tabla `users`, y el `CHECK users_role_valid` sigue siendo estricto.
 
@@ -137,7 +137,7 @@ Tres filas de esa matriz merecen justificación:
 - **Pilotos: `team_admin` escribe únicamente en su escudería.** La columna se llama
   "su escudería" y es la que evita que un administrador de escudería cargue pilotos ajenos.
 - **Cuentas: `team_admin` no tiene ninguna fila.** Solo la FIA administra cuentas. El enunciado no
-  pide autogestión para las escuderías y abrirla multiplicaría los casos deprivilegio.
+  pide autogestión para las escuderías y abrirla multiplicaría los casos de escalada de privilegios.
 
 ### 2.3 Cómo se aplica
 
@@ -172,7 +172,7 @@ ataques con GPU como a crackers de memoria.
 
 Los parámetros quedan **codificados dentro del hash** que se guarda, en el formato
 `$argon2id$v=19$m=...,t=...,p=...$salt$hash`. Eso permite subir la memoria o las iteraciones en el
-futuro sin invalocar las contraseñas existentes: al verificar se lee el coste del hash almacenado, y
+futuro sin invalidar las contraseñas existentes: al verificar se lee el coste del hash almacenado, y
 si está por debajo del configurado se rehashea con el nuevo coste en el próximo login correcto.
 
 Los parámetros son configurables porque dependen del hardware: los 64 MiB por defecto apuntan a un
@@ -197,7 +197,7 @@ aleatorio que no significa nada fuera de la base.
 | Transporte (web) | Cookie `httpOnly; Secure; SameSite=Strict; Path=/` | El JavaScript de la página no puede leerla |
 | Transporte (móvil) | `expo-secure-store` | Equivalente nativo, en el llavero del sistema |
 | Expiración por inactividad | 12 h (`SESSION_IDLE_TTL`) | Cierra sesiones olvidadas en un teléfono compartido |
-| Expiración absoluta | 7 días (`SESSION_ABSOLUTE_TTL`) | Cero alcance a una sesión robada por larga que sea la vida útil |
+| Expiración absoluta | 7 días (`SESSION_ABSOLUTE_TTL`) | Una sesión robada tiene un techo de vida, aunque el atacante la mantenga activa |
 | Revocación | Inmediata, por `revoked_at` | Requisito del enunciado: desactivar una cuenta la expulsa ya |
 
 **Por qué no JWT.** Un JWT se valida sin consultar la base, que es su ventaja, y ese mismo motivo es
@@ -206,18 +206,18 @@ lo saque del sistema de inmediato, y un JWT no lo cumple sin una lista de revoca
 siendo la tabla de sesiones que se quiso evitar. La sesión opaca paga una consulta por request
 autenticado, que es el costo correcto para este dominio.
 
-**Rotación: en el login y al cambiar de privilegio, no en cada request.** La rotación en cada uso es
-la recomendación habitual cuando el token vive en una cookie, pero se descartó por una razón
-concreta: dos peticiones simultáneas con la misma sesión, un formulario que dispara dos requests o
-dos pestañas abiertas, produce la invalidación recíproca y cierran la sesión del usuario sin que
-haya hecho nada. Se rota al iniciar sesión, al cambiar de rol o de estado, y ante una acción
-sensible. La expiración por inactividad se actualiza con `last_used_at` de forma **amortiguada**
-(como máximo una escritura cada 5 minutos), para que una sesión activa no convierta cada lectura en
-un `UPDATE`.
+**Sin rotación por request.** La rotación en cada uso es una recomendación habitual cuando el
+token vive en una cookie, pero se descartó por una razón concreta: dos peticiones simultáneas con
+la misma sesión (un formulario que dispara dos requests, dos pestañas abiertas) se invalidan
+mutuamente y cierran la sesión del usuario sin que haya hecho nada. En su lugar:
 
-Cuando el token rota, el hash anterior se conserva una generación. Si llega un token ya rotado, se
-interpreta como señal de robo y **se revoca la sesión completa**: el atacante y la víctima quedan
-fuera, y la víctima vuelve a entrar.
+- **Cada login emite una sesión nueva**, así que un token nunca sobrevive a un nuevo inicio de
+  sesión, y un token fijado de antemano por un atacante no sirve.
+- **Un cambio de rol, de escudería o de estado revoca todas las sesiones del usuario** (US6). El
+  usuario vuelve a entrar y su nueva sesión ya refleja los privilegios actuales.
+- La expiración por inactividad se actualiza con `last_used_at` de forma **amortiguada** (como
+  máximo una escritura cada 5 minutos), para que una sesión activa no convierta cada lectura en un
+  `UPDATE`.
 
 ### 3.3 Autorización
 
@@ -231,13 +231,18 @@ fuera, y la víctima vuelve a entrar.
 
 ### 3.4 Transporte y datos en reposo
 
-- TLS 1.3 en producción, con HSTS. En desarrollo el tráfico va por localhost y el TLS lo termina el
-  proxy, no la app.
-- Cabeceras de seguridad en cada respuesta: `Content-Security-Policy`, `X-Content-Type-Options`,
-  `Referrer-Policy` y `X-Frame-Options: DENY`.
+- TLS 1.3 en producción, terminado por el proxy que está delante de la API, y cabecera HSTS en
+  cada respuesta. En desarrollo el tráfico va por localhost sin TLS.
+- La IP del cliente se toma de `X-Forwarded-For` solo si `TRUST_PROXY_HEADERS=true`, que se
+  activa únicamente detrás de un proxy que sobrescribe esa cabecera. Si no, cualquier cliente
+  podría falsificar la IP que queda registrada en `login_attempts`.
+- Cabeceras de seguridad en cada respuesta: `Content-Security-Policy`, `Strict-Transport-Security`,
+  `X-Content-Type-Options`, `Referrer-Policy` y `X-Frame-Options: DENY`.
 - CORS: solo se admite el origen de la app web. En desarrollo ese origen difiere del de la API, así
   que se permite explícitamente localhost. En producción la app se sirve desde el mismo sitio que la
-  API, con lo que la cookie `SameSite=Strict` funciona sin excepción.
+  API, con lo que la cookie `SameSite=Strict` funciona sin excepción. **Riesgo abierto:** el deploy
+  actual de la app web en Vercel la sirve desde otro sitio, donde el navegador no envía esa cookie
+  (ver la deuda técnica al final).
 - **No hay cifrado a nivel de columna.** No hay dato de negocio que lo justifique, y el costo
   real (no poder indexar ni consultar, y una clave que alguien tiene que custodiar) supera el
   beneficio. Lo que sí es sensible, el hash de la contraseña, ya viene cifrado por diseño.
@@ -254,7 +259,7 @@ La tabla `login_attempts` registra cada intento con `username`, `succeeded`, `ip
 | Muchos fallos desde una misma IP | Registro para revisión; el bloqueo por IP se deja para el Sprint 2, cuando haya volumen que lo justifique |
 
 El mensaje de error **no distingue** entre "no existe el usuario" y "la contraseña no coincide". Es
-la mitigación contra enumeración más importante y la más barata: sin ella, la plataforma permite Averiguar
+la mitigación contra enumeración más importante y la más barata: sin ella, la plataforma permite averiguar
 qué nombres de usuario existen probando contraseñas.
 
 Los dos límites se complementan: el bloqueo por `username` frena el ataque dirigido a una cuenta, y
@@ -280,12 +285,13 @@ el registro por IP deja rastro del barrido automático.
 - La configuración **falla rápido**: si falta `DATABASE_URL` o si `APP_ENV=production` con
   `SEED_DEMO_PASSWORD` presente, el proceso no arranca. Un proceso que no puede configurarse bien
   no debe levantarse igual.
-- Los tokens de sesión no se registran en logs en ningún nivel. Los logs llevan el `RequestID` de
-  `chi`, que permite seguir una petición sin exponer la credencial.
+- Los tokens de sesión no se registran en logs en ningún nivel. El único log de la API es el de
+  errores no previstos, que registra la ruta y el error, nunca cabeceras ni cookies.
 
 ### 3.8 Auditoría
 
-- `login_attempts` para autenticación, con retención y purga de registros antiguos.
+- `login_attempts` para autenticación. La purga periódica de registros antiguos queda pendiente:
+  con el volumen actual la tabla no crece de forma significativa.
 - `created_at` y `updated_at` en toda tabla de negocio, actualizados por trigger.
 - La baja lógica conserva la fila: un id que existió significa la misma fila para siempre, que es lo
   que hace auditable un puntaje o una sanción.
@@ -298,7 +304,7 @@ el registro por IP deja rastro del barrido automático.
 | Robo de token por XSS | Cookie `httpOnly`: el JavaScript de la página no puede leerla. La CSP limita además qué scripts corren |
 | Robo de token en el dispositivo | `expo-secure-store` guarda la credencial en el llavero del sistema, no en un archivo legible por otras apps |
 | Token robado en tránsito | TLS 1.3. Un token interceptado sirve solo hasta la expiración por inactividad |
-| Token robado y reutilizado | La rotación detecta el reuso de un token ya rotado y revoca la sesión completa |
+| Token robado y reutilizado | Expiración por inactividad y absoluta; el logout y cualquier cambio de la cuenta lo revocan en el servidor |
 | Usuario desactivado que sigue operando | La baja revoca las sesiones en la misma transacción: la revocación es inmediata |
 | `team_admin` leyendo datos de otra escudería | El `team_id` sale de la sesión y se inyecta en el `WHERE`; se prueba el cruce con un caso de test |
 | Escalada de privilegios desde la app | La app no decide permisos: el backend responde `403`. `users_role_valid` impide roles inventados |
@@ -321,12 +327,15 @@ La US3 es de diseño, pero varias decisiones ya tienen código detrás. La tabla
 | Tablas `sessions` y `login_attempts` | Implementado (esquema) | `migrations/000001_core.up.sql` |
 | Parámetros de Argon2id configurables | Implementado (config) | `internal/config` |
 | Protección de secretos en producción | Implementado | `internal/config`, `.env.example` |
-| Middleware de identidad y RBAC | US5 | `internal/auth` |
-| Hashing, emisión y rotación de sesiones | US5 | `internal/auth`, `internal/sessions` |
-| Login y redirección por rol | US5 | `internal/transport` |
+| Middleware de identidad y RBAC | Implementado (US5) | `internal/auth` |
+| Hashing Argon2id con rehash al subir el coste | Implementado (US5) | `internal/auth` |
+| Emisión, expiración y revocación de sesiones | Implementado (US5) | `internal/sessions` |
+| Login, logout y redirección por rol | Implementado (US5) | `internal/transport`, `app/src/auth` |
+| Cabeceras de seguridad y CORS | Implementado (US5) | `internal/transport` |
+| Bloqueo por intentos e igualación de tiempos | Implementado (US5) | `internal/auth` |
 | Alcance por escudería y baja que revoca sesiones | US6 | `internal/users` |
-| Cabeceras de seguridad y CORS | US5 | `internal/transport` |
-| Bloqueo por intentos e igualación de tiempos | US5 | `internal/sessions` |
+| Revocación de sesiones al cambiar rol, escudería o estado | US6 | `internal/users` |
+| Purga de `login_attempts` | Pendiente | — |
 
 ## Criterios de éxito
 
@@ -340,8 +349,9 @@ La US3 es de diseño, pero varias decisiones ya tienen código detrás. La tabla
 | Deuda o riesgo | Por qué se acepta | Cómo se resuelve |
 |----------------|-------------------|------------------|
 | Cada request autenticado consulta la base para resolver la sesión | Es el precio de la revocación inmediata que pide el enunciado | Si el volumen lo justificara, una caché corta con lista de revocación; hoy sería complejidad sin beneficio |
-| La rotación del token no es por request | Dos peticiones simultáneas con la misma sesión se invalidarían mutuamente y cerrarían la sesión del usuario | Se rota en login, cambio de privilegio y acción sensible |
+| La rotación del token no es por request | Dos peticiones simultáneas con la misma sesión se invalidarían mutuamente y cerrarían la sesión del usuario | Sesión nueva en cada login, y revocación de todas las sesiones ante un cambio de la cuenta |
 | `last_used_at` se amortigua a 5 minutos | Escribir en cada request convierte cada lectura en un `UPDATE` | Una sesión activa puede vivir hasta 5 minutos más de lo que indica el TTL, que es un margen aceptable |
 | El bloqueo por IP no se implementa en el Sprint 1 | Sin volumen real no se sabe el umbral razonable que sirve | Se registra todo intento con su IP, así el Sprint 2 parte de datos y no de intuición |
-| La matriz de permisos está en un documento, no en código | Una tabla en Go o SQL se desactualiza igual de rápido que un `.md` | Cada fila de la matriz se convierte en un caso de test de autorización en US5/US6; el test es la que la hace verdadera |
+| La matriz de permisos está en un documento, no en código | Una tabla en Go o SQL se desactualiza igual de rápido que un `.md` | Cada fila de la matriz se convierte en un caso de test de autorización en US5/US6; es el test el que la hace verdadera |
+| La app web desplegada en Vercel no comparte sitio con la API | La cookie `SameSite=Strict` no viaja entre sitios distintos, así que el login web no se sostiene en ese deploy | Pendiente de decisión del equipo: proxy desde Vercel hacia la API, dominio propio compartido, o servir la app desde la API |
 | El alcance por escudería todavía no está probado | Es la fila de la matriz con más riesgo de fuga | US6 agrega el caso de cruce de escuderías antes de dar por buena la US |

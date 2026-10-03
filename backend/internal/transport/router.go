@@ -20,17 +20,20 @@ type SessionService interface {
 }
 
 type Dependencies struct {
-	Pool           *pgxpool.Pool
-	Authenticator  Authenticator
-	Sessions       SessionService
-	Cookie         CookieConfig
-	AllowedOrigins []string
+	Pool              *pgxpool.Pool
+	Authenticator     Authenticator
+	Sessions          SessionService
+	Cookie            CookieConfig
+	AllowedOrigins    []string
+	TrustProxyHeaders bool
 }
 
 func NewRouter(deps Dependencies) http.Handler {
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID)
-	router.Use(middleware.RealIP)
+	if deps.TrustProxyHeaders {
+		router.Use(middleware.RealIP)
+	}
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.Timeout(requestTimeout))
 	router.Use(securityHeaders)
@@ -43,7 +46,7 @@ func NewRouter(deps Dependencies) http.Handler {
 
 	router.Route("/auth", func(r chi.Router) {
 		r.Post("/login", authRoutes.login)
-		r.With(sessionGuard.RequireSession).Post("/logout", authRoutes.logout)
+		r.Post("/logout", authRoutes.logout)
 		r.With(sessionGuard.RequireSession).Get("/me", authRoutes.me)
 	})
 
@@ -64,6 +67,8 @@ func securityHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		headers := w.Header()
 		headers.Set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'")
+		// Browsers ignore HSTS over plain HTTP, so sending it in development is harmless.
+		headers.Set("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 		headers.Set("X-Content-Type-Options", "nosniff")
 		headers.Set("Referrer-Policy", "no-referrer")
 		headers.Set("X-Frame-Options", "DENY")

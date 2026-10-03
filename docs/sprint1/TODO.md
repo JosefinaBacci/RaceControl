@@ -14,11 +14,13 @@ Leyendo de arriba hacia abajo. Cada US se cierra con sus criterios de éxito ver
 | US1 | Selección de stack y configuración del entorno | 5 | 8 | 6h | 1.5h | ☑ |
 | US2 | Diseño del modelo de datos | 5 | 8 | 9h | 3.5h | ☑ |
 | US3 | Arquitectura, roles y seguridad | 5 | 8 | 9h | 0.2h | ☑ |
-| US4 | Diseño de interfaz por rol | 5 | 8 | 8h | — | ☐ |
-| US5 | Login de usuarios | 3 | 13 | 9h | — | ☐ |
+| US4 | Diseño de interfaz por rol | 5 | 8 | 8h | — | ◐ |
+| US5 | Login de usuarios | 3 | 13 | 9h | — | ☑ |
 | US6 | Gestión de usuarios | 8 | 21 | 12h | — | ☐ |
 
-**Total estimado:** 53h · **Total real:** 5.2h · **Desviación:** pendiente Sprint 2
+**Total estimado:** 53h · **Total real:** 5.2h (faltan US4 y US5) · **Desviación:** pendiente Sprint 2
+
+☑ cerrada · ◐ en curso · ☐ sin empezar
 
 > La cátedra pide comparar estimación vs. tiempo real por US para alimentar la estimación del
 > Sprint 2 con IA. Completar la columna **Real** al cerrar cada US.
@@ -65,10 +67,8 @@ Leyendo de arriba hacia abajo. Cada US se cierra con sus criterios de éxito ver
 - [x] Repositorios accesibles para el equipo
 - [x] Entornos configurados y operativos
 
-**Decisión pendiente de confirmación del equipo:** `expo-router` como router de la app.
-Alternativa con la misma cantidad de dependencias: `react-navigation` nativo. La decisión de
-Go + chi ya está firme. Pendiente también completar en el informe final la matriz ponderada
-de frameworks de backend.
+**Decisión confirmada:** `expo-router` como router de la app; US4 y US5 se implementaron sobre
+él. Queda pendiente completar en el informe final la matriz ponderada de frameworks de backend.
 
 ---
 
@@ -105,8 +105,13 @@ de frameworks de backend.
 - Sin cuentas para el público: solo `fia_admin` y `team_admin`, el público lee sin autenticarse.
 - Conflictos entre ramas: las migraciones se fusionan, los datos se regeneran con `make db-reset`.
 
-**Pendiente para el Sprint 2:** 7 tablas más del dominio (`drivers`, `events`, `score_entries`,
-`technical_controls`, `sanctions`, y sus acuses, `notifications`). Ya están diseñadas en el doc.
+**Pendiente para el Sprint 2:** 10 tablas más del dominio (`drivers`, `event_types`, `events`,
+`score_entries`, `score_acknowledgements`, `technical_controls`, `technical_control_results`,
+`sanctions`, `sanction_acknowledgements`, `notifications`). Ya están diseñadas en el doc.
+
+**Revisión del esquema:** `000001_core` se editó antes de desplegarse (en `users`, `is_active`
+pasó a ser una columna generada a partir de `deactivated_at`; se quitaron un índice y una
+restricción redundantes). Cada integrante tiene que correr `make db-reset`.
 
 **Entidades del dominio implementadas (corte Sprint 1)**
 
@@ -116,7 +121,7 @@ de frameworks de backend.
 
 ## US3 — Arquitectura, roles y seguridad
 
-*Est. 9h · Real: — · SP 5 · Valor 8*
+*Est. 9h · Real: 0.2h · SP 5 · Valor 8*
 
 - [x] Definir arquitectura general: capas, servicios, módulos, comunicación
 - [x] Definir el modelo de permisos por rol (FIA / escudería / público)
@@ -129,8 +134,9 @@ de frameworks de backend.
 
 - [x] Contraseñas con Argon2id (parámetros por hardware, salt por usuario, coste versionado en el hash)
 - [x] Sesiones opacas: token 32 bytes aleatorios, en la BD solo el SHA-256
-- [x] Rotación en login y cambio de privilegio; en cada uso se descartó porque dos peticiones
-      simultáneas se invalidarían mutuamente
+- [x] Sesión nueva en cada login y revocación de todas las sesiones al cambiar la cuenta (US6);
+      la rotación por request se descartó porque dos peticiones simultáneas se invalidarían
+      mutuamente
 - [x] Expiración por inactividad y absoluta
 - [x] Revocación inmediata al desactivar un usuario, en la misma transacción
 - [x] Cookie `httpOnly; Secure; SameSite=Strict` en web; `expo-secure-store` en móvil
@@ -146,14 +152,15 @@ muy por debajo de la estimación, y la desviación viene de la redacción, no de
 permisos de la US3 son 13 filas y una tabla; el trabajo real fue decidir y justificar, y dejar por
 escrito lo que se descartó y por qué. Para el Sprint 2 conviene distinguir dentro de la estimación
 entre "escribir el documento" y "elegir la solución".
-- [ ] Rate limit y bloqueo por intentos fallidos de login
-- [ ] RBAC en middleware: ningún endpoint sensible sin chequeo de rol
-- [ ] Auditoría de eventos de autenticación
+- [x] Bloqueo por intentos fallidos de login (implementado en US5)
+- [x] RBAC en middleware: ningún endpoint sensible sin chequeo de rol (implementado en US5)
+- [x] Auditoría de eventos de autenticación: cada intento queda en `login_attempts`
+- [ ] Purga periódica de `login_attempts` (no urgente con el volumen actual)
 
 **Criterios de éxito**
 
-- [ ] Arquitectura de autenticación y roles documentada
-- [ ] La matriz de permisos dice qué puede hacer cada rol sobre cada componente
+- [x] Arquitectura de autenticación y roles documentada
+- [x] La matriz de permisos dice qué puede hacer cada rol sobre cada componente
 
 ---
 
@@ -161,15 +168,16 @@ entre "escribir el documento" y "elegir la solución".
 
 *Est. 8h · Real: — · SP 5 · Valor 8*
 
-- [ ] Definir alcance de la interfaz de cada rol
-- [ ] Sistema de diseño común: colores, tipografías, componentes reutilizables
-- [ ] Versión inicial de cada interfaz (con datos mockeados)
+- [x] Definir alcance de la interfaz de cada rol (pantallas pública, FIA y escudería)
+- [x] Sistema de diseño común: colores, tipografías, componentes reutilizables (`app/src/theme`,
+      `app/src/components`)
+- [x] Versión inicial de cada interfaz (con datos mockeados)
 - [ ] Documentar funcionalidades por rol → `docs/sprint1/04-interfaces.md`
 
 **Criterios de éxito**
 
-- [ ] Interfaz clara, intuitiva, fácil de usar
-- [ ] La versión inicial muestra las funcionalidades mockeadas de cada rol
+- [ ] Interfaz clara, intuitiva, fácil de usar (a validar en la demo)
+- [x] La versión inicial muestra las funcionalidades mockeadas de cada rol
 
 ---
 
@@ -177,21 +185,23 @@ entre "escribir el documento" y "elegir la solución".
 
 *Est. 9h · Real: — · SP 3 · Valor 13*
 
-- [ ] Interfaz de login con usuario y contraseña
-- [ ] Validación de datos ingresados
-- [ ] Identificación del rol del usuario
-- [ ] Redirección a la interfaz del rol correspondiente (US4)
-- [ ] Notificación de ingreso incorrecto (datos inválidos o credenciales incorrectas)
+- [x] Interfaz de login con usuario y contraseña
+- [x] Validación de datos ingresados (en la app y, de nuevo, en el backend)
+- [x] Identificación del rol del usuario
+- [x] Redirección a la interfaz del rol correspondiente (US4)
+- [x] Notificación de ingreso incorrecto (datos inválidos o credenciales incorrectas)
 
-**Backend:** hasher Argon2id, `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`,
-rate limit + lockout, redirección por rol en el cliente.
+**Backend:** hasher Argon2id, `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, bloqueo
+por intentos, cookie `httpOnly` en web y token en `expo-secure-store` en móvil.
 
 **Criterios de éxito**
 
-- [ ] Acceso permitido con datos correctos
-- [ ] Se cumplen los estándares de US3
-- [ ] Interfaz clara y fácil de usar
-- [ ] La plataforma identifica correctamente el rol al iniciar sesión
+- [x] Acceso permitido con datos correctos
+- [x] Se cumplen los estándares de US3
+- [x] Interfaz clara y fácil de usar
+- [x] La plataforma identifica correctamente el rol al iniciar sesión
+
+**Pendiente:** cargar la columna **Real** de US4 y US5 en la tabla de estado.
 
 ---
 
@@ -215,5 +225,10 @@ rate limit + lockout, redirección por rol en el cliente.
 
 ## Pendientes de infraestructura
 
-- [ ] `README.md` con instrucciones de arranque
-- [ ] `docs/prompts-ia.md` — registro de prompts usados con IA (exigido por la cátedra)
+- [x] `README.md` con instrucciones de arranque
+- [x] `docs/prompts-ia.md` — registro de prompts usados con IA (exigido por la cátedra)
+- [ ] Decidir el deploy de la app web: en Vercel la cookie de sesión no llega a la API (ver la
+      deuda técnica de `03-arquitectura-roles-seguridad.md`)
+- [ ] Alojar el backend con Postgres (`make migrate` + `make seed` como pasos del deploy)
+- [ ] Correr `make check` con `DATABASE_URL`: sin base, los tests de integración se omiten
+- [ ] Registrar en `docs/prompts-ia.md` los prompts usados en US4, US5 y el deploy en Vercel

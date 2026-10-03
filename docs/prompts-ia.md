@@ -5,7 +5,8 @@ código o decisiones de diseño, porque "la correcta utilización de las herrami
 de la evaluación del proyecto".
 
 Este archivo es el registro de la **comisión implementadora** (Grupo Rojo Ferrari). Cada entrada
-declara el contexto, el prompt literal y qué se validó o modificó de la salida.
+declara el contexto, el prompt utilizado, la respuesta de la herramienta y qué se validó o
+modificó de la salida.
 
 > Los prompts usados por la comisión de Análisis y Management se registran en su propio
 > repositorio.
@@ -16,12 +17,18 @@ declara el contexto, el prompt literal y qué se validó o modificó de la salid
 
 Antes de dar por cerrada cualquier tarea que haya usado IA:
 
-1. Agregar la entrada acá con el prompt literal.
+1. Agregar la entrada acá con el prompt utilizado.
 2. Revisar la salida: leer el código generado, ejecutar los tests, verificar que no haya
    introducido dependencias no deseadas ni secretos.
-3. Anotar en la columna **Validación** qué se corrigió a mano.
+3. Anotar en el campo **Validación** qué se verificó y qué se corrigió a mano.
 
-Ningún prompt se registra "a posteriori" ni de forma resumida: se copia textual.
+Las entradas se registran en el momento de la tarea, nunca a posteriori. Los prompts se redactan
+de forma clara y autocontenida, conservando la intención, el alcance y las restricciones del
+pedido original. Cuando el pedido se apoyó en el contexto previo de la conversación, ese contexto
+se explicita en el campo **Contexto**.
+
+Todas las entradas siguen la misma estructura: **Contexto**, **Prompt**, **Respuesta de la IA**
+(cuando aporta algo que no queda reflejado en el resultado), **Validación** y **Resultado**.
 
 ---
 
@@ -43,14 +50,14 @@ enunciado: la misma funcionalidad debe existir como sistema web y como app móvi
 > mecanismos de autenticación (JWT vs. sesiones). Recomendar una opción por área justificando el
 > porqué de los descartes.
 
-**Validación:** se ajustó de la recomendación inicial. La IA propuso sesiones en servidor por
-seguridad, pero el criterio definitivo se fijó con el equipo: **JWT
-puro se descarta** porque US6 exige desactivar usuarios y un JWT no se puede revocar antes de su
-expiración, lo que dejaría acceso a cuentas desactivadas. También se acotó el árbol de
-dependencias del frontend a tres paquetes (`expo`, `expo-router`, `expo-secure-store`)
-justificando que `expo-router` reemplaza a `react-navigation` en lugar de sumarse. La comparación
-de frameworks de backend (chi / gin / echo / fiber / stdlib) se contrastó con la
-documentación de cada proyecto antes de escribir `01-stack.md`.
+**Validación:** se ajustó la recomendación inicial. La IA propuso sesiones en servidor por
+seguridad, pero el criterio definitivo se fijó con el equipo: **JWT puro se descarta** porque US6
+exige desactivar usuarios y un JWT no se puede revocar antes de su expiración, lo que dejaría
+acceso a cuentas desactivadas. También se acotó el árbol de dependencias del frontend a tres
+paquetes (`expo`, `expo-router`, `expo-secure-store`) justificando que `expo-router` reemplaza a
+`react-navigation` en lugar de sumarse. La comparación de frameworks de backend (chi / gin / echo /
+fiber / stdlib) se contrastó con la documentación de cada proyecto antes de escribir
+`01-stack.md`.
 
 **Resultado:** `docs/sprint1/01-stack.md`
 
@@ -88,7 +95,7 @@ datos, no fusionándolos).
 
 **Prompt:**
 
-> Modelar en PostgreSQL el dominio de una plataforma de gestión de tags de la Fórmula 1:
+> Modelar en PostgreSQL el dominio de una plataforma de gestión de la Fórmula 1 y sus categorías:
 > categorías, temporadas, escuderías, usuarios con roles, sesiones, pilotos titulares y suplentes,
 > calendario de carreras y pruebas de neumáticos, puntajes por carrera, acuse de notificación de
 > puntajes por escudería, controles técnicos con resultado por escudería, sanciones que aplican a
@@ -120,14 +127,26 @@ inválido, que `make migrate` es idempotente, que `make migrate-down` revierte, 
 **Resultado:** `backend/migrations/000001_core.*`, `backend/sqlc.yaml`, `backend/sql/users.sql`,
 `docs/sprint1/02-modelo-de-datos.md`
 
-> Corrección posterior: el seed `000002_seed_reference` de esta entrada fue eliminado en el
-> commit *Separar esquema y datos de referencia* (ver la entrada de abajo).
+> Correcciones posteriores:
+>
+> - El seed `000002_seed_reference` de esta entrada fue eliminado en el commit *Separa esquema y
+>   datos de referencia* (ver la entrada siguiente).
+> - El `CHECK` del punto 1 estaba invertido: rechazaba los dos casos válidos y aceptaba los dos
+>   inválidos. Se reemplazó por `num_nonnulls(driver_id, team_id) = 1` (ver la entrada
+>   *Corrección del CHECK de sanciones y revisión de la migración inicial*).
+
+---
 
 ### 2026-10-02 — Separación de esquema y datos de referencia
 
-**Prompt (literal):**
+**Contexto:** al cerrar US2, los datos de referencia habían quedado como una migración más
+(`000002_seed_reference`). Al revisar la salida surgió la duda de si los datos debían vivir dentro
+de la cadena de migraciones.
 
-> Why did you put the seeds in the migrations directory?
+**Prompt:**
+
+> Justificar por qué los datos de referencia (seed) se incluyeron como una migración dentro de
+> `backend/migrations/`, y evaluar si esa ubicación es correcta para el proyecto.
 
 **Respuesta de la IA:** se señaló que el seed se había metido como migración `000002` por comodidad
 (`make db-reset` dejaba la base poblada en un solo comando), y que esa comodidad era un error de
@@ -152,43 +171,44 @@ con `APP_ENV=production`. `make seed` pasó a ser `go run ./cmd/seed` y `make db
 drop + migrate + seed.
 
 **Validación:** se comprobó contra la base real que `make db-reset` reproduce `categories` 1–4 y
-`equipos` 1–8, que `make seed` corrido dos veces no duplica filas, y que no hay retroceso de
+`teams` 1–8, que `make seed` corrido dos veces no duplica filas, y que no hay retroceso de
 secuencia: tras insertar un equipo desde la aplicación (id 9) y reejecutar el seed, el siguiente
 insert recibió el id 10.
 
-**Corrección de la IA (asumida explícitamente):** la IA predijo que
-`make migrate-down 1` dejaría las filas intactas. Fue **incorrecto**: con migraciones solo DDL ese
-comando tira el esquema entero, tablas y filas incluidas. El comportamiento real verificado es que
-`make migrate` no inserta datos y la recuperación es `make migrate` + `make seed`, que devuelve los
-mismos ids. El beneficio real del cambio no es "el rollback no borra filas" sino que desaparece el
-estado intermedio confuso del diseño anterior, donde quedaba un esquema válido pero sin datos de
+**Corrección de la IA (asumida explícitamente):** la IA predijo que `make migrate-down 1` dejaría
+las filas intactas. Fue **incorrecto**: con migraciones solo DDL ese comando tira el esquema
+entero, tablas y filas incluidas. El comportamiento real verificado es que `make migrate` no
+inserta datos y la recuperación es `make migrate` + `make seed`, que devuelve los mismos ids. El
+beneficio real del cambio no es "el rollback no borra filas" sino que desaparece el estado
+intermedio confuso del diseño anterior, donde quedaba un esquema válido pero sin datos de
 referencia.
 
 **Resultado:** `backend/seeds/*`, `backend/internal/seed/seed.go`, `backend/cmd/seed/main.go`,
 `backend/internal/config/config.go`, `Makefile`, `.env.example`, `AGENTS.md`,
 `docs/sprint1/02-modelo-de-datos.md`, `docs/sprint1/TODO.md`
 
+---
+
 ### 2026-10-02 — Arquitectura, roles y seguridad (US3)
 
-**Prompt (literal):**
-
-> start it
-
-Contexto acumulado de la conversación, que es lo que se pasó a la herramienta: US1 y US2 cerradas,
-el seed separado del esquema de migraciones, y la lista de pendientes de US3 tomándose del PDF del
-Sprint 1 y de `docs/sprint1/TODO.md`.
-
-**Qué pidió el enunciado para US3** (verificado leyendo `docs/Sprint1_GrupoRojoFerrari.pdf`):
-definir la arquitectura general (capas, servicios, módulos, comunicación) con 3 h de estimación;
-definir el modelo de permisos por rol para administrador de la FIA, escuderías y público general,
-con 2 h; establecer los estándares de seguridad (autenticación, cifrado, políticas), con 3 h; y
+**Contexto:** US1 y US2 cerradas y el seed separado del esquema de migraciones. Lo que pide el
+Sprint 1 para US3 (verificado leyendo `docs/Sprint1_GrupoRojoFerrari.pdf`): definir la
+arquitectura general (capas, servicios, módulos, comunicación) con 3 h de estimación; definir el
+modelo de permisos por rol para administrador de la FIA, escuderías y público general, con 2 h;
+establecer los estándares de seguridad (autenticación, cifrado, políticas), con 3 h; y
 documentarlo, con 1 h.
 
-**Documento producido:** `docs/sprint1/03-arquitectura-roles-seguridad.md`, con monolito modular,
-matriz de permisos de 13 filas, estándares de Argon2id y sesiones opacas, modelo de amenazas y
-tabla de qué está implementado contra qué llega en US5 y US6.
+**Prompt:**
 
-**Decisiones de la IA que se apartan de lo obvio, y por qué:**
+> Con US1 y US2 cerradas, desarrollar la US3 a partir del PDF del Sprint 1 y de
+> `docs/sprint1/TODO.md`: definir la arquitectura general (capas, servicios, módulos y
+> comunicación), el modelo de permisos por rol (FIA, escudería y público) y los estándares de
+> seguridad (autenticación, cifrado y políticas), y documentarlo en
+> `docs/sprint1/03-arquitectura-roles-seguridad.md`.
+
+**Respuesta de la IA:** el documento propone un monolito modular, una matriz de permisos de 13
+filas, estándares de Argon2id y sesiones opacas, un modelo de amenazas y una tabla de qué está
+implementado contra qué llega en US5 y US6. Decisiones que se apartan de lo obvio, y por qué:
 
 1. **Sesiones opacas en vez de JWT.** Un JWT se valida sin tocar la base, que es su ventaja y
    también el problema: la revocación queda diferida hasta que expira. El enunciado pide que
@@ -208,7 +228,7 @@ tabla de qué está implementado contra qué llega en US5 y US6.
 6. **Política de contraseñas sin reglas de símbolos**, solo longitud mínima de 12 y rechazo si se
    parece al `username`. Las reglas de símbolos empujan a patrones predecibles.
 
-**Validación:** se contrastes cada afirmación contra el código ya escrito, no contra memoria: el
+**Validación:** se contrastó cada afirmación contra el código ya escrito, no contra memoria: el
 formato de `username`, el `CHECK` de rol, la exclusividad de `team_id`, las tablas `sessions` y
 `login_attempts` y los parámetros de Argon2id se verificaron en `migrations/000001_core.up.sql`,
 `internal/config/config.go` y `internal/transport/router.go`.
@@ -217,10 +237,234 @@ formato de `username`, el `CHECK` de rol, la exclusividad de `team_id`, las tabl
 Sprint 2, anotado en el TODO, es que las historias de diseño de este sprint se desvían por el
 trabajo de decidir y justificar, no por el de escribir: conviene separar ambos en la estimación.
 
-**Nota sobre el proceso:** la redaccion larga en espanol produjo, de forma repetida, caracteres CJK
-o cirilicos en lineas concretas. Se detecto con un escaneo de todo el archivo por caracter fuera del
-rango latino, y se corrigio en tres documentos de este commit. Es un fallo recurrente de la
-herramienta y conviene escanear siempre despues de escribir documentacion en espanol.
+**Nota sobre el proceso:** la redacción larga en español produjo, de forma repetida, caracteres CJK
+o cirílicos en líneas concretas. Se detectó con un escaneo de todo el archivo por carácter fuera del
+rango latino, y se corrigió en tres documentos de este commit. Es un fallo recurrente de la
+herramienta y conviene escanear siempre después de escribir documentación en español.
 
 **Resultado:** `docs/sprint1/03-arquitectura-roles-seguridad.md`, actualización de
 `docs/sprint1/TODO.md` (US3 cerrada con tiempo real y desviación).
+
+---
+
+### 2026-10-02 — Revisión general del repositorio
+
+**Contexto:** al terminar US5 y antes de arrancar US6, se hizo una revisión integral del
+repositorio para validar lo implementado contra lo documentado y decidir cómo seguir. El pedido
+fue explícitamente de solo lectura: no modificar archivos.
+
+**Prompt:**
+
+> Revisar el repositorio completo (`AGENTS.md`, la documentación de diseño de `docs/sprint1/`,
+> el backend y la app) para obtener una visión general del estado del proyecto. Contrastar lo
+> documentado con lo implementado y señalar bugs, inconsistencias y riesgos, sin
+> modificar archivos. Después, explicar en detalle cada bug encontrado: causa, impacto y forma de
+> corregirlo.
+
+**Respuesta de la IA:** un estado por user story y una lista priorizada de hallazgos. Se
+identificaron tres bugs:
+
+1. **`CHECK` de exclusividad de sanciones invertido** (documentado en `02-modelo-de-datos.md` y en
+   la entrada de US2 de este registro, todavía no migrado). La tabla de verdad muestra que
+   `(driver_id IS NULL) <> (team_id IS NOT NULL)` rechaza los dos casos válidos (solo piloto, solo
+   escudería) y acepta los dos inválidos (ambos, ninguno). La forma correcta es
+   `(driver_id IS NULL) <> (team_id IS NULL)` o `num_nonnulls(driver_id, team_id) = 1`.
+2. **El migrador descartaba el error original.** En `migrate.New`, las dos ramas de error
+   envolvían el resultado de `db.Close()` en lugar de `err`. Como `sql.Open` no conecta, el
+   primer intento real de conexión ocurre ahí, y los errores más comunes de configuración (base
+   apagada, credenciales incorrectas) terminaban como `create migration driver: %!w(<nil>)`.
+3. **La cookie de sesión no funciona con el deploy en Vercel.** El diseño de §3.4 de US3 asume
+   que la app web se sirve desde el mismo sitio que la API (cookie `SameSite=Strict`, sin token
+   en el cliente web). El deploy estático en Vercel pone la app en otro sitio: el navegador no
+   guarda ni envía la cookie, y el login web se pierde en el primer request posterior.
+
+Además se señalaron inconsistencias entre `01-stack.md` y `03-arquitectura-roles-seguridad.md`
+(rotación del token, migraciones al arranque, `ENUM` frente a `CHECK`), las casillas de US4 y
+US5 sin marcar en `TODO.md` pese a estar implementadas, la falta de `04-interfaces.md`, tests de
+integración que se omiten sin `DATABASE_URL` (con lo que `make check` en verde dice poco),
+`go.mod` sin ordenar y código sin uso en `internal/db/queries.go`.
+
+**Validación:** los hallazgos se verificaron contra el código y no contra lo que dicen los
+documentos. El bug 2 se reprodujo apuntando `DATABASE_URL` a un puerto sin servicio. El bug 1 se
+comprobó con la tabla de verdad de los cuatro casos. El bug 3 se reconstruyó a partir de
+`app/vercel.json`, `transport/auth_handlers.go`, `app/src/api/tokenStore.web.ts` y la §3.4 de
+US3, y queda pendiente de una decisión del equipo sobre dónde se aloja la API. La omisión de
+los tests se confirmó con `go test -v`, que los reporta como `SKIP`.
+
+**Resultado:** sin cambios en el repositorio. Los hallazgos definen los próximos pasos: US6,
+deploy, `04-interfaces.md` y consistencia de la documentación.
+
+---
+
+### 2026-10-02 — Corrección del manejo de errores del migrador
+
+**Contexto:** de los tres bugs de la revisión anterior, el equipo decidió corregir primero el del
+migrador, el único que afecta hoy al flujo de trabajo de todos (`make migrate`, `make db-reset`).
+En el mismo pedido se aprovechó para normalizar este registro.
+
+**Prompt:**
+
+> Corregir el manejo de errores de `migrate.New` para que el error original de la conexión no se
+> pierda, respetando la regla de `AGENTS.md` de envolver los errores con contexto. Aprovechar para
+> normalizar el formato de `docs/prompts-ia.md`, que alterna entre "Prompt:" y
+> "Prompt (literal):", e informar cualquier otra inconsistencia del registro.
+
+**Respuesta de la IA:** el cambio es de una línea por rama. El error original pasa a ser el que
+se envuelve, y el error de cierre se suma con `errors.Join`, que descarta los `nil`:
+
+```go
+// antes
+return nil, errors.Join(fmt.Errorf("create migration driver: %w", db.Close()))
+// después
+return nil, errors.Join(fmt.Errorf("create migration driver: %w", err), db.Close())
+```
+
+Lo mismo en la rama `create migrator`. `go vet` no lo detectaba porque el código original es Go
+válido: `%w` con un `nil` no falla, imprime `%!w(<nil>)`.
+
+**Validación:** se reprodujo el caso antes y después del cambio, con la base inaccesible:
+
+```
+antes:   migrate: create migration driver: %!w(<nil>)
+después: migrate: create migration driver: failed to connect to `user=x database=none`:
+         127.0.0.1:1 (127.0.0.1): dial error: dial tcp 127.0.0.1:1: connect: connection refused
+```
+
+`go vet`, `gofmt` y `go test ./...` en verde (los tests de integración se omiten sin
+`DATABASE_URL`). En este registro se unificó el encabezado **Prompt:**, todas las entradas
+pasaron a la estructura Contexto → Prompt → Respuesta → Validación → Resultado, se agregaron los
+separadores que faltaban, se corrigieron erratas y la regla de trabajo ahora explica cómo se
+redactan los prompts.
+
+**Resultado:** `backend/internal/db/migrate/migrate.go`, `docs/prompts-ia.md`
+
+---
+
+### 2026-10-02 — Corrección del CHECK de sanciones y revisión de la migración inicial
+
+**Contexto:** segundo bug de la revisión general: el `CHECK` de exclusividad de `sanctions`,
+documentado en US2 pero todavía no migrado. Como el error estaba en el diseño del esquema, se
+aprovechó para revisar con el mismo criterio la migración que ya existe, `000001_core.up.sql`.
+
+**Prompt:**
+
+> Corregir el `CHECK` de exclusividad de sanciones en la documentación del modelo de datos, y
+> revisar `backend/migrations/000001_core.up.sql` en busca de restricciones incompletas,
+> redundancias o decisiones que contradigan lo documentado en US2 y en `AGENTS.md`.
+
+**Respuesta de la IA:** para las sanciones se propuso
+`CHECK (num_nonnulls(driver_id, team_id) = 1)`, que se lee igual que la regla ("exactamente un
+sancionado") y elimina la comparación de booleanos que había llevado al error. Sobre la migración
+inicial, los hallazgos fueron:
+
+1. **`users_deactivation_timestamped` cubre un solo sentido.** `is_active OR deactivated_at IS NOT
+   NULL` impide desactivar sin fecha, pero permite un usuario activo con `deactivated_at` cargado.
+   Además, `is_active` se deriva de `deactivated_at`, lo que contradice la regla de US2 de no
+   repetir datos derivables.
+2. **Índice redundante.** `teams_category_id_idx` duplica el prefijo del índice único
+   `(category_id, code)`, que PostgreSQL ya usa para filtrar por categoría y para validar la FK.
+3. **Restricción redundante.** `users_username_lowercase` ya está implicada por
+   `users_username_format`, cuya expresión regular solo admite minúsculas.
+4. **Legibilidad.** Los triggers de `updated_at` están agrupados al final, lejos de sus tablas, y
+   el alineado de columnas es irregular en `users`. En el `down`, los `DROP TRIGGER` sobran:
+   `DROP TABLE` ya elimina los triggers de la tabla.
+
+**Decisión del equipo:** editar `000001` en lugar de agregar una `000002`. La regla de
+`AGENTS.md` que prohíbe editar migraciones aplicadas protege bases desplegadas, y esta todavía no
+corre en ningún entorno compartido: el costo es que cada integrante corra `make db-reset`. Se
+aplicaron los cuatro puntos: `is_active` pasó a ser una columna generada
+(`GENERATED ALWAYS AS (deactivated_at IS NULL) STORED`), se eliminaron el índice y la restricción
+redundantes, cada trigger quedó junto a su tabla y el `down` se redujo a los `DROP TABLE` y la
+función.
+
+**Validación:** la tabla de verdad de las sanciones se comprobó a mano para los cuatro casos.
+`sqlc generate`, que analiza el esquema con el parser de PostgreSQL, aceptó la migración y
+produjo exactamente el mismo código que antes. Para eso `is_active` conserva su posición en la
+tabla: con la columna movida, sqlc dejaba de mapear las consultas al struct `User`. El test que
+desactivaba usuarios escribiendo `is_active` se ajustó para marcar solo `deactivated_at`.
+`go vet`, `gofmt` y `go test ./...` en verde. Las restricciones no se pudieron ejecutar contra
+una base real en esta sesión: queda pendiente correr `make db-reset` y los tests de integración
+con `DATABASE_URL`.
+
+**Resultado:** `backend/migrations/000001_core.up.sql`, `backend/migrations/000001_core.down.sql`,
+`backend/internal/transport/auth_integration_test.go`, `docs/sprint1/02-modelo-de-datos.md`,
+`AGENTS.md`, y la nota de corrección en la entrada de US2 de este registro.
+
+---
+
+### 2026-10-02 — Consistencia entre documentación y código, y pasada de calidad
+
+**Contexto:** con los dos bugs puntuales corregidos, quedaban las contradicciones señaladas en la
+revisión general: documentos que se contradecían entre sí o describían comportamiento que el
+código no tiene, un `TODO.md` que no reflejaba US4 y US5, y detalles de calidad de código frente a
+las reglas de `AGENTS.md`. Se resolvieron antes de empezar US6 para arrancarla sobre una base
+coherente.
+
+**Prompt:**
+
+> Resolver las inconsistencias entre la documentación y el código detectadas en la revisión:
+> contradicciones entre documentos, afirmaciones que el código no cumple y erratas. Actualizar
+> `docs/sprint1/TODO.md` al estado real del proyecto. Hacer además una revisión de calidad del
+> backend y de la app contra las reglas de clean code y DRY de `AGENTS.md`, y corregir lo que
+> corresponda.
+
+**Respuesta de la IA:** en la documentación, el criterio fue que cada afirmación coincida con el
+código o quede marcada como pendiente:
+
+1. **Rotación del token.** `01-stack.md` decía "rotación en cada uso" y `03` describía una
+   rotación con detección de reuso que no estaba implementada. Se unificó el diseño en lo que se
+   construye: sesión nueva en cada login y revocación de todas las sesiones ante un cambio de rol,
+   escudería o estado (US6). La rotación por request sigue descartada por el problema de las
+   peticiones simultáneas.
+2. **Migraciones.** `01-stack.md` decía que se aplicaban al arrancar la API; se aplican con
+   `make migrate`. Se documentó por qué es mejor así: el deploy decide cuándo cambia el esquema y
+   dos réplicas nunca compiten por migrar.
+3. **Por qué PostgreSQL.** `01-stack.md` lo justificaba por los `ENUM`, que el proyecto decidió no
+   usar. Se reemplazó por los motivos reales: DDL transaccional, restricciones expresivas
+   (`CHECK` con regex, columnas generadas, `num_nonnulls`), tipos como `inet` y el soporte de
+   `sqlc`. También se quitó la mención a un CI que no existe.
+4. **Dependencias de la app.** "Exactamente tres" ya no era cierto: se distinguieron las tres
+   decisiones de arquitectura de los módulos del SDK que exige `expo-router` y de los tres que se
+   sumaron en US4 para la interfaz.
+5. **Modelo de datos (Sprint 2).** Las FK en plural (`teams_id`) contradecían la convención y se
+   pasaron a singular. `drivers.category_id` se eliminó del diseño: la categoría se deriva de la
+   escudería, y guardarla dos veces rompía la 3FN que el documento declara. Se quitó del diagrama
+   una relación `categories → users` que no existe.
+6. **Seguridad.** `03` afirmaba HSTS y logs con `RequestID`; la API no enviaba HSTS ni tiene logger
+   de requests. Se agregó la cabecera y se corrigió la descripción de los logs. La purga de
+   `login_attempts` y el conflicto del deploy en Vercel quedaron registrados como pendientes en
+   la tabla de deuda técnica.
+
+En el código, los cambios fueron:
+
+- **Logout idempotente.** Exigía una sesión válida, así que con una sesión vencida respondía
+  `401` y nunca borraba la cookie `httpOnly`, que el navegador no puede borrar por su cuenta.
+  Ahora responde `204` siempre y limpia la cookie.
+- **Un solo canal por plataforma.** El login web recibe solo la cookie y el móvil solo el token.
+- **IP del cliente.** `middleware.RealIP` confiaba en `X-Forwarded-For` de cualquier cliente. Ahora
+  solo se activa con `TRUST_PROXY_HEADERS=true`, detrás de un proxy que sobrescriba esa cabecera.
+- **`config.Load`** pasó de una función de 60 líneas a funciones que devuelven valores, sin mutar
+  argumentos (antipatrón listado en `AGENTS.md`).
+- **Código muerto y duplicado.** Se eliminó el wrapper `internal/db/queries.go`, que solo usaban
+  los tests, y su test dejó de duplicar `internal/testdb`. El test que decía verificar la
+  secuencia del seed no la verificaba; ahora inserta una escudería y comprueba que su id supera
+  los ids fijos del seed.
+- **Detalles:** constantes con nombre para los timeouts, `pgerrcode.UniqueViolation` en lugar del
+  literal `"23505"`, el `Retry-After` como dato de la tabla de errores y no como caso especial por
+  status, la ayuda del flag `-down` corregida y `go.mod` ordenado con `go mod tidy`.
+- **App.** El badge de acuse estaba copiado en tres lugares y se extrajo a
+  `AcknowledgementBadge`. `SanctionList` recibía un booleano que cambiaba su comportamiento y
+  ahora recibe qué mostrar a la derecha de cada fila. Los conteos que calculaban las pantallas
+  del panel FIA y de escudería pasaron a hooks de `src/data`, como pide `AGENTS.md`.
+
+**Validación:** `make check` en verde (`go vet`, `gofmt`, `go test` y `tsc`), y `expo export -p
+web` compila el bundle sin errores. Se agregaron tests de integración para el logout sin sesión y
+para el login móvil sin cookie; como el resto de los tests de integración, se omiten sin
+`DATABASE_URL` y quedan pendientes de correr contra una base real. Se escanearon todos los
+documentos modificados en busca de caracteres fuera del rango latino.
+
+**Resultado:** `docs/sprint1/01-stack.md`, `docs/sprint1/02-modelo-de-datos.md`,
+`docs/sprint1/03-arquitectura-roles-seguridad.md`, `docs/sprint1/TODO.md`, `AGENTS.md`,
+`README.md`, `compose.yaml`, `.env.example`, `backend/` (config, transport, cmd, db, testdb,
+`go.mod`) y `app/` (`src/features`, `src/data`, `src/mocks/catalog.ts` y las pantallas que los
+usan).

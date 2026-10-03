@@ -43,7 +43,8 @@ librería estándar funciona igual. Eso importa para el resto del proyecto, no s
 - El middleware de RBAC (US3) y el de autenticación son funciones `func(http.Handler) http.Handler`,
   exactamente igual que cualquier middleware de la documentación de Go.
 - Los tests usan `httptest.NewServer` y `http.NewRequest` sin adaptadores.
-- No hay una capa de abstracción propia que.deserialize y que pueda desincronizarse de la stdlib.
+- No hay una capa de abstracción propia que deserialice por su cuenta y pueda desincronizarse de la
+  stdlib.
 
 Descartamos `fiber` por la misma razón: reemplazar `net/http` por `fasthttp` es una decisión
 irreversible a nivel arquitectura y no aporta al problema que estamos resolviendo.
@@ -80,7 +81,7 @@ El dominio es relacional en su definición, no por conveniencia:
 - Una **sanción** aplica sobre un piloto o una escudería, referencia un evento y debe conservar su
   historial aunque el evento se modifique.
 - El enunciado pide explícitamente que puntajes, sanciones y controles técnicos sean consistentes
-  y disponibles de inmediato para tres audiences distintas.
+  y disponibles de inmediato para tres audiencias distintas.
 
 Eso pide claves foráneas, `UNIQUE`, claves foráneas compuestas y consultas de agregación
 (`SUM` por escudería, posición en el campeonato). MongoDB nos obligaría a simular todo eso con
@@ -88,10 +89,19 @@ documentos embebidos y agregaciones manuales, y nos deja sin integridad referenc
 
 ### Por qué PostgreSQL y no MySQL
 
-MySQL cumple lo mismo, pero PostgreSQL da dos cosas que el proyecto necesita: enums y tipos
-compuestos para modelar roles y estados sin tabla auxiliar, y `jsonb` por si más adelante
-necesitamos guardar datos poco estructurados (un resultado de control técnico, por ejemplo)
-sin bloquear una migración. Se elige PostgreSQL.
+MySQL cubre el modelo relacional básico, pero PostgreSQL da cuatro cosas que el proyecto usa:
+
+- **DDL transaccional.** Una migración que falla a mitad de camino se revierte entera; en MySQL
+  cada `CREATE TABLE` confirma implícitamente y deja el esquema a medias.
+- **Restricciones expresivas.** `CHECK` con expresiones regulares, columnas generadas y funciones
+  como `num_nonnulls` permiten que la base haga cumplir las reglas del dominio (formato de
+  `username`, exactamente un sancionado por sanción) y no solo el código.
+- **Tipos nativos** como `inet` para las IP de `login_attempts` y `jsonb` por si más adelante hay
+  que guardar datos poco estructurados (un resultado de control técnico, por ejemplo).
+- **Mejor soporte de `sqlc`**, cuyo motor más maduro es el de PostgreSQL y usa su propio parser.
+
+Se elige PostgreSQL. Los roles y estados se modelan con `CHECK` en lugar del tipo `ENUM`, por el
+motivo que se detalla en `02-modelo-de-datos.md`.
 
 ### Capa de acceso: pgx + sqlc
 
@@ -103,14 +113,15 @@ Consideramos tres opciones:
 | pgx crudo | Lo más simple y totalmente idiomático | Se descarta: el mapeo de filas a structs se repite en cada query y el refactor se vuelve manual |
 | GORM | CRUD muy rápido | Se descarta por opacidad: el enunciado exige integridad y consultas sobre puntajes/sanciones, y un ORM estorba ahí |
 
-El único costo de `sqlc` es un paso de generación (`make sqlc`), aceptable porque ya lo automatiza
-el Makefile y falla ruidosamente en CI.
+El único costo de `sqlc` es un paso de generación (`make sqlc`) que hay que correr después de
+tocar un `.sql`. Es aceptable porque el Makefile lo automatiza y `AGENTS.md` lo exige.
 
 ### Migraciones
 
-SQL embebido en el binario con `golang-migrate`, aplicado en el arranque de la API. El esquema
-queda versionado en el repositorio como código y cada entorno aplica exactamente los mismos
-archivos. **Nunca se edita una migración ya aplicada**: los cambios son migraciones nuevas.
+SQL embebido en el binario con `golang-migrate`, aplicado con un comando propio
+(`make migrate`, que corre `cmd/migrate`) y no en el arranque de la API: así el deploy decide
+cuándo cambia el esquema y dos réplicas de la API nunca compiten por migrar. El esquema queda
+versionado en el repositorio como código y cada entorno aplica exactamente los mismos archivos. **Nunca se edita una migración ya aplicada**: los cambios son migraciones nuevas.
 
 ---
 
@@ -140,23 +151,29 @@ proyecto necesita:
 1. **Web con el mismo código.** `react-native-web` renderiza los componentes en el navegador.
    Una pantalla escrita una vez corre en los tres destinos.
 2. **`expo-secure-store`** es la pieza de seguridad clave: guarda el token de sesión en el
-   Keychain de iOS y el Keystore de Android. Escribir eso a mano es justamente lo que
-  tendríamos que escribir a mano sin Expo.
+   Keychain de iOS y el Keystore de Android. Sin Expo habría que escribir un módulo nativo por
+   plataforma.
 3. **Builds de demo rápidos**, sin Android Studio ni Xcode instalados.
 
-### Dependencias: exactamente tres
+### Dependencias: tres decisiones, el resto del SDK
 
 Surge una pregunta razonable: ¿no estamos agregando dependencias? El objetivo fue minimizar el
-árbol, y con tres queda cubierto lo que el proyecto necesita:
+árbol. Las decisiones de arquitectura son tres paquetes:
 
 - `expo` — toolchain de desarrollo y build.
 - `expo-router` — routing por archivos. **No es una dependencia extra**: reemplaza a
   react-navigation, que habríamos tenido que instalar igual.
 - `expo-secure-store` — almacenamiento seguro del token.
 
-Para el resto (tokens, colores, espaciado) se usan los módulos nativos de React (`Animated`,
-`Pressable`, `StyleSheet`) y el design system propio en `app/src/theme`. No se suma UI Kit
-grande: menos peso, más control visual y un look consistente entre las tres plataformas.
+El resto de `app/package.json` son módulos del propio SDK de Expo, en versiones que el SDK fija:
+dependencias que `expo-router` necesita (`react-native-screens`, `react-native-safe-area-context`,
+`expo-linking`, `expo-constants`) y tres que se sumaron en US4 para la interfaz:
+`@expo/vector-icons` (iconos), `expo-linear-gradient` (degradés sobre las fotos) y
+`react-native-svg` (banderas, circuitos y el auto ilustrados).
+
+No se suma ningún UI kit: los componentes salen de los primitivos de React Native (`Pressable`,
+`StyleSheet`) y del design system propio en `app/src/theme`. Menos peso, más control visual y un
+look consistente entre las tres plataformas.
 
 ### Lo que se acepta como costo
 
@@ -191,18 +208,20 @@ pierde acceso en el request siguiente.
 - Token de **32 bytes aleatorios** (`crypto/rand`) generado al iniciar sesión.
 - En la base de datos se guarda **solo el SHA-256 del token**, nunca el token. Una filtración de
   la base de datos no permite autenticarse.
-- **Rotación en cada uso**: al presentar un token válido se emite uno nuevo y el anterior deja de
-  servir. Si alguien captura un token, queda obsoleto en cuanto el titular lo usa.
+- **Sesión nueva en cada login**: el token nunca se reutiliza entre inicios de sesión. La
+  rotación en cada request se descartó porque dos peticiones simultáneas se invalidarían
+  mutuamente; el detalle está en US3.
 - **Expiración por inactividad** (12 h) y **expiración absoluta** (168 h), de modo que un token
   robado tiene un techo de vida acotado.
 - **Contraseñas con Argon2id**, la primera recomendación de OWASP. El hash incluye sal por
   usuario y los parámetros (memoria, iteraciones, paralelismo) se configuran por entorno para
-  poder subirlos cuando el hardware lo permita sin rehashear.
+  poder subirlos cuando el hardware lo permita: las contraseñas existentes siguen funcionando y
+  se rehashean con el coste nuevo en el siguiente login correcto.
 - **Transporte según plataforma**: cookie `httpOnly; Secure; SameSite=Strict` en web, y
   `expo-secure-store` en móvil. La cookie `httpOnly` es la que impide que un XSS lea el token;
   `SameSite=Strict` corta el CSRF sobre el endpoint de sesión.
-- **Rate limiting y bloqueo** por intentos fallidos, y **registro de auditoría** de los eventos de
-  autenticación.
+- **Bloqueo por intentos fallidos** (cinco seguidos bloquean el usuario 15 minutos) y registro de
+  cada intento en `login_attempts`.
 
 El detalle completo de la matriz de permisos y de los estándares de seguridad se desarrolla en
 US3 (`03-arquitectura-roles-seguridad.md`).

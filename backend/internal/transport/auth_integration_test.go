@@ -84,7 +84,7 @@ func (h *harness) deactivate(username string) {
 	h.t.Helper()
 
 	_, err := h.pool.Exec(context.Background(),
-		`UPDATE users SET is_active = false, deactivated_at = now() WHERE username = $1`, username)
+		`UPDATE users SET deactivated_at = now() WHERE username = $1`, username)
 	if err != nil {
 		h.t.Fatalf("deactivate %s: %v", username, err)
 	}
@@ -294,6 +294,24 @@ func TestLogoutRevokesSession(t *testing.T) {
 
 	expectStatus(t, h.do(browser, http.MethodPost, "/auth/logout", nil, nil), http.StatusNoContent)
 	expectStatus(t, h.do(browser, http.MethodGet, "/auth/me", nil, nil), http.StatusUnauthorized)
+}
+
+func TestNativeLoginDoesNotSetCookie(t *testing.T) {
+	h := newHarness(t)
+	username := h.createUser(domain.RoleFIAAdmin, 0)
+	client := h.browser()
+
+	login := h.do(client, http.MethodPost, "/auth/login",
+		map[string]string{"username": username, "password": testPassword},
+		map[string]string{"X-Client-Platform": "native"})
+	expectStatus(t, login, http.StatusOK)
+
+	expectStatus(t, h.do(client, http.MethodGet, "/auth/me", nil, nil), http.StatusUnauthorized)
+}
+
+func TestLogoutWithoutSessionStillSucceeds(t *testing.T) {
+	h := newHarness(t)
+	expectStatus(t, h.do(h.browser(), http.MethodPost, "/auth/logout", nil, nil), http.StatusNoContent)
 }
 
 func TestMeWithoutSessionIsUnauthorized(t *testing.T) {

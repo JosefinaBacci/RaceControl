@@ -13,7 +13,7 @@ import (
 	"github.com/racecontrol/backend/internal/db"
 )
 
-var usernameSequence atomic.Int64
+var uniqueSequence atomic.Int64
 
 func Pool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
@@ -35,5 +35,13 @@ func Pool(t *testing.T) *pgxpool.Pool {
 func UniqueUsername(t *testing.T) string {
 	t.Helper()
 
-	return fmt.Sprintf("t%d.%d", time.Now().UnixNano()%1_000_000_000_000, usernameSequence.Add(1))
+	return fmt.Sprintf("t%d.%d", time.Now().UnixNano()%1_000_000_000_000, uniqueSequence.Add(1))
+}
+
+// UniqueCode returns a value that satisfies the short code formats of the
+// reference tables, such as teams_code_format.
+func UniqueCode(t *testing.T) string {
+	t.Helper()
+
+	return fmt.Sprintf("t%d_%d", time.Now().UnixNano()%1_000_000_000, uniqueSequence.Add(1))
 }

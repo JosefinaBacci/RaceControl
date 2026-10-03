@@ -22,3 +22,5 @@ services:
 
 volumes:
   db-data:
+    # Same volume name as `make db-up`, so both ways of starting Postgres share the data.
+    name: racecontrol-db-data

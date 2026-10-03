@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -23,14 +24,19 @@ type Config struct {
 	Environment        Environment
 	DatabaseURL        string
 	HTTPAddr           string
-	Argon2MemoryKiB    uint32
-	Argon2Iterations   uint32
-	Argon2Parallelism  uint8
-	SessionIdleTTL     time.Duration
-	SessionAbsoluteTTL time.Duration
+	Argon2             auth.Argon2Params
+	Sessions           SessionTTLs
 	SeedDemoPassword   string
 	CORSAllowedOrigins []string
+	TrustProxyHeaders  bool
 }
+
+type SessionTTLs struct {
+	Idle     time.Duration
+	Absolute time.Duration
+}
+
+const maxArgon2Parallelism = 255
 
 // Load reads the configuration from the environment, failing fast on missing or
 // malformed values so a misconfigured process never starts.
@@ -39,73 +45,84 @@ func Load() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+	argon2Params, err := argon2FromEnv()
+	if err != nil {
+		return Config{}, err
+	}
+	sessionTTLs, err := sessionTTLsFromEnv()
+	if err != nil {
+		return Config{}, err
+	}
+	// Only a reverse proxy that overwrites X-Forwarded-For makes it trustworthy;
+	// otherwise any client could forge the IP recorded in login_attempts.
+	trustProxyHeaders, err := boolFromEnv("TRUST_PROXY_HEADERS", false)
+	if err != nil {
+		return Config{}, err
+	}
 
 	cfg := Config{
 		Environment:        environment,
 		DatabaseURL:        os.Getenv("DATABASE_URL"),
 		HTTPAddr:           os.Getenv("HTTP_ADDR"),
+		Argon2:             argon2Params,
+		Sessions:           sessionTTLs,
 		SeedDemoPassword:   os.Getenv("SEED_DEMO_PASSWORD"),
 		CORSAllowedOrigins: listFromEnv("CORS_ALLOWED_ORIGINS", defaultDevelopmentOrigins),
+		TrustProxyHeaders:  trustProxyHeaders,
 	}
-
-	if cfg.Argon2MemoryKiB, err = uintFromEnv("ARGON2_MEMORY_KIB", 65536); err != nil {
+	if err := cfg.validate(); err != nil {
 		return Config{}, err
 	}
-	if cfg.Argon2Iterations, err = uintFromEnv("ARGON2_ITERATIONS", 3); err != nil {
-		return Config{}, err
-	}
-	argon2Parallelism, err := uintFromEnv("ARGON2_PARALLELISM", 2)
-	if err != nil {
-		return Config{}, err
-	}
-	if argon2Parallelism > 255 {
-		return Config{}, fmt.Errorf("ARGON2_PARALLELISM: %d exceeds the Argon2id limit of 255", argon2Parallelism)
-	}
-	cfg.Argon2Parallelism = uint8(argon2Parallelism)
-
-	if cfg.SessionIdleTTL, err = durationFromEnv("SESSION_IDLE_TTL", 12*time.Hour); err != nil {
-		return Config{}, err
-	}
-	if cfg.SessionAbsoluteTTL, err = durationFromEnv("SESSION_ABSOLUTE_TTL", 168*time.Hour); err != nil {
-		return Config{}, err
-	}
-	if cfg.SessionIdleTTL >= cfg.SessionAbsoluteTTL {
-		return Config{}, fmt.Errorf(
-			"SESSION_IDLE_TTL (%s) must be shorter than SESSION_ABSOLUTE_TTL (%s)",
-			cfg.SessionIdleTTL, cfg.SessionAbsoluteTTL)
-	}
-
-	if cfg.DatabaseURL == "" {
-		return Config{}, fmt.Errorf("DATABASE_URL is required")
-	}
-	if cfg.HTTPAddr == "" {
-		return Config{}, fmt.Errorf("HTTP_ADDR is required")
-	}
-	if err := cfg.validateSeedSafety(); err != nil {
-		return Config{}, err
-	}
-
 	return cfg, nil
 }
 
-// validateSeedSafety refuses to start when demo credentials are configured in
-// production, so a leaked .env cannot create a predictable admin account.
-func (c Config) validateSeedSafety() error {
-	if c.Environment != EnvironmentProduction {
-		return nil
+func argon2FromEnv() (auth.Argon2Params, error) {
+	memory, err := uintFromEnv("ARGON2_MEMORY_KIB", 65536)
+	if err != nil {
+		return auth.Argon2Params{}, err
 	}
-	if c.SeedDemoPassword != "" {
-		return fmt.Errorf("SEED_DEMO_PASSWORD must not be set when APP_ENV=production")
+	iterations, err := uintFromEnv("ARGON2_ITERATIONS", 3)
+	if err != nil {
+		return auth.Argon2Params{}, err
 	}
-	return nil
+	parallelism, err := uintFromEnv("ARGON2_PARALLELISM", 2)
+	if err != nil {
+		return auth.Argon2Params{}, err
+	}
+	if parallelism > maxArgon2Parallelism {
+		return auth.Argon2Params{}, fmt.Errorf("ARGON2_PARALLELISM: %d exceeds the Argon2id limit of %d",
+			parallelism, maxArgon2Parallelism)
+	}
+	return auth.Argon2Params{MemoryKiB: memory, Iterations: iterations, Parallelism: uint8(parallelism)}, nil
 }
 
-func (c Config) Argon2Params() auth.Argon2Params {
-	return auth.Argon2Params{
-		MemoryKiB:   c.Argon2MemoryKiB,
-		Iterations:  c.Argon2Iterations,
-		Parallelism: c.Argon2Parallelism,
+func sessionTTLsFromEnv() (SessionTTLs, error) {
+	idle, err := durationFromEnv("SESSION_IDLE_TTL", 12*time.Hour)
+	if err != nil {
+		return SessionTTLs{}, err
 	}
+	absolute, err := durationFromEnv("SESSION_ABSOLUTE_TTL", 168*time.Hour)
+	if err != nil {
+		return SessionTTLs{}, err
+	}
+	if idle >= absolute {
+		return SessionTTLs{}, fmt.Errorf("SESSION_IDLE_TTL (%s) must be shorter than SESSION_ABSOLUTE_TTL (%s)", idle, absolute)
+	}
+	return SessionTTLs{Idle: idle, Absolute: absolute}, nil
+}
+
+func (c Config) validate() error {
+	if c.DatabaseURL == "" {
+		return errors.New("DATABASE_URL is required")
+	}
+	if c.HTTPAddr == "" {
+		return errors.New("HTTP_ADDR is required")
+	}
+	// A leaked .env must not be able to create a predictable admin account in production.
+	if c.IsProduction() && c.SeedDemoPassword != "" {
+		return errors.New("SEED_DEMO_PASSWORD must not be set when APP_ENV=production")
+	}
+	return nil
 }
 
 // IsProduction reports whether the process runs in production.
@@ -164,6 +181,18 @@ func durationFromEnv(name string, fallback time.Duration) (time.Duration, error)
 	parsed, err := time.ParseDuration(raw)
 	if err != nil {
 		return 0, fmt.Errorf("%s must be a Go duration such as 12h: %w", name, err)
+	}
+	return parsed, nil
+}
+
+func boolFromEnv(name string, fallback bool) (bool, error) {
+	raw := os.Getenv(name)
+	if raw == "" {
+		return fallback, nil
+	}
+	parsed, err := strconv.ParseBool(raw)
+	if err != nil {
+		return false, fmt.Errorf("%s must be true or false: %w", name, err)
 	}
 	return parsed, nil
 }

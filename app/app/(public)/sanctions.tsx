@@ -12,7 +12,7 @@ export default function PublicSanctionsScreen() {
   return (
     <Screen title="Sanciones" subtitle="Sanciones publicadas por la FIA a pilotos y escuderías.">
       <ChipGroup options={categoryFilterOptions} selected={category} onSelect={setCategory} accessibilityLabel="Filtrar por categoría" />
-      <SanctionList title="Sanciones publicadas" sanctions={sanctions} showAcknowledgement={false} />
+      <SanctionList title="Sanciones publicadas" sanctions={sanctions} />
     </Screen>
   );
 }

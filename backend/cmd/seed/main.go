@@ -34,7 +34,7 @@ func main() {
 		return
 	}
 
-	hasher, err := auth.NewPasswordHasher(cfg.Argon2Params())
+	hasher, err := auth.NewPasswordHasher(cfg.Argon2)
 	if err != nil {
 		log.Fatalf("seed: %v", err)
 	}

@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	steps := flag.Int("down", 0, "roll back this many migrations; 0 or less rolls back everything")
+	steps := flag.Int("down", 0, "roll back this many migrations instead of applying them; a negative value rolls back everything")
 	flag.Parse()
 
 	cfg, err := config.Load()

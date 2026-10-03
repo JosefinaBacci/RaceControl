@@ -1,6 +1,7 @@
 import { useSession } from '@/auth/SessionProvider';
 import { Badge, Button, Card, ListItem, Screen } from '@/components';
 import { useTeamInbox } from '@/data/hooks';
+import { AcknowledgementBadge } from '@/features/AcknowledgementBadge';
 import { MockNotice } from '@/features/MockNotice';
 
 export default function TeamInboxScreen() {
@@ -18,7 +19,7 @@ export default function TeamInboxScreen() {
             subtitle={item.detail}
             trailing={
               item.acknowledged ? (
-                <Badge label="Acusado" tone="success" icon="checkmark" />
+                <AcknowledgementBadge acknowledged />
               ) : (
                 <Button label="Acusar recibo" icon="checkmark-done" compact onPress={() => acknowledge(item.key)} />
               )

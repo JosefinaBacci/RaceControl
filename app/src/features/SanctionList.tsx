@@ -1,18 +1,18 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { Badge, Card, ListItem } from '@/components';
+import { Card, ListItem } from '@/components';
 import { teamById } from '@/mocks/catalog';
 import type { Sanction } from '@/mocks/data';
 
 type SanctionListProps = {
   title: string;
   sanctions: Sanction[];
-  showAcknowledgement: boolean;
+  trailing?: (sanction: Sanction) => ReactNode;
   action?: ReactNode;
 };
 
-export function SanctionList({ title, sanctions, showAcknowledgement, action }: SanctionListProps) {
+export function SanctionList({ title, sanctions, trailing, action }: SanctionListProps) {
   return (
     <Card title={title} action={action}>
       {sanctions.map((sanction, index) => (
@@ -21,15 +21,7 @@ export function SanctionList({ title, sanctions, showAcknowledgement, action }: 
           leading={<View style={[styles.marker, { backgroundColor: teamById(sanction.teamId).color }]} />}
           title={sanction.penalty}
           subtitle={`${sanction.subject} · ${sanction.event}`}
-          trailing={
-            showAcknowledgement ? (
-              <Badge
-                label={sanction.acknowledged ? 'Acusada' : 'Sin acuse'}
-                tone={sanction.acknowledged ? 'success' : 'warning'}
-                icon={sanction.acknowledged ? 'checkmark' : 'time-outline'}
-              />
-            ) : null
-          }
+          trailing={trailing?.(sanction)}
           isLast={index === sanctions.length - 1}
         />
       ))}

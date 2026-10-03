@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/racecontrol/backend/internal/auth"
 	"github.com/racecontrol/backend/internal/domain"
@@ -20,19 +21,20 @@ type errorBody struct {
 }
 
 type errorMapping struct {
-	target  error
-	status  int
-	code    string
-	message string
+	target     error
+	status     int
+	code       string
+	message    string
+	retryAfter time.Duration
 }
 
 var errorMappings = []errorMapping{
-	{domain.ErrInvalidCredentials, http.StatusUnauthorized, "invalid_credentials", "Usuario o contraseña incorrectos"},
-	{domain.ErrUnauthenticated, http.StatusUnauthorized, "unauthenticated", "Tenés que iniciar sesión"},
-	{domain.ErrAccountLocked, http.StatusTooManyRequests, "account_locked", "Demasiados intentos fallidos. Probá de nuevo en 15 minutos"},
-	{domain.ErrForbidden, http.StatusForbidden, "forbidden", "No tenés permiso para esta operación"},
-	{domain.ErrNotFound, http.StatusNotFound, "not_found", "No encontrado"},
-	{domain.ErrConflict, http.StatusConflict, "conflict", "El recurso ya existe"},
+	{target: domain.ErrInvalidCredentials, status: http.StatusUnauthorized, code: "invalid_credentials", message: "Usuario o contraseña incorrectos"},
+	{target: domain.ErrUnauthenticated, status: http.StatusUnauthorized, code: "unauthenticated", message: "Tenés que iniciar sesión"},
+	{target: domain.ErrAccountLocked, status: http.StatusTooManyRequests, code: "account_locked", message: "Demasiados intentos fallidos. Probá de nuevo en 15 minutos", retryAfter: auth.LockoutWindow},
+	{target: domain.ErrForbidden, status: http.StatusForbidden, code: "forbidden", message: "No tenés permiso para esta operación"},
+	{target: domain.ErrNotFound, status: http.StatusNotFound, code: "not_found", message: "No encontrado"},
+	{target: domain.ErrConflict, status: http.StatusConflict, code: "conflict", message: "El recurso ya existe"},
 }
 
 func writeError(w http.ResponseWriter, r *http.Request, err error) {
@@ -44,8 +46,8 @@ func writeError(w http.ResponseWriter, r *http.Request, err error) {
 
 	for _, mapping := range errorMappings {
 		if errors.Is(err, mapping.target) {
-			if mapping.status == http.StatusTooManyRequests {
-				w.Header().Set("Retry-After", strconv.Itoa(int(auth.LockoutWindow.Seconds())))
+			if mapping.retryAfter > 0 {
+				w.Header().Set("Retry-After", strconv.Itoa(int(mapping.retryAfter.Seconds())))
 			}
 			writeJSON(w, mapping.status, errorBody{Code: mapping.code, Message: mapping.message})
 			return

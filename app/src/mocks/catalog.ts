@@ -9,6 +9,10 @@ export const categories: readonly { value: CategoryCode; label: string }[] = [
   { value: 'academy', label: 'F1 Academy' },
 ];
 
+export function categoryLabel(code: CategoryCode): string {
+  return categories.find((category) => category.value === code)?.label ?? '';
+}
+
 export type Team = { id: number; category: CategoryCode; name: string; country: string; flag: FlagCode; color: string };
 
 export const teams: readonly Team[] = [

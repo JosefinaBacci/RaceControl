@@ -1,5 +1,6 @@
-import { Avatar, Badge, Button, Card, ListItem, Screen } from '@/components';
+import { Avatar, Button, Card, ListItem, Screen } from '@/components';
 import { useSanctions, useScoreNotices } from '@/data/hooks';
+import { AcknowledgementBadge } from '@/features/AcknowledgementBadge';
 import { MockNotice } from '@/features/MockNotice';
 import { SanctionList } from '@/features/SanctionList';
 import { teamById } from '@/mocks/catalog';
@@ -24,19 +25,15 @@ export default function FiaResultsScreen() {
               leading={<Avatar name={team.name} color={team.color} />}
               title={team.name}
               subtitle={`${notice.points} puntos`}
-              trailing={
-                <Badge
-                  label={notice.acknowledged ? 'Acusado' : 'Sin acuse'}
-                  tone={notice.acknowledged ? 'success' : 'warning'}
-                  icon={notice.acknowledged ? 'checkmark' : 'time-outline'}
-                />
-              }
+              trailing={<AcknowledgementBadge acknowledged={notice.acknowledged} />}
               isLast={index === scoreNotices.length - 1}
             />
           );
         })}
       </Card>
-      <SanctionList title="Sanciones emitidas" sanctions={sanctions} showAcknowledgement />
+      <SanctionList title="Sanciones emitidas" sanctions={sanctions}
+        trailing={(sanction) => <AcknowledgementBadge acknowledged={sanction.acknowledged} acknowledgedLabel="Acusada" />}
+      />
     </Screen>
   );
 }

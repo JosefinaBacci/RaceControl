@@ -3,43 +3,21 @@ package db_test
 import (
 	"context"
 	"errors"
-	"fmt"
-	"os"
 	"strings"
-	"sync/atomic"
 	"testing"
-	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/racecontrol/backend/internal/db"
+	"github.com/racecontrol/backend/internal/db/dbgen"
+	"github.com/racecontrol/backend/internal/testdb"
 )
 
-// usernameSequence makes concurrent test binaries produce distinct usernames.
-var usernameSequence atomic.Int64
-
-func testPool(t *testing.T) *pgxpool.Pool {
-	t.Helper()
-
-	databaseURL := os.Getenv("DATABASE_URL")
-	if databaseURL == "" {
-		t.Skip("DATABASE_URL is not set; skipping database integration test")
-	}
-
-	pool, err := db.Connect(context.Background(), databaseURL)
-	if err != nil {
-		t.Fatalf("connect: %v", err)
-	}
-	t.Cleanup(pool.Close)
-
-	return pool
-}
+const highestSeededTeamID = 8
 
 // TestGetUserByUsernameNotFound asserts that a missing username yields pgx.ErrNoRows
-// rather than a zero value, which is what the auth service turns into a 401.
+// rather than a zero value, which is what the authenticator turns into a 401.
 func TestGetUserByUsernameNotFound(t *testing.T) {
-	queries := db.NewQueries(testPool(t))
+	queries := dbgen.New(testdb.Pool(t))
 
 	_, err := queries.GetUserByUsername(context.Background(), "nobody-here")
 	if !errors.Is(err, pgx.ErrNoRows) {
@@ -50,71 +28,39 @@ func TestGetUserByUsernameNotFound(t *testing.T) {
 // TestGetUserByUsernameIsCaseInsensitive locks in the login behaviour that lets a
 // user type their username in any casing while the schema stores only lowercase.
 func TestGetUserByUsernameIsCaseInsensitive(t *testing.T) {
-	pool := testPool(t)
-	queries := db.NewQueries(pool)
+	queries := dbgen.New(testdb.Pool(t))
+	created, err := queries.CreateUser(context.Background(), dbgen.CreateUserParams{
+		Username:     testdb.UniqueUsername(t),
+		PasswordHash: "test-hash",
+		Role:         "fia_admin",
+	})
+	if err != nil {
+		t.Fatalf("CreateUser: %v", err)
+	}
 
-	username := uniqueUsername(t)
-	insertTestUser(t, pool, username)
-
-	for _, input := range []string{username, strings.ToUpper(username)} {
+	for _, input := range []string{created.Username, strings.ToUpper(created.Username)} {
 		user, err := queries.GetUserByUsername(context.Background(), input)
 		if err != nil {
 			t.Fatalf("GetUserByUsername(%q): %v", input, err)
 		}
-		if user.Username != username {
-			t.Errorf("GetUserByUsername(%q) = %q, want %q", input, user.Username, username)
+		if user.ID != created.ID {
+			t.Errorf("GetUserByUsername(%q) returned user %d, want %d", input, user.ID, created.ID)
 		}
 	}
 }
 
-// TestInsertAfterSeededRowsDoesNotCollide proves the seed migration left the
-// identity sequences ahead of the rows it inserted explicitly.
-func TestInsertAfterSeededRowsDoesNotCollide(t *testing.T) {
-	pool := testPool(t)
-	queries := db.NewQueries(pool)
-
-	insertTestUser(t, pool, uniqueUsername(t))
-
-	user, err := queries.GetUserByUsername(context.Background(), seededUsername(t))
+// TestInsertAfterSeedDoesNotCollide proves the seed left the identity sequence
+// ahead of the rows it inserted with fixed ids.
+func TestInsertAfterSeedDoesNotCollide(t *testing.T) {
+	var teamID int64
+	err := testdb.Pool(t).QueryRow(context.Background(),
+		`INSERT INTO teams (category_id, code, name) VALUES (1, $1, 'Test team') RETURNING id`,
+		testdb.UniqueCode(t),
+	).Scan(&teamID)
 	if err != nil {
-		t.Fatalf("read seeded user: %v", err)
+		t.Fatalf("insert team: %v", err)
 	}
-	if user.ID <= 0 {
-		t.Fatalf("seeded user has id %d, want a positive identity value", user.ID)
+	if teamID <= highestSeededTeamID {
+		t.Fatalf("new team got id %d, want an id above the seeded %d", teamID, highestSeededTeamID)
 	}
-}
-
-// seededUsername returns a username known to exist from the seed migration.
-func seededUsername(t *testing.T) string {
-	t.Helper()
-
-	const knownSeededUsername = "seeded_probe"
-	pool := testPool(t)
-	if _, err := pool.Exec(context.Background(),
-		`INSERT INTO users (username, password_hash, role) VALUES ($1, 'hash', 'fia_admin')
-		 ON CONFLICT (username) DO NOTHING`,
-		knownSeededUsername,
-	); err != nil {
-		t.Fatalf("insert probe user: %v", err)
-	}
-	return knownSeededUsername
-}
-
-func insertTestUser(t *testing.T, pool *pgxpool.Pool, username string) {
-	t.Helper()
-
-	if _, err := pool.Exec(context.Background(),
-		`INSERT INTO users (username, password_hash, role) VALUES ($1, 'test-hash', 'fia_admin')`,
-		username,
-	); err != nil {
-		t.Fatalf("insert test user %q: %v", username, err)
-	}
-}
-
-// uniqueUsername builds a lowercase username honouring the users_username_format
-// check constraint, unique across concurrent test binaries.
-func uniqueUsername(t *testing.T) string {
-	t.Helper()
-
-	return fmt.Sprintf("test_%d_%d", time.Now().UnixNano(), usernameSequence.Add(1))
 }

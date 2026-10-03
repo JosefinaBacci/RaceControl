@@ -114,8 +114,21 @@ export function useTeamInbox(teamId: number | null) {
   }, [teamId, acknowledgedKeys]);
 
   const acknowledge = (key: string) => setAcknowledgedKeys((previous) => new Set(previous).add(key));
+  const pendingCount = countPending(items);
 
-  return { items, acknowledge };
+  return { items, pendingCount, acknowledge };
+}
+
+export function usePendingAcknowledgements() {
+  return useMemo(() => ({ sanctions: countPending(sanctions), scores: countPending(scoreNotices) }), []);
+}
+
+export function useActiveAccountCount() {
+  return useMemo(() => managedUsers.filter((user) => user.isActive).length, []);
+}
+
+function countPending(items: readonly { acknowledged: boolean }[]): number {
+  return items.filter((item) => !item.acknowledged).length;
 }
 
 export type RoleFilter = Role | 'all';

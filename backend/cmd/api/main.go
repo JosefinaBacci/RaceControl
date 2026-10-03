@@ -19,6 +19,11 @@ import (
 	"github.com/racecontrol/backend/internal/transport"
 )
 
+const (
+	readHeaderTimeout = 10 * time.Second
+	shutdownTimeout   = 10 * time.Second
+)
+
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
@@ -42,7 +47,7 @@ func main() {
 	server := &http.Server{
 		Addr:              cfg.HTTPAddr,
 		Handler:           router,
-		ReadHeaderTimeout: 10 * time.Second,
+		ReadHeaderTimeout: readHeaderTimeout,
 	}
 
 	go shutdownOnSignal(ctx, server, log.Printf)
@@ -54,30 +59,31 @@ func main() {
 }
 
 func buildRouter(cfg config.Config, pool *pgxpool.Pool) (http.Handler, error) {
-	hasher, err := auth.NewPasswordHasher(cfg.Argon2Params())
+	hasher, err := auth.NewPasswordHasher(cfg.Argon2)
 	if err != nil {
 		return nil, err
 	}
 
 	queries := dbgen.New(pool)
 	sessionService := sessions.NewService(queries, sessions.Config{
-		IdleTTL:     cfg.SessionIdleTTL,
-		AbsoluteTTL: cfg.SessionAbsoluteTTL,
+		IdleTTL:     cfg.Sessions.Idle,
+		AbsoluteTTL: cfg.Sessions.Absolute,
 	})
 
 	return transport.NewRouter(transport.Dependencies{
-		Pool:           pool,
-		Authenticator:  auth.NewAuthenticator(queries, hasher, sessionService),
-		Sessions:       sessionService,
-		Cookie:         transport.CookieConfig{Secure: cfg.IsProduction(), MaxAge: cfg.SessionAbsoluteTTL},
-		AllowedOrigins: cfg.CORSAllowedOrigins,
+		Pool:              pool,
+		Authenticator:     auth.NewAuthenticator(queries, hasher, sessionService),
+		Sessions:          sessionService,
+		Cookie:            transport.CookieConfig{Secure: cfg.IsProduction(), MaxAge: cfg.Sessions.Absolute},
+		AllowedOrigins:    cfg.CORSAllowedOrigins,
+		TrustProxyHeaders: cfg.TrustProxyHeaders,
 	}), nil
 }
 
 func shutdownOnSignal(ctx context.Context, server *http.Server, logf func(string, ...any)) {
 	<-ctx.Done()
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 
 	if err := server.Shutdown(shutdownCtx); err != nil {

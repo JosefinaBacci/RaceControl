@@ -25,27 +25,36 @@ diseño. La comisión de Análisis y Management trabaja en otro repositorio.
 
 ```
 backend/
-  cmd/api           API HTTP
-  cmd/migrate       Runner de migraciones
-  cmd/seed          Aplica los datos de referencia idempotentes
-  internal/config   Configuración desde el entorno
-  internal/db       Pool de pgx, runner de migraciones, queries generadas por sqlc
-  internal/db/dbgen Código generado por sqlc; nunca editar a mano
-  internal/domain   Entidades y errores de dominio (sin dependencias de infraestructura)
-  internal/auth     Hashing de contraseñas, middleware RBAC
-  internal/sessions Creación, rotación y revocación de sesiones
-  internal/users    Servicio de gestión de usuarios
-  internal/transport Handlers, middlewares, routing (chi)
-  migrations/       Archivos .sql numerados (solo DDL) + embed.go
-  seeds/            Datos de referencia idempotentes + embed.go
-  internal/seed     Aplica las seeds
-  sql/              Queries que sqlc convierte en Go
-  sqlc.yaml         Configuración de sqlc
+  cmd/api               API HTTP
+  cmd/migrate           Runner de migraciones
+  cmd/seed              Aplica los datos de referencia (y las cuentas demo fuera de producción)
+  cmd/create-admin      Crea el primer administrador FIA
+  internal/config       Configuración desde el entorno
+  internal/db           Pool de pgx
+  internal/db/migrate   Runner de migraciones embebidas
+  internal/db/dbgen     Código generado por sqlc; nunca editar a mano
+  internal/domain       Entidades y errores de dominio (sin dependencias de infraestructura)
+  internal/auth         Hashing de contraseñas, login con bloqueo, middleware RBAC
+  internal/sessions     Emisión, expiración y revocación de sesiones
+  internal/users        Servicio de gestión de usuarios (US6)
+  internal/transport    Handlers, middlewares, routing (chi)
+  internal/seed         Aplica las seeds
+  internal/testdb       Helpers de los tests de integración
+  migrations/           Archivos .sql numerados (solo DDL) + embed.go
+  seeds/                Datos de referencia idempotentes + embed.go
+  sql/                  Queries que sqlc convierte en Go
+  sqlc.yaml             Configuración de sqlc
 app/
-  app/              Rutas (expo-router)
-  src/api           Cliente HTTP
-  src/components    Componentes reutilizables
-  src/theme         Design system: colores, tipografía, espaciado
+  app/                  Rutas (expo-router): (public), fia, team, login
+  src/api               Cliente HTTP y almacenamiento del token
+  src/auth              Sesión, validación del login, roles
+  src/components        Componentes reutilizables del design system
+  src/data              Hooks de datos (hoy sobre mocks; mañana sobre src/api)
+  src/features          Bloques de pantalla compartidos entre roles
+  src/illustrations     Ilustraciones SVG (banderas, circuitos, auto)
+  src/mocks             Datos de ejemplo de US4
+  src/navigation        Layouts por rol, guardas de acceso
+  src/theme             Design system: colores, tipografía, espaciado
 docs/
   sprint1/          Documentación de diseño por user story
   prompts-ia.md     Registro de prompts de IA (exigido por la cátedra)
@@ -116,7 +125,7 @@ evaluación.
 - Nombres en `snake_case` y en plural las tablas (`users`, `teams`, `drivers`).
 - Toda tabla de negocio lleva `created_at` y `updated_at`.
 - Claves foráneas con `ON DELETE` explícito; nunca borrados en cascada silenciosos sobre datos
-  históricos de sanctiones o puntajes.
+  históricos de sanciones o puntajes.
 - Idempotencia: los nombres únicos donde aplique (`users.username`, `users.email`).
 - **Claves primarias:** `bigint GENERATED ALWAYS AS IDENTITY`. `ALWAYS` impide que
   cualquier código asigne un id a mano, que es lo que desincroniza la secuencia.
@@ -124,7 +133,8 @@ evaluación.
   `max(id)` vivo para no retroceder la secuencia si alguien insertó desde la app. Por eso los
   conflictos entre ramas se resuelven con `make db-reset`, nunca fusionando filas: las
   migraciones se fusionan, los datos se regeneran.
-- **Baja lógica siempre:** `is_active` + `deactivated_at`. Nunca `DELETE` sobre una fila
+- **Baja lógica siempre:** se marca `deactivated_at`, y `is_active` es una columna generada
+  (`deactivated_at IS NULL`) que nunca se escribe a mano. Nunca `DELETE` sobre una fila
   referenciada, así los ids nunca se reciclan.
 
 ### App (TypeScript / React Native)
@@ -142,8 +152,11 @@ make migrate      # Aplicar el esquema (solo DDL)
 make seed         # Cargar datos de referencia (idempotente)
 make db-reset     # Recrear base desde cero: drop + migrate + seed
 make sqlc         # Regenerar queries tras editar backend/sql
+make create-admin ADMIN_USERNAME=...  # Crear un administrador FIA
 make backend-run  # Levantar la API
-make backend-test # Tests del backend
+make backend-test # Tests del backend (los de integración necesitan DATABASE_URL)
+make app-install  # Instalar dependencias de la app
+make app-web      # Correr la app en el navegador
 make check        # Lint + typecheck + tests de todo el proyecto
 ```
 

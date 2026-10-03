@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/term"
@@ -21,10 +22,7 @@ import (
 	"github.com/racecontrol/backend/internal/domain"
 )
 
-const (
-	passwordEnvVar     = "ADMIN_PASSWORD"
-	uniqueViolationSQL = "23505"
-)
+const passwordEnvVar = "ADMIN_PASSWORD"
 
 func main() {
 	username := flag.String("username", "", "username of the new FIA administrator")
@@ -54,7 +52,7 @@ func run(username, email string) error {
 		return err
 	}
 
-	hasher, err := auth.NewPasswordHasher(cfg.Argon2Params())
+	hasher, err := auth.NewPasswordHasher(cfg.Argon2)
 	if err != nil {
 		return err
 	}
@@ -77,7 +75,7 @@ func run(username, email string) error {
 		Role:         string(domain.RoleFIAAdmin),
 	})
 	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) && pgErr.Code == uniqueViolationSQL {
+	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 		return fmt.Errorf("username or email already in use: %s", pgErr.ConstraintName)
 	}
 	if err != nil {

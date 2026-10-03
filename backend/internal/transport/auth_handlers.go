@@ -68,19 +68,23 @@ func (h *authHandlers) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.SetCookie(w, h.sessionCookie(result.Token, int(h.cookie.MaxAge.Seconds())))
-
 	response := loginResponse{User: toUserResponse(result.Identity)}
 	if isNativeClient(r) {
 		response.Token = result.Token
+	} else {
+		http.SetCookie(w, h.sessionCookie(result.Token, int(h.cookie.MaxAge.Seconds())))
 	}
 	writeJSON(w, http.StatusOK, response)
 }
 
+// logout answers 204 even without a valid session: the browser cannot delete an
+// httpOnly cookie by itself, so an expired one must still be cleared here.
 func (h *authHandlers) logout(w http.ResponseWriter, r *http.Request) {
-	if err := h.sessions.Revoke(r.Context(), auth.TokenFromRequest(r)); err != nil {
-		writeError(w, r, err)
-		return
+	if token := auth.TokenFromRequest(r); token != "" {
+		if err := h.sessions.Revoke(r.Context(), token); err != nil {
+			writeError(w, r, err)
+			return
+		}
 	}
 	http.SetCookie(w, h.sessionCookie("", -1))
 	w.WriteHeader(http.StatusNoContent)
