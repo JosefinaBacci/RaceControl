@@ -5,6 +5,7 @@ DB_PASS ?= racecontrol
 DB_PORT ?= 5432
 GO ?= go
 SQLC_VERSION ?= 1.31.1
+TEST_DB_NAME ?= racecontrol_test
 
 # podman when installed, docker otherwise. Override with `make CONTAINER=docker ...`.
 # MSYS_NO_PATHCONV and `pwd -W` keep Git Bash on Windows from rewriting container paths.
@@ -15,7 +16,7 @@ CONTAINER ?= $(shell command -v podman >/dev/null 2>&1 && echo podman || echo do
 -include .env
 export
 
-.PHONY: help db-up db-down db-logs db-ps migrate migrate-down db-reset seed create-admin sqlc backend-run backend-test backend-lint tidy app-install app-start app-web app-lint check
+.PHONY: help db-up db-down db-logs db-ps migrate migrate-down db-reset seed create-admin sqlc backend-run test-db backend-test backend-lint tidy app-install app-start app-web app-lint check
 
 help: ## Show available targets
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | sed 's/:.*## /\t/' | expand -t16
@@ -72,7 +73,14 @@ create-admin: ## Create a FIA administrator: make create-admin ADMIN_USERNAME=..
 backend-run: ## Run the API locally
 	cd backend && $(GO) run ./cmd/api
 
-backend-test: ## Run backend tests
+test-db: ## Create the test database if missing and bring its schema and reference data up to date
+	@$(CONTAINER) exec racecontrol-db psql -U $(DB_USER) -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = '$(TEST_DB_NAME)'" | grep -q 1 || \
+		$(CONTAINER) exec racecontrol-db psql -U $(DB_USER) -d postgres -q -c 'CREATE DATABASE $(TEST_DB_NAME);'
+	cd backend && DATABASE_URL="$(TEST_DATABASE_URL)" $(GO) run ./cmd/migrate
+	cd backend && DATABASE_URL="$(TEST_DATABASE_URL)" SEED_DEMO_PASSWORD= $(GO) run ./cmd/seed
+
+backend-test: ## Run backend tests; integration tests use TEST_DATABASE_URL, never the development database
+	@if [ -n "$(TEST_DATABASE_URL)" ]; then $(MAKE) --no-print-directory test-db; fi
 	cd backend && $(GO) test ./...
 
 backend-lint: ## Vet and format-check the backend

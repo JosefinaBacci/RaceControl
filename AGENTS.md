@@ -154,7 +154,7 @@ make db-reset     # Recrear base desde cero: drop + migrate + seed
 make sqlc         # Regenerar queries tras editar backend/sql
 make create-admin ADMIN_USERNAME=...  # Crear un administrador FIA
 make backend-run  # Levantar la API
-make backend-test # Tests del backend (los de integración necesitan DATABASE_URL)
+make backend-test # Tests del backend (los de integración usan la base de TEST_DATABASE_URL)
 make app-install  # Instalar dependencias de la app
 make app-web      # Correr la app en el navegador
 make check        # Lint + typecheck + tests de todo el proyecto

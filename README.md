@@ -62,5 +62,7 @@ En producción, el primer administrador se crea con
 | `make check` | Lint, typecheck y tests de todo el proyecto |
 | `make help` | Lista todos los comandos |
 
-Los tests de integración del backend corren contra la base de `DATABASE_URL`; sin esa variable
-se omiten, así que conviene correr `make check` con la base levantada.
+Los tests de integración del backend corren contra una base propia, `racecontrol_test`, en el
+mismo contenedor: `make check` la crea y la actualiza sola si `TEST_DATABASE_URL` está definida
+en `.env` (viene en `.env.example`). Así los tests nunca dejan usuarios en la base de desarrollo.
+Sin esa variable, los tests de integración se omiten.
