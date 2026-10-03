@@ -93,11 +93,18 @@ func (q *Queries) RevokeSessionByTokenHash(ctx context.Context, tokenHash string
 const revokeUserSessions = `-- name: RevokeUserSessions :exec
 UPDATE sessions
 SET revoked_at = now()
-WHERE user_id = $1 AND revoked_at IS NULL
+WHERE user_id = $1
+  AND revoked_at IS NULL
+  AND id IS DISTINCT FROM $2
 `
 
-func (q *Queries) RevokeUserSessions(ctx context.Context, userID int64) error {
-	_, err := q.db.Exec(ctx, revokeUserSessions, userID)
+type RevokeUserSessionsParams struct {
+	UserID        int64
+	KeptSessionID pgtype.Int8
+}
+
+func (q *Queries) RevokeUserSessions(ctx context.Context, arg RevokeUserSessionsParams) error {
+	_, err := q.db.Exec(ctx, revokeUserSessions, arg.UserID, arg.KeptSessionID)
 	return err
 }
 

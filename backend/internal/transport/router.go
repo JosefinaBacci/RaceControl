@@ -59,6 +59,7 @@ func NewRouter(deps Dependencies) http.Handler {
 		r.Post("/{id}/deactivate", userRoutes.deactivate)
 		r.Post("/{id}/reactivate", userRoutes.reactivate)
 	})
+	router.With(sessionGuard.RequireSession).Post("/account/password", userRoutes.changeOwnPassword)
 
 	router.Route("/auth", func(r chi.Router) {
 		r.Post("/login", authRoutes.login)

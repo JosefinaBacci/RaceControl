@@ -223,6 +223,10 @@ formulario de asignación. Un cambio de rol, escudería o contraseña y la baja 
 del usuario en la misma transacción. Un administrador no puede desactivarse ni cambiar su propio
 rol, así que siempre queda al menos uno activo.
 
+**Perfil propio:** `POST /account/password`, para cualquier usuario con sesión. Pide la contraseña
+actual, aplica la política de contraseñas y cierra todas las demás sesiones del usuario, pero no la
+que hizo el cambio.
+
 **App:** `app/fia/users/` (listado con búsqueda y filtros, alta, edición, baja y reactivación con
 confirmación), sobre `src/api/users.ts` y los hooks de `src/data/accounts.ts`. El panel FIA ya
 muestra la cantidad real de cuentas activas.

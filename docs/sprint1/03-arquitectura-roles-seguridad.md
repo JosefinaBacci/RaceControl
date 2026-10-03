@@ -338,7 +338,7 @@ La US3 es de diseño, pero varias decisiones ya tienen código detrás. La tabla
 | Baja lógica que revoca sesiones en la misma transacción | Implementado (US6) | `internal/users`, `internal/db` |
 | Revocación de sesiones al cambiar rol, escudería o contraseña | Implementado (US6) | `internal/users` |
 | Un administrador no puede desactivarse ni quitarse el rol | Implementado (US6) | `internal/users` |
-| Cambio de la contraseña propia ("Perfil propio U" de la matriz) | Pendiente | — |
+| Cambio de la contraseña propia ("Perfil propio U" de la matriz), pidiendo la actual y cerrando las demás sesiones | Implementado | `internal/users`, `POST /account/password` |
 | Alcance por fila para recursos de escudería | Sprint 2 | módulos de pilotos, puntajes y sanciones |
 | Purga de `login_attempts` | Pendiente | — |
 

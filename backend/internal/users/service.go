@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
+	"github.com/racecontrol/backend/internal/auth"
 	"github.com/racecontrol/backend/internal/db"
 	"github.com/racecontrol/backend/internal/db/dbgen"
 	"github.com/racecontrol/backend/internal/domain"
@@ -21,6 +22,7 @@ const (
 
 type PasswordHasher interface {
 	Hash(password string) (string, error)
+	Verify(password, encodedHash string) (auth.PasswordCheck, error)
 }
 
 type Transactor interface {
@@ -133,7 +135,7 @@ func (s *Service) Deactivate(ctx context.Context, actor domain.Identity, id int6
 		if err := queries.DeactivateUser(ctx, id); err != nil {
 			return fmt.Errorf("deactivate account %d: %w", id, err)
 		}
-		return revokeSessions(ctx, queries, id)
+		return revokeSessions(ctx, queries, dbgen.RevokeUserSessionsParams{UserID: id})
 	})
 	if err != nil {
 		return Account{}, err
@@ -149,6 +151,46 @@ func (s *Service) Reactivate(ctx context.Context, id int64) (Account, error) {
 		return Account{}, fmt.Errorf("reactivate account %d: %w", id, err)
 	}
 	return s.Get(ctx, id)
+}
+
+// ChangeOwnPassword keeps the session that made the request, so the user is not
+// signed out of the device they are using, and ends every other one.
+func (s *Service) ChangeOwnPassword(ctx context.Context, actor domain.Identity, current, next string) error {
+	user, err := s.queries.GetUserByUsername(ctx, actor.Username)
+	if err != nil {
+		return fmt.Errorf("load account %d: %w", actor.UserID, err)
+	}
+	if err := s.verifyCurrentPassword(current, user.PasswordHash); err != nil {
+		return err
+	}
+	if next == current {
+		return domain.NewValidationError("password", "la nueva contraseña tiene que ser distinta de la actual")
+	}
+	newHash, err := s.hashChangedPassword(&next, accountState{username: user.Username, email: user.Email.String})
+	if err != nil {
+		return err
+	}
+
+	return s.transactor.InTx(ctx, func(queries dbgen.Querier) error {
+		if err := storePasswordHash(ctx, queries, user.ID, newHash); err != nil {
+			return err
+		}
+		return revokeSessions(ctx, queries, dbgen.RevokeUserSessionsParams{
+			UserID:        user.ID,
+			KeptSessionID: pgtype.Int8{Int64: actor.SessionID, Valid: true},
+		})
+	})
+}
+
+func (s *Service) verifyCurrentPassword(current, storedHash string) error {
+	check, err := s.hasher.Verify(current, storedHash)
+	if err != nil {
+		return fmt.Errorf("verify current password: %w", err)
+	}
+	if !check.Matches {
+		return domain.NewValidationError("currentPassword", "la contraseña actual no es correcta")
+	}
+	return nil
 }
 
 func (s *Service) hashChangedPassword(password *string, state accountState) (string, error) {
@@ -222,19 +264,26 @@ func applyUpdate(ctx context.Context, queries dbgen.Querier, id int64, next acco
 		return conflictOrWrap(err, "update account")
 	}
 	if newHash != "" {
-		if err := queries.UpdateUserPasswordHash(ctx, dbgen.UpdateUserPasswordHashParams{ID: id, PasswordHash: newHash}); err != nil {
-			return fmt.Errorf("update password of account %d: %w", id, err)
+		if err := storePasswordHash(ctx, queries, id, newHash); err != nil {
+			return err
 		}
 	}
 	if !mustRevoke {
 		return nil
 	}
-	return revokeSessions(ctx, queries, id)
+	return revokeSessions(ctx, queries, dbgen.RevokeUserSessionsParams{UserID: id})
 }
 
-func revokeSessions(ctx context.Context, queries dbgen.Querier, id int64) error {
-	if err := queries.RevokeUserSessions(ctx, id); err != nil {
-		return fmt.Errorf("revoke sessions of account %d: %w", id, err)
+func storePasswordHash(ctx context.Context, queries dbgen.Querier, id int64, hash string) error {
+	if err := queries.UpdateUserPasswordHash(ctx, dbgen.UpdateUserPasswordHashParams{ID: id, PasswordHash: hash}); err != nil {
+		return fmt.Errorf("update password of account %d: %w", id, err)
+	}
+	return nil
+}
+
+func revokeSessions(ctx context.Context, queries dbgen.Querier, params dbgen.RevokeUserSessionsParams) error {
+	if err := queries.RevokeUserSessions(ctx, params); err != nil {
+		return fmt.Errorf("revoke sessions of account %d: %w", params.UserID, err)
 	}
 	return nil
 }

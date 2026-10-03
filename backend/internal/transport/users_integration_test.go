@@ -265,3 +265,50 @@ func (h *harness) findAccount(admin *http.Client, username string) response {
 	}
 	return response{status: got.status, body: matches[0].(map[string]any)}
 }
+
+func (h *harness) changeOwnPassword(client *http.Client, current, next string) response {
+	h.t.Helper()
+	return h.do(client, http.MethodPost, "/account/password", map[string]string{"currentPassword": current, "newPassword": next}, nil)
+}
+
+func TestChangeOwnPasswordKeepsThisSessionAndEndsTheOthers(t *testing.T) {
+	h := newHarness(t)
+	thisDevice, username := h.signedIn(domain.RoleTeamAdmin, ferrariTeamID)
+	otherDevice := h.browser()
+	expectStatus(t, h.login(otherDevice, username, testPassword), http.StatusOK)
+
+	expectStatus(t, h.changeOwnPassword(thisDevice, testPassword, newPassword), http.StatusNoContent)
+
+	expectStatus(t, h.do(thisDevice, http.MethodGet, "/auth/me", nil, nil), http.StatusOK)
+	expectStatus(t, h.do(otherDevice, http.MethodGet, "/auth/me", nil, nil), http.StatusUnauthorized)
+	expectStatus(t, h.login(h.browser(), username, testPassword), http.StatusUnauthorized)
+	expectStatus(t, h.login(h.browser(), username, newPassword), http.StatusOK)
+}
+
+func TestChangeOwnPasswordRejectsInvalidRequests(t *testing.T) {
+	h := newHarness(t)
+	client, _ := h.signedIn(domain.RoleFIAAdmin, 0)
+
+	cases := map[string]struct {
+		current, next, wantField string
+	}{
+		"wrong current password": {wrongPassword, newPassword, "currentPassword"},
+		"same password":          {testPassword, testPassword, "password"},
+		"short new password":     {testPassword, "corta", "password"},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			got := h.changeOwnPassword(client, tc.current, tc.next)
+			expectStatus(t, got, http.StatusBadRequest)
+			if got.body["field"] != tc.wantField {
+				t.Fatalf("field = %v, want %s", got.body["field"], tc.wantField)
+			}
+		})
+	}
+	expectStatus(t, h.do(client, http.MethodGet, "/auth/me", nil, nil), http.StatusOK)
+}
+
+func TestChangeOwnPasswordRequiresSession(t *testing.T) {
+	h := newHarness(t)
+	expectStatus(t, h.changeOwnPassword(h.browser(), testPassword, newPassword), http.StatusUnauthorized)
+}

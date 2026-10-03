@@ -22,7 +22,7 @@ type Querier interface {
 	ListTeams(ctx context.Context) ([]ListTeamsRow, error)
 	ReactivateUser(ctx context.Context, id int64) error
 	RevokeSessionByTokenHash(ctx context.Context, tokenHash string) error
-	RevokeUserSessions(ctx context.Context, userID int64) error
+	RevokeUserSessions(ctx context.Context, arg RevokeUserSessionsParams) error
 	TeamExists(ctx context.Context, id int64) (bool, error)
 	TouchSession(ctx context.Context, arg TouchSessionParams) error
 	UpdateAccount(ctx context.Context, arg UpdateAccountParams) error

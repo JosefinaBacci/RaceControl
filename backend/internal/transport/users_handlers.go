@@ -19,6 +19,7 @@ type UserManager interface {
 	Update(ctx context.Context, actor domain.Identity, id int64, changes users.AccountChanges) (users.Account, error)
 	Deactivate(ctx context.Context, actor domain.Identity, id int64) (users.Account, error)
 	Reactivate(ctx context.Context, id int64) (users.Account, error)
+	ChangeOwnPassword(ctx context.Context, actor domain.Identity, current, next string) error
 }
 
 type userHandlers struct {
@@ -48,6 +49,11 @@ type createAccountRequest struct {
 	Password string `json:"password"`
 	Role     string `json:"role"`
 	TeamID   *int64 `json:"teamId"`
+}
+
+type changePasswordRequest struct {
+	CurrentPassword string `json:"currentPassword"`
+	NewPassword     string `json:"newPassword"`
 }
 
 type updateAccountRequest struct {
@@ -116,6 +122,24 @@ func (h *userHandlers) reactivate(w http.ResponseWriter, r *http.Request) {
 	h.respondWithAccount(w, r, http.StatusOK, func(id int64, _ domain.Identity) (users.Account, error) {
 		return h.users.Reactivate(r.Context(), id)
 	})
+}
+
+func (h *userHandlers) changeOwnPassword(w http.ResponseWriter, r *http.Request) {
+	var request changePasswordRequest
+	if err := decodeJSON(w, r, &request); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	actor, err := identityFrom(r)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	if err := h.users.ChangeOwnPassword(r.Context(), actor, request.CurrentPassword, request.NewPassword); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *userHandlers) respondWithAccount(w http.ResponseWriter, r *http.Request, status int,

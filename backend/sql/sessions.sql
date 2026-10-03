@@ -26,4 +26,6 @@ WHERE token_hash = $1 AND revoked_at IS NULL;
 -- name: RevokeUserSessions :exec
 UPDATE sessions
 SET revoked_at = now()
-WHERE user_id = $1 AND revoked_at IS NULL;
+WHERE user_id = sqlc.arg(user_id)
+  AND revoked_at IS NULL
+  AND id IS DISTINCT FROM sqlc.narg(kept_session_id);
