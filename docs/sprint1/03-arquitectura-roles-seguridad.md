@@ -23,11 +23,8 @@ juntos; los controles técnicos y las sanciones sobre un mismo evento también. 
 eso son transacciones distribuidas, con el mismo modelo de datos replicado en varios servicios y
 un problema de consistencia que todavía no tenemos requisitos para resolver.
 
-El Sprint 1 tiene seis historias y un solo equipo. El costo operativo de microservicios (despliegue,
-observabilidad, contratos entre servicios, red) no se paga con ninguna ventaja a esta escala.
-
 La modularidad no se descarta: cada módulo del dominio vive en su propio paquete de
-`internal/`, con dependencias que apuntan en una sola dirección. Si en el Sprint 3 un módulo
+`internal/`, con dependencias que apuntan en una sola dirección. Si en un futuro un módulo
 demuestra que necesita escalar o desplegarse aparte, se extrae sin reescribirlo, porque sus
 fronteras ya están marcadas.
 
@@ -63,27 +60,21 @@ mismo error se ve igual desde cualquier endpoint.
 
 Un paquete por módulo del enunciado. Cada uno aporta sus tres capas cuando le toque:
 
-| Módulo | Responsabilidad | Sprint |
+| Módulo | Responsabilidad | Implementado |
 |--------|-----------------|--------|
 | `auth` | Hashing de contraseñas (Argon2id), middleware de identidad y RBAC | US5 |
 | `sessions` | Creación, expiración y revocación de sesiones | US5 |
 | `users` | Alta, modificación, baja lógica, búsqueda y listado de cuentas | US6 |
-| `calendar` | Eventos: carreras, pruebas de neumáticos, controles técnicos | S2 |
-| `scores` | Puntajes por carrera y acuses de recibo de las escuderías | S2 |
-| `drivers` | Pilotos titulares y suplentes por escudería | S2 |
-| `controls` | Controles técnicos y su resultado por escudería | S2 |
-| `sanctions` | Sanciones a pilotos o escuderías y sus acuses | S2 |
-| `notifications` | Mensajería interna y avisos entre FIA y escuderías | S2 |
-
-`sessions` y `users` quedan separados a propósito: la sesión es infraestructura de seguridad con
-reglas propias de expiración, y el usuario es una entidad de negocio que la US6 administra. Unificar
-los dos haría que la baja de una cuenta pudiera decidir por error la política de expiración.
+| `calendar` | Eventos: carreras, pruebas de neumáticos, controles técnicos | futuro |
+| `scores` | Puntajes por carrera y acuses de recibo de las escuderías | futuro |
+| `drivers` | Pilotos titulares y suplentes por escudería | futuro |
+| `controls` | Controles técnicos y su resultado por escudería | futuro |
+| `sanctions` | Sanciones a pilotos o escuderías y sus acuses | futuro |
+| `notifications` | Mensajería interna y avisos entre FIA y escuderías | futuro |
 
 ### 1.3 Comunicación
 
-- **REST sobre HTTP/1.1 con JSON**, un recurso por endpoint. Se descartó GraphQL: la app tiene pocas
-  pantallas por rol, y el problema real de esta plataforma es de autorización, no shape de la
-  respuesta.
+- **REST sobre HTTP/1.1 con JSON**, un recurso por endpoint.
 - **Una sola API para los tres roles.** La app no replica reglas de negocio para decidir qué
   mostrar: pide los datos y el backend devuelve lo que ese rol puede ver.
 - **Móvil y web usan el mismo cliente** (`app/src/api`), lo que evita que la lógica de sesión
@@ -110,47 +101,22 @@ público sin mirar la tabla `users`, y el `CHECK users_role_valid` sigue siendo 
 
 ### 2.2 Matriz de permisos
 
-`C` crear · `R` leer · `U` modificar · `D` eliminar · `A` acusar recibo · `Desc` descargar
+`C` crear · `R` leer · `U` modificar · `D` eliminar · `N` notificar recepción · `Desc` descargar
 
 | Recurso | `fia_admin` | `team_admin` | Público |
 |---------|-------------|--------------|---------|
 | Escuderías (catálogo) | R | R | R |
 | Calendario (eventos) | C R U D | R Desc | R Desc |
 | Reglamentos | C R U D | R Desc | R Desc |
-| Puntajes | C R U | R A | R |
+| Puntajes | C R U | R N | R |
 | Pilotos | R | C R U (solo su escudería) | R |
 | Controles técnicos | C R U + resultados | R | R |
-| Sanciones | C R U | R A | R |
+| Sanciones | C R U | R N | R |
 | Pruebas de neumáticos | C R U | R | R |
 | Notificaciones | C (emitir) R | R (recibir) | — |
 | Cuentas de usuario | C R U D (baja lógica) + búsqueda | — | — |
 | Perfil propio | R U | R U | — |
 
-Tres filas de esa matriz merecen justificación:
-
-- **Puntajes: el público no acusa recibo.** El acuse es un acto administrativo de la escudería; el
-  enunciado solo lo pide a las escuderías.
-- **Pilotos: `team_admin` escribe únicamente en su escudería.** La columna se llama
-  "su escudería" y es la que evita que un administrador de escudería cargue pilotos ajenos.
-- **Cuentas: `team_admin` no tiene ninguna fila.** Solo la FIA administra cuentas. El enunciado no
-  pide autogestión para las escuderías y abrirla multiplicaría los casos de escalada de privilegios.
-
-### 2.3 Cómo se aplica
-
-Tres reglas que hacen que la matriz sea real y no decorativa:
-
-1. **El backend es la única autoridad.** La app oculta botones, pero un `team_admin` que llame al
-   endpoint de US6 recibe `403` igual. Ocultar controles es ergonomía, no seguridad.
-2. **El alcance lo impone la sesión, nunca el cliente.** Un `team_admin` no manda su `team_id` en el
-   cuerpo de la petición: el service lo toma del token de sesión y lo inyecta en el `WHERE`. Si el
-   alcance fuera un parámetro, bastaría cambiar un campo del JSON para leer datos de otra escudería.
-3. **Denegar por defecto.** Una ruta sin permiso explícito no se expone. Las rutas públicas son una
-   lista corta y consciente (`GET` del catálogo de escuderías, calendario, puntajes, pilotos y
-   sanciones), no "todo lo que no tenga middleware".
-
-El middleware de RBAC resuelve el permiso de la ruta; el service resuelve el alcance por fila. Las
-dos capas hacen falta: el middleware evita el trabajo inútil, pero un `team_admin` que pide un recurso
-de su rol sobre una fila de otra escudería debe recibir `403` desde el service.
 ## 3. Estándares de seguridad
 
 ### 3.1 Contraseñas
@@ -236,12 +202,7 @@ mutuamente y cierran la sesión del usuario sin que haya hecho nada. En su lugar
   `X-Content-Type-Options`, `Referrer-Policy` y `X-Frame-Options: DENY`.
 - CORS: solo se admite el origen de la app web. En desarrollo ese origen difiere del de la API, así
   que se permite explícitamente localhost. En producción la app se sirve desde el mismo sitio que la
-  API, con lo que la cookie `SameSite=Strict` funciona sin excepción. **Riesgo abierto:** el deploy
-  actual de la app web en Vercel la sirve desde otro sitio, donde el navegador no envía esa cookie
-  (ver la deuda técnica al final).
-- **No hay cifrado a nivel de columna.** No hay dato de negocio que lo justifique, y el costo
-  real (no poder indexar ni consultar, y una clave que alguien tiene que custodiar) supera el
-  beneficio. Lo que sí es sensible, el hash de la contraseña, ya viene cifrado por diseño.
+  API, con lo que la cookie `SameSite=Strict` funciona sin excepción.
 
 ### 3.5 Política de intentos y enumeración de usuarios
 
@@ -252,7 +213,7 @@ La tabla `login_attempts` registra cada intento con `username`, `succeeded`, `ip
 | Credenciales inválidas | `401` con el mismo mensaje para usuario inexistente y para contraseña mala |
 | Usuario inexistente | Se ejecuta igualmente un Argon2id sobre un hash señuelo, para que el tiempo de respuesta no lo delate |
 | Cinco fallos seguidos del mismo `username` | Bloqueo de 15 minutos para ese `username`, con respuesta genérica |
-| Muchos fallos desde una misma IP | Registro para revisión; el bloqueo por IP se deja para el Sprint 2, cuando haya volumen que lo justifique |
+| Muchos fallos desde una misma IP | Registro para revisión; el bloqueo por IP se deja para después, cuando haya volumen que lo justifique |
 
 El mensaje de error **no distingue** entre "no existe el usuario" y "la contraseña no coincide". Es
 la mitigación contra enumeración más importante y la más barata: sin ella, la plataforma permite averiguar
@@ -336,22 +297,3 @@ La US3 es de diseño, pero varias decisiones ya tienen código detrás. La tabla
 | Cambio de la contraseña propia ("Perfil propio U" de la matriz), pidiendo la actual y cerrando las demás sesiones | Implementado | `internal/users`, `POST /account/password` |
 | Alcance por fila para recursos de escudería | Sprint 2 | módulos de pilotos, puntajes y sanciones |
 | Purga de `login_attempts` | Pendiente | — |
-
-## Criterios de éxito
-
-| Criterio del enunciado | Estado |
-|------------------------|--------|
-| La arquitectura de autenticación y roles está documentada y aprobada por el equipo | Secciones 1, 2 y 3; tabla de decisión abierta al debate del equipo |
-| El modelo de permisos define claramente qué puede hacer cada rol sobre cada componente del sistema | Matriz de la sección 2.2, con las tres filas justificadas |
-
-## Deuda técnica y riesgos registrados
-
-| Deuda o riesgo | Por qué se acepta | Cómo se resuelve |
-|----------------|-------------------|------------------|
-| Cada request autenticado consulta la base para resolver la sesión | Es el precio de la revocación inmediata que pide el enunciado | Si el volumen lo justificara, una caché corta con lista de revocación; hoy sería complejidad sin beneficio |
-| La rotación del token no es por request | Dos peticiones simultáneas con la misma sesión se invalidarían mutuamente y cerrarían la sesión del usuario | Sesión nueva en cada login, y revocación de todas las sesiones ante un cambio de la cuenta |
-| `last_used_at` se amortigua a 5 minutos | Escribir en cada request convierte cada lectura en un `UPDATE` | Una sesión activa puede vivir hasta 5 minutos más de lo que indica el TTL, que es un margen aceptable |
-| El bloqueo por IP no se implementa en el Sprint 1 | Sin volumen real no se sabe el umbral razonable que sirve | Se registra todo intento con su IP, así el Sprint 2 parte de datos y no de intuición |
-| La matriz de permisos está en un documento, no en código | Una tabla en Go o SQL se desactualiza igual de rápido que un `.md` | Cada fila de la matriz se convierte en un caso de test de autorización en US5/US6; es el test el que la hace verdadera |
-| La app web desplegada en Vercel no comparte sitio con la API | La cookie `SameSite=Strict` no viaja entre sitios distintos, así que el login web no se sostiene en ese deploy | Pendiente de decisión del equipo: proxy desde Vercel hacia la API, dominio propio compartido, o servir la app desde la API |
-| El alcance por fila todavía no está probado | US6 solo expone cuentas, que son exclusivas de la FIA: un `team_admin` recibe `403` en todas sus rutas, y eso sí está probado | Los recursos de escudería del Sprint 2 (pilotos, acuses) agregan el caso de cruce de escuderías antes de darse por buenos |
