@@ -543,3 +543,58 @@ tests de integración de `transport` corriendo, sin omitidos.
 `backend/sql/teams.sql`, `backend/internal/transport/` (handlers, rutas, errores y tests),
 `backend/cmd/api/main.go`, `docs/sprint1/03-arquitectura-roles-seguridad.md`,
 `docs/sprint1/TODO.md`.
+
+---
+
+### 2026-10-03 — Gestión de usuarios: pantallas de la app (US6)
+
+**Contexto:** con los endpoints de US6 en la API, la pantalla de usuarios del panel FIA seguía
+siendo la maqueta de US4, con datos de ejemplo y los botones deshabilitados. Al probar la app, el
+equipo detectó que no se podía modificar un usuario y se pidió conectarla.
+
+**Prompt:**
+
+> Conectar la gestión de usuarios de la app a la API de US6: listado con búsqueda y filtros por
+> rol y estado, alta, edición, baja y reactivación, mostrando cada error de la API en el campo
+> que corresponde. Mantener la lógica fuera de los componentes de pantalla, reutilizar el design
+> system y los helpers existentes, y no duplicar código.
+
+**Respuesta de la IA:** la pantalla pasó a una carpeta `app/fia/users/` con su propio stack
+(listado, `new` y `[id]`), para que el alta y la edición se abran sobre el listado y tengan URL
+propia en la web. Decisiones relevantes:
+
+1. **Un helper de errores compartido.** El login ya traducía los errores de la API a mensajes por
+   campo. En lugar de copiarlo, se extrajo a `src/api/formFailure.ts` (en un commit de refactor
+   propio) y lo usan el login y los formularios de cuentas.
+2. **Estados de carga en un solo lugar.** `useRemote` resuelve carga, error y recarga, y descarta
+   respuestas viejas si el usuario cambia el filtro antes de que llegue la anterior.
+   `RemoteContent` muestra el indicador de carga o el error con un botón de reintentar.
+3. **Lógica fuera de las pantallas**, como pide `AGENTS.md`: qué cambió en el formulario se calcula
+   en `src/features/accounts/accountChanges.ts`, y el formulario solo envía lo modificado.
+4. **Búsqueda con espera de 300 ms**, para no hacer un pedido por cada tecla.
+5. **Confirmación de la baja en la misma pantalla.** `Alert` de React Native no funciona en la web,
+   así que la desactivación pide confirmar en el lugar: en la fila del listado o en la ficha de la
+   cuenta. La lógica de baja y reactivación vive en un solo hook, `useStatusToggle`, que usan las
+   dos vistas.
+6. **La propia cuenta, protegida también en la interfaz.** El administrador no ve el selector de
+   rol ni el botón de baja sobre su propia cuenta; el backend lo rechaza de todas formas.
+7. **Sin datos de ejemplo de usuarios.** Se eliminaron los usuarios simulados y el panel FIA muestra
+   la cantidad real de cuentas activas.
+
+**Validación:** al revisar la primera versión, el equipo notó que la herramienta había quitado del
+listado los botones de editar y de dar de baja que tenía la maqueta de US4, dejando solo la fila
+navegable. Se restituyeron: el lápiz abre la ficha, la papelera desactiva la cuenta previa
+confirmación en la misma fila, y una cuenta desactivada muestra en su lugar el botón de
+reactivar. Para no duplicar la lógica entre la fila y la ficha se extrajo `useStatusToggle`.
+
+`tsc` en verde y `expo export -p web` compila el bundle. Se verificó contra la API
+real, con una sesión por cookie como la de la app web, el flujo completo: login como `fia.admin`,
+alta con el email normalizado, búsqueda, cambio de rol que quita la escudería, el `409` con el
+campo indicado ante un usuario repetido, baja y reactivación. También se comprobó que el
+preflight de CORS permite `PATCH` desde el origen de la app.
+
+**Resultado:** `app/app/fia/users/` (`_layout.tsx`, `index.tsx`, `new.tsx`, `[id].tsx`),
+`app/src/api/users.ts`, `app/src/api/teams.ts`, `app/src/api/formFailure.ts`,
+`app/src/auth/loginForm.ts`, `app/src/data/` (`accounts.ts`, `useRemote.ts`,
+`useDebouncedValue.ts`, `useFormSubmission.ts`), `app/src/features/RemoteContent.tsx`,
+`app/src/features/accounts/`, `app/app/fia/index.tsx`, `docs/sprint1/TODO.md`, `AGENTS.md`.

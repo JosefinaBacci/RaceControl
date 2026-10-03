@@ -1,13 +1,11 @@
 import { useMemo, useState } from 'react';
 
-import type { Role } from '@/api/auth';
 import type { CategoryCode } from '@/mocks/catalog';
 import {
   calendarEvents,
   circuitFacts,
   driverStandings,
   drivers,
-  managedUsers,
   notifications,
   sanctions,
   scoreNotices,
@@ -123,21 +121,6 @@ export function usePendingAcknowledgements() {
   return useMemo(() => ({ sanctions: countPending(sanctions), scores: countPending(scoreNotices) }), []);
 }
 
-export function useActiveAccountCount() {
-  return useMemo(() => managedUsers.filter((user) => user.isActive).length, []);
-}
-
 function countPending(items: readonly { acknowledged: boolean }[]): number {
   return items.filter((item) => !item.acknowledged).length;
-}
-
-export type RoleFilter = Role | 'all';
-
-export function useManagedUsers(search: string, role: RoleFilter) {
-  return useMemo(() => {
-    const needle = search.trim().toLowerCase();
-    return managedUsers
-      .filter((user) => role === 'all' || user.role === role)
-      .filter((user) => needle === '' || user.username.includes(needle) || user.email.includes(needle));
-  }, [search, role]);
 }

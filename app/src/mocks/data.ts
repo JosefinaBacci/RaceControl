@@ -98,13 +98,3 @@ export const notifications: Notification[] = [
   { id: 1, title: 'Nuevo reglamento técnico 2027', body: 'Disponible para descarga la versión 1.2 del reglamento técnico.', sentAt: '2026-09-30', acknowledgedBy: 7, recipients: 10 },
   { id: 2, title: 'Cambio de horario — GP de Estados Unidos', body: 'La FP1 se adelanta 30 minutos.', sentAt: '2026-10-01', acknowledgedBy: 4, recipients: 10 },
 ];
-
-export type ManagedUser = { id: number; username: string; email: string; role: 'fia_admin' | 'team_admin'; teamId: number | null; isActive: boolean };
-
-export const managedUsers: ManagedUser[] = [
-  { id: 1, username: 'fia.admin', email: 'fia.admin@racecontrol.test', role: 'fia_admin', teamId: null, isActive: true },
-  { id: 2, username: 'ferrari.admin', email: 'ferrari.admin@racecontrol.test', role: 'team_admin', teamId: 1, isActive: true },
-  { id: 3, username: 'redbull.admin', email: 'redbull.admin@racecontrol.test', role: 'team_admin', teamId: 2, isActive: true },
-  { id: 4, username: 'mercedes.admin', email: 'mercedes.admin@racecontrol.test', role: 'team_admin', teamId: 3, isActive: true },
-  { id: 5, username: 'mclaren.admin', email: 'mclaren.admin@racecontrol.test', role: 'team_admin', teamId: 4, isActive: false },
-];

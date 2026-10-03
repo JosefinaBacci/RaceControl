@@ -49,7 +49,7 @@ app/
   src/api               Cliente HTTP y almacenamiento del token
   src/auth              Sesión, validación del login, roles
   src/components        Componentes reutilizables del design system
-  src/data              Hooks de datos (hoy sobre mocks; mañana sobre src/api)
+  src/data              Hooks de datos: los de cuentas sobre src/api, el resto todavía sobre mocks
   src/features          Bloques de pantalla compartidos entre roles
   src/illustrations     Ilustraciones SVG (banderas, circuitos, auto)
   src/mocks             Datos de ejemplo de US4

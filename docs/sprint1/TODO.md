@@ -214,7 +214,7 @@ por intentos, cookie `httpOnly` en web y token en `expo-secure-store` en móvil.
 - [x] Baja (eliminación o desactivación) de un usuario
 - [x] Listado y búsqueda de usuarios (solo administrador FIA)
 - [x] Asignación de un rol válido
-- [ ] Pantalla de gestión de usuarios de la app conectada a la API
+- [x] Pantalla de gestión de usuarios de la app conectada a la API
 
 **Backend:** `GET /users` (búsqueda por usuario o email, filtros por rol y estado),
 `POST /users`, `GET /users/{id}`, `PATCH /users/{id}`, `POST /users/{id}/deactivate`,
@@ -223,9 +223,13 @@ formulario de asignación. Un cambio de rol, escudería o contraseña y la baja 
 del usuario en la misma transacción. Un administrador no puede desactivarse ni cambiar su propio
 rol, así que siempre queda al menos uno activo.
 
+**App:** `app/fia/users/` (listado con búsqueda y filtros, alta, edición, baja y reactivación con
+confirmación), sobre `src/api/users.ts` y los hooks de `src/data/accounts.ts`. El panel FIA ya
+muestra la cantidad real de cuentas activas.
+
 **Criterios de éxito**
 
-- [ ] El admin FIA crea, modifica y elimina usuarios, les asigna un rol válido, los busca y lista
+- [x] El admin FIA crea, modifica y elimina usuarios, les asigna un rol válido, los busca y lista
 - [x] Los cambios se reflejan de manera consistente (sesiones revocadas en la misma transacción)
 - [x] Un usuario sin permisos de rol no puede acceder ni usar la funcionalidad (`401` sin sesión,
       `403` para `team_admin`, probado)
