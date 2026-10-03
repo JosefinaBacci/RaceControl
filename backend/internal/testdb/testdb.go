@@ -38,8 +38,6 @@ func UniqueUsername(t *testing.T) string {
 	return fmt.Sprintf("t%d.%d", time.Now().UnixNano()%1_000_000_000_000, uniqueSequence.Add(1))
 }
 
-// UniqueCode returns a value that satisfies the short code formats of the
-// reference tables, such as teams_code_format.
 func UniqueCode(t *testing.T) string {
 	t.Helper()
 

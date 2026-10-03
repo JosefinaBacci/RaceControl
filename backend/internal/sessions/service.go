@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
+	"github.com/racecontrol/backend/internal/db"
 	"github.com/racecontrol/backend/internal/db/dbgen"
 	"github.com/racecontrol/backend/internal/domain"
 )
@@ -63,7 +64,7 @@ func (s *Service) Issue(ctx context.Context, userID int64, client Client) (strin
 	_, err = s.store.CreateSession(ctx, dbgen.CreateSessionParams{
 		UserID:            userID,
 		TokenHash:         hashToken(token),
-		AbsoluteExpiresAt: timestamp(s.config.Clock().Add(s.config.AbsoluteTTL)),
+		AbsoluteExpiresAt: db.Timestamptz(s.config.Clock().Add(s.config.AbsoluteTTL)),
 		Ip:                client.IP,
 		UserAgent:         pgtype.Text{String: client.UserAgent, Valid: client.UserAgent != ""},
 	})
@@ -82,8 +83,8 @@ func (s *Service) Resolve(ctx context.Context, token string) (domain.Identity, e
 	now := s.config.Clock()
 	row, err := s.store.GetActiveSessionByTokenHash(ctx, dbgen.GetActiveSessionByTokenHashParams{
 		TokenHash:  hashToken(token),
-		Now:        timestamp(now),
-		IdleCutoff: timestamp(now.Add(-s.config.IdleTTL)),
+		Now:        db.Timestamptz(now),
+		IdleCutoff: db.Timestamptz(now.Add(-s.config.IdleTTL)),
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return domain.Identity{}, domain.ErrUnauthenticated
@@ -117,24 +118,20 @@ func (s *Service) touchIfStale(ctx context.Context, row dbgen.GetActiveSessionBy
 	if now.Sub(row.LastUsedAt.Time) < touchInterval {
 		return nil
 	}
-	if err := s.store.TouchSession(ctx, dbgen.TouchSessionParams{ID: row.SessionID, LastUsedAt: timestamp(now)}); err != nil {
+	if err := s.store.TouchSession(ctx, dbgen.TouchSessionParams{ID: row.SessionID, LastUsedAt: db.Timestamptz(now)}); err != nil {
 		return fmt.Errorf("touch session: %w", err)
 	}
 	return nil
 }
 
 func identityFromRow(row dbgen.GetActiveSessionByTokenHashRow) domain.Identity {
-	identity := domain.Identity{
+	return domain.Identity{
 		UserID:    row.UserID,
 		Username:  row.Username,
 		Role:      domain.Role(row.Role),
+		TeamID:    db.Int64Pointer(row.TeamID),
 		SessionID: row.SessionID,
 	}
-	if row.TeamID.Valid {
-		teamID := row.TeamID.Int64
-		identity.TeamID = &teamID
-	}
-	return identity
 }
 
 func newToken() (string, error) {
@@ -148,8 +145,4 @@ func newToken() (string, error) {
 func hashToken(token string) string {
 	sum := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(sum[:])
-}
-
-func timestamp(t time.Time) pgtype.Timestamptz {
-	return pgtype.Timestamptz{Time: t, Valid: true}
 }

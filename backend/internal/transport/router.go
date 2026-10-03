@@ -67,7 +67,6 @@ func securityHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		headers := w.Header()
 		headers.Set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'")
-		// Browsers ignore HSTS over plain HTTP, so sending it in development is harmless.
 		headers.Set("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 		headers.Set("X-Content-Type-Options", "nosniff")
 		headers.Set("Referrer-Policy", "no-referrer")

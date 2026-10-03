@@ -9,8 +9,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 
+	"github.com/racecontrol/backend/internal/db"
 	"github.com/racecontrol/backend/internal/db/dbgen"
 	"github.com/racecontrol/backend/internal/domain"
 	"github.com/racecontrol/backend/internal/sessions"
@@ -87,9 +87,8 @@ func (a *Authenticator) Login(ctx context.Context, credentials Credentials, clie
 }
 
 func validateCredentialsFormat(username, password string) error {
-	if !domain.IsValidUsername(username) {
-		return domain.NewValidationError("username",
-			"el usuario debe tener entre 3 y 32 caracteres: letras, números, punto, guion o guion bajo")
+	if err := domain.ValidateUsername(username); err != nil {
+		return err
 	}
 	if password == "" {
 		return domain.NewValidationError("password", "la contraseña es obligatoria")
@@ -103,7 +102,7 @@ func validateCredentialsFormat(username, password string) error {
 func (a *Authenticator) ensureNotLocked(ctx context.Context, username string) error {
 	failures, err := a.users.CountFailuresSinceLastSuccess(ctx, dbgen.CountFailuresSinceLastSuccessParams{
 		Username: username,
-		Since:    pgtype.Timestamptz{Time: a.clock().Add(-LockoutWindow), Valid: true},
+		Since:    db.Timestamptz(a.clock().Add(-LockoutWindow)),
 	})
 	if err != nil {
 		return fmt.Errorf("count failed logins: %w", err)
@@ -160,10 +159,5 @@ func (a *Authenticator) recordAttempt(ctx context.Context, username string, succ
 }
 
 func identityOf(user dbgen.User) domain.Identity {
-	identity := domain.Identity{UserID: user.ID, Username: user.Username, Role: domain.Role(user.Role)}
-	if user.TeamID.Valid {
-		teamID := user.TeamID.Int64
-		identity.TeamID = &teamID
-	}
-	return identity
+	return domain.Identity{UserID: user.ID, Username: user.Username, Role: domain.Role(user.Role), TeamID: db.Int64Pointer(user.TeamID)}
 }

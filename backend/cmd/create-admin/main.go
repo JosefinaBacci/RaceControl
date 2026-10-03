@@ -10,8 +10,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/term"
 
@@ -35,8 +33,8 @@ func main() {
 }
 
 func run(username, email string) error {
-	if !domain.IsValidUsername(username) {
-		return errors.New("-username must match ^[a-z0-9._-]{3,32}$")
+	if err := domain.ValidateUsername(username); err != nil {
+		return err
 	}
 
 	cfg, err := config.Load()
@@ -74,9 +72,8 @@ func run(username, email string) error {
 		PasswordHash: hash,
 		Role:         string(domain.RoleFIAAdmin),
 	})
-	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
-		return fmt.Errorf("username or email already in use: %s", pgErr.ConstraintName)
+	if constraint, isViolation := db.UniqueViolation(err); isViolation {
+		return fmt.Errorf("username or email already in use: %s", constraint)
 	}
 	if err != nil {
 		return fmt.Errorf("create user: %w", err)

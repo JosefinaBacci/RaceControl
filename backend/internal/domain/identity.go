@@ -42,3 +42,11 @@ func NormalizeUsername(raw string) string {
 func IsValidUsername(normalized string) bool {
 	return usernamePattern.MatchString(normalized)
 }
+
+func ValidateUsername(normalized string) error {
+	if !IsValidUsername(normalized) {
+		return NewValidationError("username",
+			"el usuario debe tener entre 3 y 32 caracteres: letras, números, punto, guion o guion bajo")
+	}
+	return nil
+}
