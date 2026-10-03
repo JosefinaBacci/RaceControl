@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View, type ImageSourcePropType } from 'react-native';
 
 import { colors } from '@/theme';
 
@@ -13,9 +13,20 @@ function initialsOf(name: string): string {
     .join('');
 }
 
-export function Avatar({ name, color = colors.surfaceMuted, size = 36 }: { name: string; color?: string; size?: number }) {
+type AvatarProps = {
+  name: string;
+  color?: string;
+  size?: number;
+  image?: ImageSourcePropType;
+};
+
+export function Avatar({ name, color = colors.surfaceMuted, size = 36, image }: AvatarProps) {
+  const shape = { width: size, height: size, borderRadius: size / 2 };
+  if (image) {
+    return <Image source={image} accessibilityLabel={name} style={[styles.image, shape]} />;
+  }
   return (
-    <View style={[styles.avatar, { width: size, height: size, borderRadius: size / 2, borderColor: color }]}>
+    <View style={[styles.avatar, shape, { borderColor: color }]}>
       <AppText variant="caption" style={{ fontSize: size * 0.36, fontWeight: '800' }}>
         {initialsOf(name)}
       </AppText>
@@ -30,4 +41,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceRaised,
     borderWidth: 2,
   },
+  image: { backgroundColor: colors.surfaceRaised },
 });

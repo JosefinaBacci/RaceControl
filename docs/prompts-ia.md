@@ -598,3 +598,81 @@ preflight de CORS permite `PATCH` desde el origen de la app.
 `app/src/auth/loginForm.ts`, `app/src/data/` (`accounts.ts`, `useRemote.ts`,
 `useDebouncedValue.ts`, `useFormSubmission.ts`), `app/src/features/RemoteContent.tsx`,
 `app/src/features/accounts/`, `app/app/fia/index.tsx`, `docs/sprint1/TODO.md`, `AGENTS.md`.
+
+---
+
+### 2026-10-03 — Cambio de contraseña propia y menú de usuario
+
+**Contexto:** la matriz de permisos de US3 promete que cada usuario puede modificar su propio
+perfil, pero ningún usuario podía cambiar su contraseña: solo el administrador FIA, editando su
+propia cuenta desde la gestión de usuarios. La herramienta propuso un botón global de "Cambiar
+contraseña"; el equipo lo rechazó y definió otra interfaz: un menú desplegable desde un ícono de
+usuario arriba a la derecha, con accesos a la cuenta y al cierre de sesión, y el cambio de
+contraseña dentro de una pantalla de cuenta.
+
+**Prompt:**
+
+> Permitir que cualquier usuario con sesión cambie su propia contraseña. En la interfaz, reemplazar
+> el botón de cerrar sesión por un menú de usuario en la esquina superior derecha, con acceso a una
+> pantalla "Mi cuenta" que contenga el cambio de contraseña, y la opción de cerrar sesión.
+
+**Respuesta de la IA:**
+
+1. **Backend: `POST /account/password`.** Pide la contraseña actual, para que alguien frente a una
+   sesión abierta ajena no pueda apropiarse de la cuenta. Si es incorrecta responde `400` sobre ese
+   campo y no `401`, para que la app no interprete que la sesión se cerró. La nueva contraseña
+   tiene que cumplir la política y ser distinta de la actual.
+2. **Se cierran las demás sesiones, no la actual.** En lugar de escribir una consulta nueva, la
+   existente `RevokeUserSessions` recibió un parámetro opcional con la sesión a conservar; las
+   revocaciones de US6 la siguen usando sin él. La escritura del hash quedó en un helper común
+   para no repetirla entre la edición de la FIA y el cambio propio.
+3. **Menú de usuario.** Un avatar abre un menú con el nombre, el rol, "Mi panel", "Mi cuenta" y
+   "Cerrar sesión". No se agregó "Configuración" porque todavía no hay nada que configurar. El
+   botón del encabezado dejó de recibir un modo público o privado: muestra el menú si hay sesión
+   y "Ingresar" si no la hay.
+4. **Pantalla "Mi cuenta"** para los dos roles, con los datos de la cuenta y el formulario de cambio
+   de contraseña con confirmación. Para permitir los dos roles se generalizó `RoleGate` a una
+   lista de roles en lugar de escribir otra guarda.
+
+**Validación:** 3 tests de integración nuevos contra Postgres 18: el cambio conserva la sesión que
+lo hizo y cierra las de otro dispositivo, la contraseña vieja deja de funcionar y la nueva sí;
+se rechazan la contraseña actual incorrecta, la nueva igual a la actual y la nueva demasiado
+corta; y sin sesión responde `401`. `make check` en verde, `tsc` en verde y `expo export -p web`
+compila el bundle.
+
+**Resultado:** `backend/sql/sessions.sql`, `backend/internal/users/service.go`,
+`backend/internal/transport/` (handler, ruta y tests), `app/app/account.tsx`,
+`app/src/navigation/UserMenu.tsx`, `app/src/navigation/HeaderSessionButton.tsx`,
+`app/src/navigation/RoleGate.tsx`, `app/src/api/auth.ts`,
+`app/src/features/accounts/passwordConfirmation.ts`, los layouts de `fia`, `team` y `(public)`,
+`docs/sprint1/03-arquitectura-roles-seguridad.md`, `docs/sprint1/TODO.md`.
+
+---
+
+### 2026-10-03 — Logos de la FIA y de las escuderías (US4)
+
+**Contexto:** los avatares mostraban iniciales sobre un círculo de color. El equipo propuso usar
+los logos reales y consiguió los de la FIA y de las tres escuderías con cuentas demo (Ferrari, Red
+Bull y Mercedes), en formatos y tamaños dispares: dos JPG con fondo de color, dos PNG con fondo
+transparente, y en total cerca de 1,1 MB.
+
+**Prompt:**
+
+> Usar los logos de la FIA y de las escuderías en los avatares de la app. Adaptar las imágenes
+> para que se vean bien en un avatar circular sin aumentar de más el tamaño de la app.
+
+**Respuesta de la IA:** cada logo se llevó a un PNG de 256 × 256 px: los de fondo transparente se
+recortaron a su contenido y se centraron con margen, el de Red Bull se completó con su propio
+color de fondo, y el de la FIA se recortó al emblema con el mismo margen que el resto. El total
+bajó a unos 130 KB. Un registro `src/logos.ts`, con el mismo criterio que el de fotos, asocia
+cada logo con el id fijo de su escudería en el seed. `Avatar` acepta una imagen opcional, así que
+las escuderías sin logo siguen mostrando sus iniciales.
+
+**Validación:** antes de integrarlos se generó una vista previa de los cuatro logos como avatares
+sobre el fondo oscuro de la app; el de la FIA tocaba el borde del círculo y se volvió a recortar
+con margen. `tsc` en verde y `expo export -p web` incluye los cuatro logos optimizados. Los logos
+son marcas registradas: se documentaron en `app/assets/logos/CREDITS.md` con la misma aclaración de
+uso académico que las fotos.
+
+**Resultado:** `app/assets/logos/`, `app/src/logos.ts`, `app/src/components/Avatar.tsx`, el
+listado de usuarios, la pantalla de resultados y el menú de usuario.

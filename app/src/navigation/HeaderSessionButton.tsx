@@ -1,63 +1,29 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
-import { useState, type ComponentProps } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 
-import { roleHome } from '@/auth/roles';
 import { useSession } from '@/auth/SessionProvider';
 import { AppText } from '@/components';
 import { colors, radius, spacing } from '@/theme';
 
-export function HeaderSessionButton({ mode }: { mode: 'public' | 'private' }) {
-  const session = useSession();
-  const [isSigningOut, setIsSigningOut] = useState(false);
+import { UserMenu } from './UserMenu';
 
-  if (mode === 'private') {
-    const signOut = async () => {
-      setIsSigningOut(true);
-      try {
-        await session.signOut();
-      } finally {
-        setIsSigningOut(false);
-        router.replace('/');
-      }
-    };
-    return (
-      <HeaderAction
-        icon="log-out-outline"
-        label={isSigningOut ? 'Saliendo…' : 'Cerrar sesión'}
-        onPress={signOut}
-        disabled={isSigningOut}
-      />
-    );
-  }
+export function HeaderSessionButton() {
+  const session = useSession();
 
   if (session.status === 'authenticated') {
-    return <HeaderAction icon="grid-outline" label="Mi panel" onPress={() => router.push(roleHome[session.user.role])} highlighted />;
+    return <UserMenu user={session.user} />;
   }
-  return <HeaderAction icon="person-circle-outline" label="Ingresar" onPress={() => router.push('/login')} highlighted />;
-}
-
-type HeaderActionProps = {
-  icon: ComponentProps<typeof Ionicons>['name'];
-  label: string;
-  onPress: () => void;
-  disabled?: boolean;
-  highlighted?: boolean;
-};
-
-function HeaderAction({ icon, label, onPress, disabled, highlighted = false }: HeaderActionProps) {
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={onPress}
-      disabled={disabled}
+      onPress={() => router.push('/login')}
       hitSlop={8}
-      style={({ pressed }) => [styles.action, highlighted && styles.highlighted, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.action, pressed && styles.pressed]}
     >
-      <Ionicons name={icon} size={18} color={colors.text} />
+      <Ionicons name="person-circle-outline" size={18} color={colors.text} />
       <AppText variant="caption" style={styles.label}>
-        {label}
+        Ingresar
       </AppText>
     </Pressable>
   );
@@ -72,10 +38,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: colors.accent,
   },
-  highlighted: { backgroundColor: colors.accent, borderColor: colors.accent },
   pressed: { opacity: 0.75 },
   label: { fontWeight: '700' },
 });

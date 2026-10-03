@@ -31,6 +31,10 @@ export async function logout(): Promise<void> {
   }
 }
 
+export function changeOwnPassword(currentPassword: string, newPassword: string): Promise<void> {
+  return apiRequest<void>('POST', '/account/password', { currentPassword, newPassword });
+}
+
 export function fetchCurrentUser(): Promise<SessionUser> {
   return apiRequest<SessionUser>('GET', '/auth/me');
 }

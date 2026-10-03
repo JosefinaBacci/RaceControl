@@ -3,6 +3,7 @@ import { useSanctions, useScoreNotices } from '@/data/hooks';
 import { AcknowledgementBadge } from '@/features/AcknowledgementBadge';
 import { MockNotice } from '@/features/MockNotice';
 import { SanctionList } from '@/features/SanctionList';
+import { teamLogo } from '@/logos';
 import { teamById } from '@/mocks/catalog';
 
 export default function FiaResultsScreen() {
@@ -22,7 +23,7 @@ export default function FiaResultsScreen() {
           return (
             <ListItem
               key={notice.id}
-              leading={<Avatar name={team.name} color={team.color} />}
+              leading={<Avatar name={team.name} color={team.color} image={teamLogo(team.id)} />}
               title={team.name}
               subtitle={`${notice.points} puntos`}
               trailing={<AcknowledgementBadge acknowledged={notice.acknowledged} />}

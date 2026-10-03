@@ -7,7 +7,7 @@ export default function PublicLayout() {
   const screenOptions = useTabScreenOptions();
 
   return (
-    <Tabs screenOptions={{ ...screenOptions, headerTitle: headerLogo, headerRight: () => <HeaderSessionButton mode="public" /> }}>
+    <Tabs screenOptions={{ ...screenOptions, headerTitle: headerLogo, headerRight: () => <HeaderSessionButton /> }}>
       <Tabs.Screen name="index" options={{ title: 'Inicio', tabBarIcon: tabIcon('home-outline') }} />
       <Tabs.Screen name="calendar" options={{ title: 'Carreras', tabBarIcon: tabIcon('flag-outline') }} />
       <Tabs.Screen name="standings" options={{ title: 'Puntajes', tabBarIcon: tabIcon('trophy-outline') }} />

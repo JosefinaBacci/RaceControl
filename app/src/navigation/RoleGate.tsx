@@ -7,7 +7,7 @@ import { roleHome } from '@/auth/roles';
 import { useSession } from '@/auth/SessionProvider';
 import { colors } from '@/theme';
 
-export function RoleGate({ role, children }: { role: Role; children: ReactNode }) {
+export function RoleGate({ roles, children }: { roles: readonly Role[]; children: ReactNode }) {
   const session = useSession();
 
   if (session.status === 'loading') {
@@ -16,7 +16,7 @@ export function RoleGate({ role, children }: { role: Role; children: ReactNode }
   if (session.status === 'anonymous') {
     return <Redirect href="/login" />;
   }
-  if (session.user.role !== role) {
+  if (!roles.includes(session.user.role)) {
     return <Redirect href={roleHome[session.user.role]} />;
   }
   return children;

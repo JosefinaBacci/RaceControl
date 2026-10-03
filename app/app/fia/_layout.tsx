@@ -8,8 +8,8 @@ export default function FiaLayout() {
   const screenOptions = useTabScreenOptions();
 
   return (
-    <RoleGate role="fia_admin">
-      <Tabs screenOptions={{ ...screenOptions, headerTitle: headerLogo, headerRight: () => <HeaderSessionButton mode="private" /> }}>
+    <RoleGate roles={['fia_admin']}>
+      <Tabs screenOptions={{ ...screenOptions, headerTitle: headerLogo, headerRight: () => <HeaderSessionButton /> }}>
         <Tabs.Screen name="index" options={{ title: 'Panel', tabBarIcon: tabIcon('speedometer-outline') }} />
         <Tabs.Screen name="users" options={{ title: 'Usuarios', tabBarIcon: tabIcon('people-outline') }} />
         <Tabs.Screen name="calendar" options={{ title: 'Calendario', tabBarIcon: tabIcon('calendar-outline') }} />

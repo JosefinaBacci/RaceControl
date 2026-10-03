@@ -11,6 +11,7 @@ import { AppText, Avatar, Badge, Button, Card, ChipGroup, IconButton, Screen, Te
 import { useAccounts } from '@/data/accounts';
 import { useStatusToggle } from '@/features/accounts/useStatusToggle';
 import { RemoteContent } from '@/features/RemoteContent';
+import { accountLogo } from '@/logos';
 import { teamById } from '@/mocks/catalog';
 import { colors, spacing } from '@/theme';
 
@@ -102,7 +103,7 @@ function AccountRow({ account, showsTable, onChanged }: { account: Account; show
   return (
     <View style={styles.row}>
       <View style={[columnStyleList[0], styles.userCell]}>
-        <Avatar name={account.username} color={avatarColor} />
+        <Avatar name={account.username} color={avatarColor} image={accountLogo(account.role, account.teamId)} />
         <View style={styles.userText}>
           <AppText variant="bodyStrong" numberOfLines={1}>
             {account.username}
