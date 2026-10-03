@@ -1,9 +1,5 @@
 # US2 — Diseño del modelo de datos
 
-**Comisión:** Grupo Rojo Ferrari (Sevenants Antonio, Tourn Felipe)
-**Story points:** 5 · **Business value:** 8
-**Estado:** modelo completo diseñado; implementado el corte del Sprint 1 (migración `000001` + `seeds/reference.sql`).
-
 ## Objetivo
 
 Identificar las entidades del dominio, sus relaciones y sus atributos, elegir el tipo de base de

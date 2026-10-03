@@ -1,9 +1,5 @@
 # US1 — Selección de stack y configuración del entorno
 
-**Comisión:** Grupo Rojo Ferrari (Sevenants Antonio, Tourn Felipe)
-**Story points:** 5 · **Business value:** 8
-**Estado:** decisión tomada en sesión de diseño, documentada acá.
-
 ## Objetivo
 
 Definir las tecnologías del sistema y dejar el entorno de desarrollo operativo, de modo que el

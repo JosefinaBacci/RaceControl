@@ -1,18 +1,5 @@
 # Registro de prompts de IA
 
-La cátedra (**APS 2026, Enunciado 1**) exige registrar los prompts utilizados con IA para generar
-código o decisiones de diseño, porque "la correcta utilización de las herramientas de IA es parte
-de la evaluación del proyecto".
-
-Este archivo es el registro de la **comisión implementadora** (Grupo Rojo Ferrari). Cada entrada
-declara el contexto, el prompt utilizado, la respuesta de la herramienta y qué se validó o
-modificó de la salida.
-
-> Los prompts usados por la comisión de Análisis y Management se registran en su propio
-> repositorio.
-
----
-
 ## Regla de trabajo
 
 Antes de dar por cerrada cualquier tarea que haya usado IA:

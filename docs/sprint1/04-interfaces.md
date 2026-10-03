@@ -1,10 +1,5 @@
 # US4 — Diseño de interfaz por rol
 
-**Comisión:** Grupo Rojo Ferrari (Sevenants Antonio, Tourn Felipe)
-**Story points:** 5 · **Business value:** 8
-**Estado:** versión inicial de las tres interfaces implementada en `app/`; la gestión de usuarios,
-el login y la cuenta propia ya trabajan con datos reales, el resto con datos de ejemplo.
-
 ## Objetivo
 
 Definir qué ve y qué puede hacer cada rol, construir un sistema de diseño común a las tres

@@ -1,9 +1,5 @@
 # Sprint 1 — Lista de tareas
 
-Comisión **Grupo Rojo Ferrari** (Sevenants Antonio, Tourn Felipe) — Enunciado 1 (FIA).
-
-Entrega: **lunes 5/10** · Demo: **martes 6/10**
-
 Leyendo de arriba hacia abajo. Cada US se cierra con sus criterios de éxito verificados,
 `make check` en verde y **un commit atómico**.
 

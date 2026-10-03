@@ -1,10 +1,5 @@
 # US3 — Arquitectura, roles y seguridad
 
-**Comisión:** Grupo Rojo Ferrari (Sevenants Antonio, Tourn Felipe)
-**Story points:** 5 · **Business value:** 8
-**Estado:** diseño completo y aprobado por el equipo; la parte de infraestructura ya está
-implementada, el login llega en US5 y la gestión de cuentas en US6.
-
 ## Objetivo
 
 Diseñar tres cosas que el enunciado exige que estén resueltas **desde el diseño** y no después:
