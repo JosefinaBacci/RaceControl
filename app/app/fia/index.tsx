@@ -26,7 +26,7 @@ export default function FiaDashboardScreen() {
       </StatRow>
       <Card title="Acciones rápidas">
         <View style={styles.actions}>
-          <Button label="Nuevo usuario" icon="person-add-outline" compact onPress={() => router.push('/fia/users/new')} />
+          <Button label="Nuevo usuario" icon="person-add-outline" compact onPress={() => router.push('/fia/users/new', { withAnchor: true })} />
           <Button label="Cargar evento" icon="calendar-outline" variant="secondary" compact onPress={() => router.push('/fia/calendar')} />
           <Button label="Publicar puntajes" icon="trophy-outline" variant="secondary" compact onPress={() => router.push('/fia/results')} />
           <Button label="Enviar comunicado" icon="megaphone-outline" variant="secondary" compact onPress={() => router.push('/fia/notifications')} />

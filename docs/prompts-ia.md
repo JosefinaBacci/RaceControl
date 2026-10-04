@@ -783,3 +783,38 @@ estimar por separado decidir, implementar y validar, porque la validación (test
 pruebas manuales) es lo que menos se acelera.
 
 **Resultado:** `docs/sprint1/04-interfaces.md`, `docs/sprint1/TODO.md`.
+
+---
+
+### 2026-10-04 — Navegación de la gestión de usuarios
+
+**Contexto:** al probar la app, el equipo reportó que, después de cargar o dar de baja un usuario,
+no se podía volver a la pantalla de usuarios: "Cancelar" o "Crear usuario" llevaban a otro lado, y
+la pestaña Usuarios quedaba mostrando el formulario.
+
+**Prompt:**
+
+> Reproducir el problema reportado al cargar y dar de baja un usuario e intentar salir de la
+> pantalla, encontrar la causa y corregirla.
+
+**Respuesta de la IA:** el problema se reprodujo manejando la app real en un navegador automatizado
+(Playwright), con la API y la base locales. La baja funcionaba; lo que fallaba era la navegación.
+Cuando el formulario de alta se abría desde el acceso rápido del panel, al recargar la página o
+entrando por la URL, quedaba como única pantalla de la sección Usuarios, sin el listado debajo. Al
+cancelar o crear, la app volvía al panel y la pestaña Usuarios quedaba mostrando el formulario,
+sin forma de volver al listado. La corrección declara el listado como base fija de esa sección
+(`unstable_settings = { anchor: 'index' }` en su layout) y el acceso rápido del panel navega
+incluyendo esa base (`withAnchor`). Se descartaron dos cambios que el equipo también evaluó:
+guardar el borrador del formulario al recargar, porque implicaría escribir la contraseña inicial
+en el almacenamiento del navegador, y reiniciar la pestaña al salir de ella, porque perdería un
+formulario a medio completar; conservar la última pantalla de cada pestaña es el comportamiento
+estándar.
+
+**Validación:** antes y después del cambio se corrieron con Playwright los dos recorridos: el
+acceso rápido del panel (cancelar, crear y volver a la pestaña Usuarios) y el flujo completo desde
+el listado (cancelar, cancelar tras recargar, crear, dar de baja desde la fila, reactivar y dar de
+baja desde la ficha, volver). Antes fallaban tres pasos; después, todos llegan al listado. Durante
+la prueba se detectó que el servidor de desarrollo de Expo seguía sirviendo el árbol de rutas
+viejo: el cambio solo se ve después de reiniciarlo con `npx expo start --clear`. `tsc` en verde.
+
+**Resultado:** `app/app/fia/users/_layout.tsx`, `app/app/fia/index.tsx`.
