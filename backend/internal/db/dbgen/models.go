@@ -50,7 +50,6 @@ type DriverTeamAssignment struct {
 
 type Event struct {
 	ID          int64
-	EventTypeID int64
 	SeasonID    int64
 	CategoryID  int64
 	Name        string
@@ -62,14 +61,6 @@ type Event struct {
 	Round       pgtype.Int4
 	CreatedAt   pgtype.Timestamptz
 	UpdatedAt   pgtype.Timestamptz
-}
-
-type EventType struct {
-	ID        int64
-	Code      string
-	Name      string
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
 }
 
 type LoginAttempt struct {
@@ -87,6 +78,16 @@ type Notification struct {
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 	EventID   int64
+}
+
+type Race struct {
+	ID        int64
+	EventID   int64
+	Name      string
+	StartsAt  pgtype.Timestamptz
+	EndsAt    pgtype.Timestamptz
+	CreatedAt pgtype.Timestamptz
+	UpdatedAt pgtype.Timestamptz
 }
 
 type ScoreAcknowledgement struct {
@@ -150,6 +151,27 @@ type Team struct {
 	Name       string
 	CreatedAt  pgtype.Timestamptz
 	UpdatedAt  pgtype.Timestamptz
+}
+
+type TechnicalControl struct {
+	ID          int64
+	EventID     int64
+	Name        string
+	ControlType string
+	StartedAt   pgtype.Timestamptz
+	EndedAt     pgtype.Timestamptz
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+}
+
+type TyreTest struct {
+	ID        int64
+	EventID   pgtype.Int8
+	Name      string
+	StartsAt  pgtype.Timestamptz
+	EndsAt    pgtype.Timestamptz
+	CreatedAt pgtype.Timestamptz
+	UpdatedAt pgtype.Timestamptz
 }
 
 type User struct {

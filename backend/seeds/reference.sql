@@ -13,12 +13,6 @@ INSERT INTO seasons (id, year) OVERRIDING SYSTEM VALUE VALUES
     (1, 2026)
 ON CONFLICT (year) DO NOTHING;
 
-INSERT INTO event_types (id, code, name) OVERRIDING SYSTEM VALUE VALUES
-    (1, 'race',              'Carrera'),
-    (2, 'tyre_test',         'Prueba de neumáticos'),
-    (3, 'technical_control', 'Control técnico')
-ON CONFLICT (code) DO NOTHING;
-
 INSERT INTO teams (id, category_id, code, name) OVERRIDING SYSTEM VALUE VALUES
     (1, 1, 'ferrari',         'Scuderia Ferrari'),
     (2, 1, 'red_bull',        'Red Bull Racing'),
@@ -35,4 +29,3 @@ ON CONFLICT (category_id, code) DO NOTHING;
 SELECT setval(pg_get_serial_sequence('categories', 'id'), COALESCE((SELECT max(id) FROM categories), 0));
 SELECT setval(pg_get_serial_sequence('seasons',    'id'), COALESCE((SELECT max(id) FROM seasons),    0));
 SELECT setval(pg_get_serial_sequence('teams',      'id'), COALESCE((SELECT max(id) FROM teams),      0));
-SELECT setval(pg_get_serial_sequence('event_types', 'id'), COALESCE((SELECT max(id) FROM event_types), 0));
