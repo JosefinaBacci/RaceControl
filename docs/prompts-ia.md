@@ -479,3 +479,21 @@ viejo: el cambio solo se ve después de reiniciarlo con `npx expo start --clear`
 3. **Identidad = tiempo + evento + usuario.** La fila (user, event, `created_at`) identifica la notificación: dos publicaciones del mismo evento a distinta hora son dos notificaciones distintas, no duplicados.
 
 **Resultado:** `backend/migrations/000010_notifications_event.*` (up + down: agrega `event_id NOT NULL`, dropea `kind`/`title`/`body` y su CHECK, índice por `event_id`), verificación en la base (INSERT sin `event_id` rechazado; con `event_id`, ok y rollback). Commit `6a2d284`.
+
+---
+
+### 2026-10-12 — Contexto del piloto: número por temporada, rol por período (Sprint 2)
+
+**Contexto:** `drivers` guardaba `number` y `is_starter` como atributos estáticos del piloto. El equipo señaló que el número de coche es de la temporada y que el rol titular/suplente no puede ser una propiedad fija. Se descartó una tabla `race_entries` porque duplicaba la clave `(event_id, driver_id)` de `score_entries`, guardaba `team_id` derivable vía trigger y modelaba un hecho que ninguna US consume.
+
+**Prompt:**
+
+> El is_starter debería estar vinculado a la carrera y no al piloto, y el número debería estar vinculado a la temporada. El modelo de drivers es una mierda, proponé algo más decente y normalizado. ¿El is_starter es por temporada? Pero qué pasa si cambia en el medio de la temporada.
+
+**Respuesta de la IA:** se normalizó por grano de hecho, apoyándose en la historia append-only que ya existía:
+
+1. **`drivers` queda con lo de la persona:** `first_name`, `last_name`, `license_number`, `country_code`. Se dropean `number` e `is_starter` (y su CHECK).
+2. **El rol viaja con la pertenencia:** `driver_team_assignments` gana `is_starter`. Un cambio de rol o de equipo a mitad de temporada es una fila nueva con `effective_from` (mecanismo existente, append-only); el rol actual es la fila abierta y el de una fecha pasada, la fila vigente. El `DEFAULT true` es solo mecánica del `ALTER` sobre filas existentes; los seeds y la app pasan el valor explícito.
+3. **El número es por (piloto, temporada):** nueva `driver_season_numbers(driver_id, season_id, number)` con `UNIQUE (driver_id, season_id)` y rango 0-999. El número lo asigna el campeonato y sobrevive un cambio de equipo, por eso no tiene historial. La colisión por (temporada, categoría) se valida en el servicio porque la categoría se deriva de la escudería.
+
+**Resultado:** `backend/migrations/000011_driver_context.*` (up + down), `backend/seeds/demo.sql` (asignaciones con rol, números 2026), `backend/internal/db/dbgen/models.go` (Driver sin número/rol, `DriverSeasonNumber`, `DriverTeamAssignment.IsStarter`). Verificado en la base: INSERT de cambio de rol a mitad de año funciona y el UPDATE sigue rechazado por append-only. Commit `5645d7c`.
