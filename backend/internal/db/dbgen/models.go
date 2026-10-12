@@ -23,13 +23,20 @@ type Driver struct {
 	FirstName     string
 	LastName      string
 	LicenseNumber string
-	Number        pgtype.Int4
 	CountryCode   string
-	IsStarter     bool
 	IsActive      bool
 	DeactivatedAt pgtype.Timestamptz
 	CreatedAt     pgtype.Timestamptz
 	UpdatedAt     pgtype.Timestamptz
+}
+
+type DriverSeasonNumber struct {
+	ID        int64
+	DriverID  int64
+	SeasonID  int64
+	Number    int32
+	CreatedAt pgtype.Timestamptz
+	UpdatedAt pgtype.Timestamptz
 }
 
 type DriverTeamAssignment struct {
@@ -38,6 +45,7 @@ type DriverTeamAssignment struct {
 	TeamID        int64
 	EffectiveFrom pgtype.Timestamptz
 	CreatedAt     pgtype.Timestamptz
+	IsStarter     bool
 }
 
 type Event struct {
@@ -75,12 +83,10 @@ type LoginAttempt struct {
 type Notification struct {
 	ID        int64
 	UserID    int64
-	Kind      string
-	Title     string
-	Body      string
 	ReadAt    pgtype.Timestamptz
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
+	EventID   int64
 }
 
 type ScoreAcknowledgement struct {

@@ -15,26 +15,41 @@ OVERRIDING SYSTEM VALUE VALUES
     (8, 3, 1, 2, 'Verificación de pesos',           'Lusail',            'Lusail',          'qa', TIMESTAMPTZ '2026-11-26 09:00:00+00', TIMESTAMPTZ '2026-11-26 12:00:00+00', NULL)
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO drivers (id, first_name, last_name, license_number, number, country_code, is_starter)
+INSERT INTO drivers (id, first_name, last_name, license_number, country_code)
 OVERRIDING SYSTEM VALUE VALUES
-    (1, 'Charles',  'Leclerc',   'FIA-0001', 16, 'mc', true),
-    (2, 'Lewis',    'Hamilton',  'FIA-0002', 44, 'gb', true),
-    (3, 'Antonio',  'Giovinazzi', 'FIA-0003', 99, 'it', false),
-    (4, 'Max',      'Verstappen', 'FIA-0004',  1, 'nl', true),
-    (5, 'Yuki',     'Tsunoda',   'FIA-0005', 22, 'jp', true),
-    (6, 'George',   'Russell',   'FIA-0006', 63, 'gb', true),
-    (7, 'Andrea Kimi', 'Antonelli', 'FIA-0007', 12, 'it', true)
+    (1, 'Charles',  'Leclerc',    'FIA-0001', 'mc'),
+    (2, 'Lewis',    'Hamilton',   'FIA-0002', 'gb'),
+    (3, 'Antonio',  'Giovinazzi', 'FIA-0003', 'it'),
+    (4, 'Max',      'Verstappen', 'FIA-0004', 'nl'),
+    (5, 'Yuki',     'Tsunoda',    'FIA-0005', 'jp'),
+    (6, 'George',   'Russell',    'FIA-0006', 'gb'),
+    (7, 'Andrea Kimi', 'Antonelli', 'FIA-0007', 'it')
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO driver_team_assignments (id, driver_id, team_id, effective_from)
+-- The role (starter/reserve) is part of the membership period, so a mid-season
+-- change is a new assignment row, never an edit of a recorded one.
+INSERT INTO driver_team_assignments (id, driver_id, team_id, effective_from, is_starter)
 OVERRIDING SYSTEM VALUE VALUES
-    (1, 1, 1, TIMESTAMPTZ '2026-01-01 00:00:00+00'),
-    (2, 2, 1, TIMESTAMPTZ '2026-01-01 00:00:00+00'),
-    (3, 3, 1, TIMESTAMPTZ '2026-01-01 00:00:00+00'),
-    (4, 4, 2, TIMESTAMPTZ '2026-01-01 00:00:00+00'),
-    (5, 5, 2, TIMESTAMPTZ '2026-01-01 00:00:00+00'),
-    (6, 6, 3, TIMESTAMPTZ '2026-01-01 00:00:00+00'),
-    (7, 7, 3, TIMESTAMPTZ '2026-01-01 00:00:00+00')
+    (1, 1, 1, TIMESTAMPTZ '2026-01-01 00:00:00+00', true),
+    (2, 2, 1, TIMESTAMPTZ '2026-01-01 00:00:00+00', true),
+    (3, 3, 1, TIMESTAMPTZ '2026-01-01 00:00:00+00', false),
+    (4, 4, 2, TIMESTAMPTZ '2026-01-01 00:00:00+00', true),
+    (5, 5, 2, TIMESTAMPTZ '2026-01-01 00:00:00+00', true),
+    (6, 6, 3, TIMESTAMPTZ '2026-01-01 00:00:00+00', true),
+    (7, 7, 3, TIMESTAMPTZ '2026-01-01 00:00:00+00', true)
+ON CONFLICT DO NOTHING;
+
+-- Race numbers are assigned per (driver, season); they survive a team change
+-- mid-season.
+INSERT INTO driver_season_numbers (id, driver_id, season_id, number)
+OVERRIDING SYSTEM VALUE VALUES
+    (1, 1, 1, 16),
+    (2, 2, 1, 44),
+    (3, 3, 1, 99),
+    (4, 4, 1, 1),
+    (5, 5, 1, 22),
+    (6, 6, 1, 63),
+    (7, 7, 1, 12)
 ON CONFLICT DO NOTHING;
 
 -- team_id is left out on purpose: the trigger derives it from the assignment
@@ -50,4 +65,5 @@ ON CONFLICT (event_id, driver_id) DO NOTHING;
 SELECT setval(pg_get_serial_sequence('events',                 'id'), COALESCE((SELECT max(id) FROM events),                 0));
 SELECT setval(pg_get_serial_sequence('drivers',                'id'), COALESCE((SELECT max(id) FROM drivers),                0));
 SELECT setval(pg_get_serial_sequence('driver_team_assignments', 'id'), COALESCE((SELECT max(id) FROM driver_team_assignments), 0));
+SELECT setval(pg_get_serial_sequence('driver_season_numbers',   'id'), COALESCE((SELECT max(id) FROM driver_season_numbers),   0));
 SELECT setval(pg_get_serial_sequence('score_entries',          'id'), COALESCE((SELECT max(id) FROM score_entries),          0));
