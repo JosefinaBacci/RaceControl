@@ -407,3 +407,57 @@ la prueba se detectó que el servidor de desarrollo de Expo seguía sirviendo el
 viejo: el cambio solo se ve después de reiniciarlo con `npx expo start --clear`. `tsc` en verde.
 
 **Resultado:** `app/app/fia/users/_layout.tsx`, `app/app/fia/index.tsx`.
+
+---
+
+### 2026-10-12 — Modelo de puntajes: la posición se deriva y la auditoría registra puntos (Sprint 2)
+
+**Contexto:** al cerrar la Fase 0 del Sprint 2 quedó migrado un esquema con `score_entries.position` y un `score_change_log` de texto libre. Antes de implementar las US de puntajes, el equipo revisó esas dos decisiones: si hacía falta guardar el orden de llegada por resultado y si un log que no registra los valores sirve como auditoría.
+
+**Prompt:**
+
+> ¿Hace falta registrar la posición en cada resultado? "Las posiciones no son necesarias, se reconstruyen de los puntos." Y un log que no registra lo que cambió no sirve: "ni siquiera sabés qué modificaciones ocurrieron". El orden no debería forzarse al insertar: "debería ser una query nada más".
+
+**Respuesta de la IA:** se replanteó el modelo con tres decisiones encadenadas:
+
+1. **La posición es derivable.** En una clasificación la posición determina los puntos, y no hay un caso real de "posición distinta con los mismos puntos" (las penalizaciones de grilla afectan la largada, no la clasificación; una descalificación mueve juntos posición y puntos). Por eso `score_entries.position` y su `UNIQUE (event_id, position)` —que además impedía empates— se eliminaron: el orden dentro de una carrera y el de las clasificaciones son `ORDER BY points DESC` en la query, y el desempate es una regla del sistema (countback o clave estable), nunca un dato que carga el administrador.
+2. **La auditoría registra el dato, no una frase.** `score_change_log` queda como cabecera (evento, actor, fecha) y se agrega `score_change_log_items` con una fila por piloto afectado: `old_points` / `new_points`. El tipo de cambio (`created`/`updated`/`removed`) y la posición se derivan de esos valores, y un `CHECK (old_points IS DISTINCT FROM new_points)` descarta filas sin información.
+3. **El estado se deriva siempre.** Nada de "pendiente/confirmado" como booleano guardado: se computa en la lectura.
+
+**Resultado:** `backend/migrations/000006_score_change_items.*` (quita `position`, crea el log estructurado), `backend/seeds/demo.sql`, `backend/internal/db/dbgen/models.go`. Commit `f62041b`.
+
+---
+
+### 2026-10-12 — Escudería del piloto: historial inmutable y equipo del resultado derivado (Sprint 2)
+
+**Contexto:** el diseño de Fase 0 pijaba la escudería de cada resultado con un FK compuesto `(driver_id, team_id) → drivers(id, team_id)`. El equipo señaló que "el piloto puede cambiar de escudería en un momento dado" y que el cambio tendría que ser registrable para trackear los puntos según a qué escudería correspondió en cada período.
+
+**Prompt:**
+
+> Guardar ambos, el team y el piloto, porque el piloto puede cambiar de escudería en un momento dado. El cambio de escudería tendría que ser algo registrable para que los puntos se trackeen según a qué escudería el piloto correspondió hasta la fecha del cambio. ¿El snapshot sería para precalcular la derivación? Las asignaciones viejas no pueden editarse; los suplentes son por escudería realmente.
+
+**Respuesta de la IA:** se probó en la base que el FK compuesto **bloquea** el cambio de escudería (`UPDATE drivers SET team_id …` → violación de FK), y que `ON UPDATE CASCADE` reescribiría los resultados viejos. Se recorrió el debate en tres pasos:
+
+1. **Historial de asignaciones.** Nueva tabla `driver_team_assignments(driver_id, team_id, effective_from)` con períodos **implícitos** y **append-only**: cerrar un período = insertar la fila siguiente; un trigger rechaza `UPDATE`/`DELETE`. Como el historial nunca se edita, la derivación para una fecha pasada nunca cambia.
+2. **Dos semánticas del snapshot.** "¿El snapshot precalcula la derivación?" solo es cierto si el resultado es una proyección de la afiliación (opción A, todo derivado). Bajo B, el resultado es un documento publicado: guarda el equipo con el que se publicó. Se eligió **B con equivalencia garantizada**: el `team_id` del resultado **lo completa un trigger** con la asignación vigente en la fecha del evento, así que B ≡ A por construcción; y como los suplentes pertenecen a una escudería, la derivación siempre existe.
+3. **Se descarta el FK compuesto.** El equipo del resultado se valida por la historia, no por la fila de `drivers`: se eliminan `score_entries_driver_team_fk`, `drivers_id_team_unique` y `drivers.team_id` (el equipo actual es la asignación abierta, derivable); `score_entries.driver_id` pasa a tener FK propia.
+
+**Resultado:** `backend/migrations/000007_driver_team_assignments.*` (tabla + `assigned_team()` + trigger de inmutabilidad) y `000008_team_snapshot.*` (FKs simples, triggers `set_score_entry_team`/`set_score_change_item_team`, baja de `drivers.team_id`), `backend/seeds/demo.sql` (asignaciones iniciales), `backend/internal/db/dbgen/models.go`. Commit `1ce4953`.
+
+---
+
+### 2026-10-12 — Acuse de recibo por versión publicada (Sprint 2)
+
+**Contexto:** `score_acknowledgements` tenía `UNIQUE (event_id, team_id)`: una escudería acusaba una vez por carrera. Pero las US9/US24 permiten **modificar** puntajes después de publicarlos ("Recibe una notificación cuando se publican o modifican los resultados"), lo que dejaba al acuse apuntando a datos viejos sin forma de volver a confirmar.
+
+**Prompt:**
+
+> Si la FIA corrige los puntajes después de que una escudería acusó, el acuse queda obsoleto y no se puede repetir. Las escuderías afectadas son las afectadas por el cambio; el resto no le incumbe de forma directa. Acuse por versión, que apunte al change log.
+
+**Respuesta de la IA:** el acuse es un hecho (no se deriva), pero su ancla estaba mal: debía apuntar a la **versión publicada**, no al evento. La versión es la fila de `score_change_log`, que ya lleva evento y fecha. Cambios:
+
+1. `score_acknowledgements.event_id` → `change_log_id` con `UNIQUE (change_log_id, team_id)`: cada corrección genera una versión nueva y las escuderías afectadas vuelven a **pendiente** automáticamente.
+2. Las escuderías afectadas por un cambio salen de `score_change_log_items.team_id` (equipo derivado con el que se cargó el resultado), de modo que también se notifica a la escudería a la que se le *quitó* un piloto.
+3. El estado pendiente/confirmada se deriva de la última versión del evento: confirmada = existe acuse de esa escudería contra ella.
+
+**Resultado:** `backend/migrations/000009_score_acknowledgements_per_version.*`, `backend/internal/db/dbgen/models.go`. Commit `f897de1`.
