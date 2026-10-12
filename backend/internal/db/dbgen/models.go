@@ -18,12 +18,89 @@ type Category struct {
 	UpdatedAt pgtype.Timestamptz
 }
 
+type Driver struct {
+	ID            int64
+	TeamID        int64
+	FirstName     string
+	LastName      string
+	LicenseNumber string
+	Number        pgtype.Int4
+	CountryCode   string
+	IsStarter     bool
+	IsActive      bool
+	DeactivatedAt pgtype.Timestamptz
+	CreatedAt     pgtype.Timestamptz
+	UpdatedAt     pgtype.Timestamptz
+}
+
+type Event struct {
+	ID          int64
+	EventTypeID int64
+	SeasonID    int64
+	CategoryID  int64
+	Name        string
+	Circuit     string
+	Location    string
+	CountryCode string
+	StartsAt    pgtype.Timestamptz
+	EndsAt      pgtype.Timestamptz
+	Round       pgtype.Int4
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+}
+
+type EventType struct {
+	ID        int64
+	Code      string
+	Name      string
+	CreatedAt pgtype.Timestamptz
+	UpdatedAt pgtype.Timestamptz
+}
+
 type LoginAttempt struct {
 	ID          int64
 	Username    string
 	Succeeded   bool
 	Ip          *netip.Addr
 	AttemptedAt pgtype.Timestamptz
+}
+
+type Notification struct {
+	ID        int64
+	UserID    int64
+	Kind      string
+	Title     string
+	Body      string
+	ReadAt    pgtype.Timestamptz
+	CreatedAt pgtype.Timestamptz
+	UpdatedAt pgtype.Timestamptz
+}
+
+type ScoreAcknowledgement struct {
+	ID             int64
+	EventID        int64
+	TeamID         int64
+	AcknowledgedBy int64
+	AcknowledgedAt pgtype.Timestamptz
+}
+
+type ScoreChangeLog struct {
+	ID          int64
+	EventID     int64
+	ActorUserID int64
+	ChangedAt   pgtype.Timestamptz
+	Summary     string
+}
+
+type ScoreEntry struct {
+	ID        int64
+	EventID   int64
+	DriverID  int64
+	TeamID    int64
+	Position  int32
+	Points    pgtype.Numeric
+	CreatedAt pgtype.Timestamptz
+	UpdatedAt pgtype.Timestamptz
 }
 
 type Season struct {

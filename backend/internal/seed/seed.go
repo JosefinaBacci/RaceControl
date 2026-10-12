@@ -29,6 +29,15 @@ func (r *Runner) Reference(ctx context.Context) error {
 	return nil
 }
 
+// Demo applies the sample calendar, drivers and scores. It is reserved for
+// non-production environments so a real deployment starts with an empty season.
+func (r *Runner) Demo(ctx context.Context) error {
+	if err := applyFile(ctx, r.pool, "demo.sql"); err != nil {
+		return fmt.Errorf("apply demo seed: %w", err)
+	}
+	return nil
+}
+
 func applyFile(ctx context.Context, pool *pgxpool.Pool, name string) error {
 	contents, err := fs.ReadFile(seeds.Files, name)
 	if err != nil {

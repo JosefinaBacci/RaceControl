@@ -30,7 +30,15 @@ func main() {
 	}
 	log.Println("reference data seeded")
 
-	if cfg.IsProduction() || cfg.SeedDemoPassword == "" {
+	if cfg.IsProduction() {
+		return
+	}
+	if err := runner.Demo(ctx); err != nil {
+		log.Fatalf("seed: %v", err)
+	}
+	log.Println("demo data seeded")
+
+	if cfg.SeedDemoPassword == "" {
 		return
 	}
 
