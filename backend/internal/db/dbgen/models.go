@@ -30,15 +30,6 @@ type Driver struct {
 	UpdatedAt     pgtype.Timestamptz
 }
 
-type DriverSeasonNumber struct {
-	ID        int64
-	DriverID  int64
-	SeasonID  int64
-	Number    int32
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
-}
-
 type DriverTeamAssignment struct {
 	ID            int64
 	DriverID      int64
@@ -128,6 +119,15 @@ type ScoreEntry struct {
 type Season struct {
 	ID        int64
 	Year      int32
+	CreatedAt pgtype.Timestamptz
+	UpdatedAt pgtype.Timestamptz
+}
+
+type SeasonDriver struct {
+	ID        int64
+	DriverID  int64
+	SeasonID  int64
+	Number    int32
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 }
