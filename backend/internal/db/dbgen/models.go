@@ -85,10 +85,10 @@ type Notification struct {
 
 type ScoreAcknowledgement struct {
 	ID             int64
-	EventID        int64
 	TeamID         int64
 	AcknowledgedBy int64
 	AcknowledgedAt pgtype.Timestamptz
+	ChangeLogID    int64
 }
 
 type ScoreChangeLog struct {
