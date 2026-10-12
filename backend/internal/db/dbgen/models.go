@@ -20,7 +20,6 @@ type Category struct {
 
 type Driver struct {
 	ID            int64
-	TeamID        int64
 	FirstName     string
 	LastName      string
 	LicenseNumber string
@@ -31,6 +30,14 @@ type Driver struct {
 	DeactivatedAt pgtype.Timestamptz
 	CreatedAt     pgtype.Timestamptz
 	UpdatedAt     pgtype.Timestamptz
+}
+
+type DriverTeamAssignment struct {
+	ID            int64
+	DriverID      int64
+	TeamID        int64
+	EffectiveFrom pgtype.Timestamptz
+	CreatedAt     pgtype.Timestamptz
 }
 
 type Event struct {
@@ -98,6 +105,7 @@ type ScoreChangeLogItem struct {
 	DriverID    int64
 	OldPoints   pgtype.Numeric
 	NewPoints   pgtype.Numeric
+	TeamID      int64
 }
 
 type ScoreEntry struct {
