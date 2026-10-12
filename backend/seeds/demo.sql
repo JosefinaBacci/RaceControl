@@ -3,8 +3,7 @@
 -- from it so a production database starts with an empty calendar instead of
 -- made-up races.
 
--- 1. events: el calendario oficial de GP/ronda (ya no hay circuit/location/country_code/round;
---    estos datos viven en la tabla races hija)
+-- 1. events: el calendario oficial de GP/ronda
 INSERT INTO events (id, season_id, category_id, name, starts_at, ends_at)
 OVERRIDING SYSTEM VALUE VALUES
     (1, 1, 1, 'Gran Premio de Singapur', TIMESTAMPTZ '2026-10-04 15:00:00+00', TIMESTAMPTZ '2026-10-04 17:00:00+00'),
@@ -17,23 +16,23 @@ OVERRIDING SYSTEM VALUE VALUES
     (8, 1, 2, 'Verificación de pesos', TIMESTAMPTZ '2026-11-26 09:00:00+00', TIMESTAMPTZ '2026-11-26 12:00:00+00')
 ON CONFLICT (id) DO NOTHING;
 
--- 2. races: la carrera concreta, con los datos de circuito antes en events
-INSERT INTO races (id, event_id, name, circuit, location, country_code, round, starts_at, ends_at)
+-- 2. races: la carrera concreta (sin starts_at/ends_at; el timing viene de events)
+INSERT INTO races (id, event_id, name, circuit, location, country_code, round)
 OVERRIDING SYSTEM VALUE VALUES
-    (1, 1, 'Gran Premio de Singapur', 'Marina Bay', 'Singapore', 'sg', 18, TIMESTAMPTZ '2026-10-04 15:00:00+00', TIMESTAMPTZ '2026-10-04 17:00:00+00'),
-    (2, 3, 'Gran Premio de Estados Unidos', 'Circuit of the Americas', 'Austin', 'us', 19, TIMESTAMPTZ '2026-10-18 16:00:00+00', TIMESTAMPTZ '2026-10-18 18:00:00+00'),
-    (3, 5, 'Ronda 13 — Qatar', 'Lusail', 'Lusail', 'qa', 13, TIMESTAMPTZ '2026-11-27 15:00:00+00', TIMESTAMPTZ '2026-11-27 17:00:00+00'),
-    (4, 6, 'Ronda 10 — Monza', 'Monza', 'Monza', 'it', 10, TIMESTAMPTZ '2026-09-06 13:00:00+00', TIMESTAMPTZ '2026-09-06 15:00:00+00'),
-    (5, 7, 'Ronda 7 — Las Vegas', 'Las Vegas Strip', 'Las Vegas', 'us', 7, TIMESTAMPTZ '2026-11-21 18:00:00+00', TIMESTAMPTZ '2026-11-21 20:00:00+00')
+    (1, 1, 'Gran Premio de Singapur', 'Marina Bay', 'Singapore', 'sg', 18),
+    (2, 3, 'Gran Premio de Estados Unidos', 'Circuit of the Americas', 'Austin', 'us', 19),
+    (3, 5, 'Ronda 13 — Qatar', 'Lusail', 'Lusail', 'qa', 13),
+    (4, 6, 'Ronda 10 — Monza', 'Monza', 'Monza', 'it', 10),
+    (5, 7, 'Ronda 7 — Las Vegas', 'Las Vegas Strip', 'Las Vegas', 'us', 7)
 ON CONFLICT DO NOTHING;
 
--- 3. tyre_tests: prueba de neumáticos (suelta o bajo GP)
-INSERT INTO tyre_tests (id, event_id, name, starts_at, ends_at)
+-- 3. tyre_tests: prueba de neumáticos (sin starts_at/ends_at)
+INSERT INTO tyre_tests (id, event_id, name)
 OVERRIDING SYSTEM VALUE VALUES
-    (1, 4, 'Prueba de neumáticos Pirelli 2027', TIMESTAMPTZ '2026-10-20 09:00:00+00', TIMESTAMPTZ '2026-10-20 17:00:00+00')
+    (1, 4, 'Prueba de neumáticos Pirelli 2027')
 ON CONFLICT DO NOTHING;
 
--- 4. technical_controls: control técnico (suelto o bajo GP)
+-- 4. technical_controls: control técnico (con started_at/ended_at, como ya era)
 INSERT INTO technical_controls (id, event_id, name, control_type, started_at, ended_at)
 OVERRIDING SYSTEM VALUE VALUES
     (1, 2, 'Control técnico post-carrera', 'post-race', TIMESTAMPTZ '2026-10-05 09:00:00+00', TIMESTAMPTZ '2026-10-05 12:00:00+00'),
@@ -85,7 +84,7 @@ OVERRIDING SYSTEM VALUE VALUES
     (4, 1, 2, 12)
 ON CONFLICT (event_id, driver_id) DO NOTHING;
 
--- 9. setval para todas las secuencias (incluye season_drivers)
+-- 9. setval para todas las secuencias
 SELECT setval(pg_get_serial_sequence('events',                 'id'), COALESCE((SELECT max(id) FROM events),                 0));
 SELECT setval(pg_get_serial_sequence('drivers',                'id'), COALESCE((SELECT max(id) FROM drivers),                0));
 SELECT setval(pg_get_serial_sequence('season_drivers',   'id'), COALESCE((SELECT max(id) FROM season_drivers),   0));
