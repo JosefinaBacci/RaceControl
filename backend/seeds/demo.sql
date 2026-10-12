@@ -25,12 +25,12 @@ OVERRIDING SYSTEM VALUE VALUES
     (7, 3, 'Andrea Kimi', 'Antonelli', 'FIA-0007', 12, 'it', true)
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO score_entries (id, event_id, driver_id, team_id, position, points)
+INSERT INTO score_entries (id, event_id, driver_id, team_id, points)
 OVERRIDING SYSTEM VALUE VALUES
-    (1, 1, 1, 1, 1, 25),
-    (2, 1, 4, 2, 2, 18),
-    (3, 1, 6, 3, 3, 15),
-    (4, 1, 2, 1, 4, 12)
+    (1, 1, 1, 1, 25),
+    (2, 1, 4, 2, 18),
+    (3, 1, 6, 3, 15),
+    (4, 1, 2, 1, 12)
 ON CONFLICT (event_id, driver_id) DO NOTHING;
 
 SELECT setval(pg_get_serial_sequence('events',        'id'), COALESCE((SELECT max(id) FROM events),        0));

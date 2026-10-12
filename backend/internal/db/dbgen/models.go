@@ -92,12 +92,19 @@ type ScoreChangeLog struct {
 	Summary     string
 }
 
+type ScoreChangeLogItem struct {
+	ID          int64
+	ChangeLogID int64
+	DriverID    int64
+	OldPoints   pgtype.Numeric
+	NewPoints   pgtype.Numeric
+}
+
 type ScoreEntry struct {
 	ID        int64
 	EventID   int64
 	DriverID  int64
 	TeamID    int64
-	Position  int32
 	Points    pgtype.Numeric
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
