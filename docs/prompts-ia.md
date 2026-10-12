@@ -461,3 +461,21 @@ viejo: el cambio solo se ve después de reiniciarlo con `npx expo start --clear`
 3. El estado pendiente/confirmada se deriva de la última versión del evento: confirmada = existe acuse de esa escudería contra ella.
 
 **Resultado:** `backend/migrations/000009_score_acknowledgements_per_version.*`, `backend/internal/db/dbgen/models.go`. Commit `f897de1`.
+
+---
+
+### 2026-10-12 — Notificación = hecho puro: solo usuario, evento y leída (Sprint 2)
+
+**Contexto:** la tabla `notifications` de Fase 0 guardaba `kind`, `title` y `body` junto con `user_id`. Al diseñar las notificaciones de puntajes, el equipo la revisó con tres ideas: la notificación es "de un evento" sin importar su tipo; la mensajería FIA↔escudería es otra cosa y no va en la misma tabla; y el texto hardcodeado en la base no es un hecho, se deriva al leer.
+
+**Prompt:**
+
+> Una notificación es de un evento, no me importa qué tipo. La mensajería no es ortogonal con este tipo de notificaciones, son dos tipos distintos, no tiene sentido mezclarlos en una misma tabla. Droppeá body y title, no necesitamos text hardcodeado en la base de datos. Tampoco necesitamos el kind: tenemos el kind en el evento. Las notificaciones se identifican por el tiempo, el tipo y el usuario.
+
+**Respuesta de la IA:** se aterrizaron las tres ideas en una tabla mínima:
+
+1. **Solo hechos.** `notifications(id, user_id, event_id, read_at)` con `event_id NOT NULL → events ON DELETE RESTRICT`: cada notificación es de un evento, de cualquier tipo (`race | tyre_test | technical_control`), y la base lo garantiza sin CHECK de kinds.
+2. **Nada de texto ni kind.** `title`/`body`/`kind` se dropean; el texto mostrado se deriva al leer del evento (nombre, fecha, `event_type_id`) y de la historia en `score_change_log` (publicado vs. corregido). El tipo de evento ya vive en `events.event_type_id`.
+3. **Identidad = tiempo + evento + usuario.** La fila (user, event, `created_at`) identifica la notificación: dos publicaciones del mismo evento a distinta hora son dos notificaciones distintas, no duplicados.
+
+**Resultado:** `backend/migrations/000010_notifications_event.*` (up + down: agrega `event_id NOT NULL`, dropea `kind`/`title`/`body` y su CHECK, índice por `event_id`), verificación en la base (INSERT sin `event_id` rechazado; con `event_id`, ok y rollback). Commit `6a2d284`.
