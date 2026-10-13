@@ -19,8 +19,8 @@ Trabajo pendiente, para cuando exista un despliegue con la base en serio:
 2. `GRANT USAGE ON SCHEMA public`, `GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA
    public` y `ALTER DEFAULT PRIVILEGES ... ON TABLES` para que las tablas nuevas hereden las grants.
 3. `REVOKE UPDATE, DELETE` sobre las tablas de historial y auditoría (`driver_team_assignments`,
-   `score_change_log`, `score_change_log_items`, `score_acknowledgements`), como segunda capa además
-   del trigger.
+   `score_change_log`, `score_change_log_items`, `score_acknowledgements`, `login_attempts`), como
+   segunda capa además del trigger.
 4. Una segunda URL de conexión: la API usa el rol nuevo; las migraciones, los seeds y `create-admin`
    siguen con el dueño.
 5. Documentar el cambio en `docs/sprint1/03-arquitectura-roles-seguridad.md`.
@@ -43,15 +43,8 @@ Detalles ya verificados, para no re-descubrirlos:
 desarrollo) y el control documentado para "escalada de privilegios desde la app" es el RBAC del
 backend, no los privilegios de base. Es trabajo de infraestructura, no de una user story del sprint.
 
-## Decidir si la auditoría también es append-only
+### Append-only ya resuelto
 
-**Estado:** pendiente de decisión.
-
-Hoy el único guardián de append-only es `driver_team_assignments` (`reject_mutation()`). Las tablas de
-auditoría (`score_change_log`, `score_change_log_items`) y el acuse (`score_acknowledgements`) quedan
-mutables, aunque por semántica son hechos congelados: reescribir la auditoría le quita el sentido.
-`reject_mutation()` ya es genérica, así que extenderla es un trigger de dos líneas por tabla.
-
-Se dejó para cuando entren US9 (puntajes) y US24 (acuse), que son quienes escriben esas filas, o para
-cuando se resuelva el punto anterior de permisos. `notifications` **no** entra: tiene estado "leída",
-se actualiza a propósito.
+Los hechos congelados ya tienen su guardia (`reject_mutation()`): `driver_team_assignments` (desde
+`000007`) y `score_change_log`, `score_change_log_items`, `score_acknowledgements` y `login_attempts`
+(desde `000017`). `notifications` queda fuera a propósito: tiene estado "leída" y se actualiza.

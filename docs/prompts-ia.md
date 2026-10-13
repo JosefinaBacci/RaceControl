@@ -691,3 +691,29 @@ solo cubriría la API, y la segregación de permisos queda anotada como TODO en
 `docs/sprint2/TODO.md`. No cambió código. En el mismo archivo quedó anotada, como decisión pendiente,
 la cobertura append-only de la auditoría (`score_change_log`, `score_change_log_items`,
 `score_acknowledgements`).
+
+---
+
+### 2026-10-13 — Append-only en la auditoría (cierre de F5)
+
+**Contexto:** continuación de la entrada anterior. La cobertura append-only de la auditoría había
+quedado anotada como decisión pendiente, no implementada.
+
+**Prompt:**
+
+> agregaste los otros append-only?
+
+**Respuesta de la IA:** no los había implementado; los había dejado anotados porque "dejemos el
+trigger" se interpretó como "no agregar nada más". Antes de proponer el cambio se verificó que nada en
+el código dependa de poder mutar esas tablas (no tienen queries ni handlers: son de US9 y US24,
+todavía sin construir; los únicos `UPDATE` del proyecto son sobre `sessions` y `users`, que sí deben
+ser mutables) y que nada borre `login_attempts` (solo se inserta y se lee para el bloqueo de login).
+
+**Resultado (decisión del usuario):** se agregan las guardias en una migración nueva,
+`000017_append_only_audit`, en lugar de fusionarlas en `000016`. El motivo por el que §D había elegido
+fusionar era el cambio de diseño del calendario en vuelo, que acá no aplica porque el cambio es
+puramente aditivo, y la regla por defecto de AGENTS es "solo archivos nuevos en `backend/migrations/"`
+(además se aplica sin `db-reset`). El alcance es `score_change_log`, `score_change_log_items`,
+`score_acknowledgements` y `login_attempts`, reusando `reject_mutation()`. Se descartó darle un código
+propio (`RC002`) para traducirlo a 4xx: la API no debería ofrecer mutar la auditoría nunca, así que un
+rechazo ahí es un bug y un 500 es la respuesta correcta.
