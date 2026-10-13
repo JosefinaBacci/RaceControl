@@ -526,3 +526,32 @@ viejo: el cambio solo se ve después de reiniciarlo con `npx expo start --clear`
 **Respuesta de la IA:** la unicidad de un dato derivado que cruza tablas no se resuelve con un `UNIQUE` de una sola tabla. Para `races` se usó el patrón que el propio repositorio ya emplea (`drivers_id_team_unique` + FK compuesta en `score_entries`): se copia `season_id`/`category_id` desde el evento y se protegen con una FK compuesta a `events (id, season_id, category_id)`, habilitando `UNIQUE (season_id, category_id, round)`. Para `season_drivers` la categoría no es atributo de una fila padre sino que se deriva del historial de asignaciones, así que se materializó con un trigger (mismo criterio que `score_entries.team_id` en 000008) y recién ahí el `UNIQUE (season_id, category_id, number)` se sostiene. Un `UNIQUE (season_id, number)` se descartó por incorrecto: F1 y F2 numeran sus coches en forma independiente.
 
 **Resultado:** se corrigieron `000001`/`000002` (baja lógica derivada en `categories`, `teams` y `events`), `000004` (se quita el `summary` de `score_change_log`, redundante con `score_change_log_items`), `000011` (categoría derivada + unicidad por campeonato en los números de piloto), `000012` (`tyre_tests.event_id NOT NULL`, triggers `updated_at` en las hijas, timing solo en `events` con la baja de `started_at/ended_at` de `technical_controls`), `000014`/`000015` (CHECK, FK compuesta y `down` corregidos) y `backend/seeds/demo.sql`. Verificado con `make db-reset`, `make check` en verde, la cadena completa de `down` (15→0) sobre datos sembrados, y pruebas de comportamiento: la FK compuesta rechaza temporada/categoría incoherentes, la ronda se repite en otro campeonato pero no en el mismo, el número de piloto se repite entre categorías pero no dentro de una, y los triggers de `updated_at` y la baja lógica responden. `make sqlc` regeneró `dbgen`.
+
+---
+
+### 2026-10-13 — Calendario: una hija por evento, nombre en el evento y ronda obligatoria (000016)
+
+**Contexto:** antes de implementar US7 (gestión del calendario) se pidió verificar que el modelo no
+represente estados inconsistentes. La jerarquía `events` + `races`/`tyre_tests`/`technical_controls`
+permitía tres estados inválidos de bajo costo de arreglo: varias hijas del mismo tipo por evento, el
+nombre duplicado entre el evento y la hija (podían divergir) y una carrera sin ronda (que además
+esquivaba el `UNIQUE` por campeonato cargando `NULL`).
+
+**Prompt:**
+
+> fijate que el modelo de datos sea coherente y no represente estados inconsistentes; evitá la representación de estados inconsistentes para minimizar la cantidad de chequeos
+
+**Respuesta de la IA:** se separaron los hallazgos en *Tier 1* (constraints puntuales, sin tocar la
+estructura) y *Tier 2* (el caso "evento sin hija", que no sale con un `UNIQUE`). En esta pasada se
+aplicó solo el Tier 1, por ser seguro: `UNIQUE (event_id)` en cada hija (a lo sumo una hija por
+evento), se elimina `name` de las tres hijas (el nombre vive en `events`) y `races.round` pasa a
+`NOT NULL` con `CHECK (round > 0)`. El índice plano por `event_id` se reemplaza por el único, que ya
+cubre las búsquedas.
+
+**Resultado:** `backend/migrations/000016_events_child_integrity.{up,down}.sql`,
+`backend/seeds/demo.sql` (las hijas ya no insertan `name`) y `backend/internal/db/dbgen/models.go`
+(se van `Name` de `Race`/`TyreTest`/`TechnicalControl`; `Race.Round` pasa a `int32`). Verificado con
+`make db-reset`, `make sqlc` y `make check` en verde; el `down` de la 000016 restaura nombre y ronda
+opcional y el `up` vuelve a aplicarse; y pruebas de comportamiento en la base: una segunda hija del
+mismo evento, una ronda `NULL` y una ronda `0` son rechazadas. Quedan pendientes el Tier 2
+("exactamente una hija") y las decisiones de puntajes/acuse y triggers.
