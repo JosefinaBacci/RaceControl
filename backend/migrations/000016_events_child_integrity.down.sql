@@ -1,5 +1,16 @@
 -- 000016 down: undoes the 1:1 relationship and the event kind, returns the name to
--- the children copying it from the event and makes the round optional again.
+-- the children copying it from the event, makes the round optional again, drops
+-- the date guard and narrows the team derivation back to the driver and the event.
+
+-- 8. The date guard goes away.
+DROP TRIGGER events_keep_final_date ON events;
+DROP FUNCTION assert_event_date_is_final();
+
+-- 7. The derived team goes back to firing only when the driver or the event changes.
+DROP TRIGGER score_entries_set_team ON score_entries;
+CREATE TRIGGER score_entries_set_team
+    BEFORE INSERT OR UPDATE OF event_id, driver_id ON score_entries
+    FOR EACH ROW EXECUTE FUNCTION set_score_entry_team();
 
 -- 6. The "exactly one child" triggers and their functions go away.
 DROP TRIGGER events_require_child ON events;

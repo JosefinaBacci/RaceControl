@@ -1,6 +1,7 @@
 -- 000016_events_child_integrity: an event declares its kind and has exactly one
--- child of that kind. A race always has a round and the event name is not
--- duplicated on the children.
+-- child of that kind. A race always has a round, the event name is not duplicated
+-- on the children, a result always derives its credited team and a race that
+-- already has results keeps its date.
 
 -- 1. The name belongs to the event. The child duplicated it and the two could diverge.
 ALTER TABLE races DROP COLUMN name;
@@ -129,3 +130,28 @@ CREATE CONSTRAINT TRIGGER technical_controls_keep_event_child
     AFTER DELETE OR UPDATE OF event_id ON technical_controls
     DEFERRABLE INITIALLY DEFERRED
     FOR EACH ROW EXECUTE FUNCTION assert_event_keeps_child();
+
+-- 7. The credited team is derived on every write, not only when the driver or the
+--    event changes, so a direct write can no longer overwrite it.
+DROP TRIGGER score_entries_set_team ON score_entries;
+CREATE TRIGGER score_entries_set_team
+    BEFORE INSERT OR UPDATE ON score_entries
+    FOR EACH ROW EXECUTE FUNCTION set_score_entry_team();
+
+-- 8. A race that already has results has been run: its date is final. The guard
+--    fires only when the date really changes, so editing anything else on the
+--    event still works.
+CREATE FUNCTION assert_event_date_is_final() RETURNS trigger AS $$
+BEGIN
+    IF NEW.starts_at IS DISTINCT FROM OLD.starts_at
+        AND EXISTS (SELECT 1 FROM score_entries WHERE event_id = NEW.id) THEN
+        RAISE EXCEPTION 'event % has results: its date is final', NEW.id
+            USING ERRCODE = 'RC001';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER events_keep_final_date
+    BEFORE UPDATE OF starts_at ON events
+    FOR EACH ROW EXECUTE FUNCTION assert_event_date_is_final();

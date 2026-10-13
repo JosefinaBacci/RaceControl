@@ -2,6 +2,7 @@ package db
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgerrcode"
@@ -27,6 +28,20 @@ func UniqueViolation(err error) (constraint string, isViolation bool) {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 		return pgErr.ConstraintName, true
+	}
+	return "", false
+}
+
+// guardCodePrefix is the SQLSTATE class the schema guards raise with, so a service
+// can tell a deliberate rule apart from an accidental database error.
+const guardCodePrefix = "RC"
+
+// GuardViolation reports whether err is a rule a schema guard raised on purpose
+// and returns the SQLSTATE that identifies which one.
+func GuardViolation(err error) (code string, isGuard bool) {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && strings.HasPrefix(pgErr.Code, guardCodePrefix) {
+		return pgErr.Code, true
 	}
 	return "", false
 }
