@@ -11,11 +11,13 @@ import (
 )
 
 type Category struct {
-	ID        int64
-	Code      string
-	Name      string
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
+	ID            int64
+	Code          string
+	Name          string
+	IsActive      bool
+	DeactivatedAt pgtype.Timestamptz
+	CreatedAt     pgtype.Timestamptz
+	UpdatedAt     pgtype.Timestamptz
 }
 
 type Driver struct {
@@ -40,18 +42,16 @@ type DriverTeamAssignment struct {
 }
 
 type Event struct {
-	ID          int64
-	SeasonID    int64
-	CategoryID  int64
-	Name        string
-	Circuit     string
-	Location    string
-	CountryCode string
-	StartsAt    pgtype.Timestamptz
-	EndsAt      pgtype.Timestamptz
-	Round       pgtype.Int4
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
+	ID            int64
+	SeasonID      int64
+	CategoryID    int64
+	Name          string
+	StartsAt      pgtype.Timestamptz
+	EndsAt        pgtype.Timestamptz
+	IsActive      bool
+	DeactivatedAt pgtype.Timestamptz
+	CreatedAt     pgtype.Timestamptz
+	UpdatedAt     pgtype.Timestamptz
 }
 
 type LoginAttempt struct {
@@ -72,13 +72,17 @@ type Notification struct {
 }
 
 type Race struct {
-	ID        int64
-	EventID   int64
-	Name      string
-	StartsAt  pgtype.Timestamptz
-	EndsAt    pgtype.Timestamptz
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
+	ID          int64
+	EventID     int64
+	Name        string
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+	Circuit     string
+	Location    string
+	CountryCode string
+	Round       pgtype.Int4
+	SeasonID    int64
+	CategoryID  int64
 }
 
 type ScoreAcknowledgement struct {
@@ -94,7 +98,6 @@ type ScoreChangeLog struct {
 	EventID     int64
 	ActorUserID int64
 	ChangedAt   pgtype.Timestamptz
-	Summary     string
 }
 
 type ScoreChangeLogItem struct {
@@ -124,12 +127,13 @@ type Season struct {
 }
 
 type SeasonDriver struct {
-	ID        int64
-	DriverID  int64
-	SeasonID  int64
-	Number    int32
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
+	ID         int64
+	DriverID   int64
+	SeasonID   int64
+	CategoryID int64
+	Number     int32
+	CreatedAt  pgtype.Timestamptz
+	UpdatedAt  pgtype.Timestamptz
 }
 
 type Session struct {
@@ -145,12 +149,14 @@ type Session struct {
 }
 
 type Team struct {
-	ID         int64
-	CategoryID int64
-	Code       string
-	Name       string
-	CreatedAt  pgtype.Timestamptz
-	UpdatedAt  pgtype.Timestamptz
+	ID            int64
+	CategoryID    int64
+	Code          string
+	Name          string
+	IsActive      bool
+	DeactivatedAt pgtype.Timestamptz
+	CreatedAt     pgtype.Timestamptz
+	UpdatedAt     pgtype.Timestamptz
 }
 
 type TechnicalControl struct {
@@ -158,18 +164,14 @@ type TechnicalControl struct {
 	EventID     int64
 	Name        string
 	ControlType string
-	StartedAt   pgtype.Timestamptz
-	EndedAt     pgtype.Timestamptz
 	CreatedAt   pgtype.Timestamptz
 	UpdatedAt   pgtype.Timestamptz
 }
 
 type TyreTest struct {
 	ID        int64
-	EventID   pgtype.Int8
+	EventID   int64
 	Name      string
-	StartsAt  pgtype.Timestamptz
-	EndsAt    pgtype.Timestamptz
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 }
