@@ -555,3 +555,59 @@ cubre las búsquedas.
 opcional y el `up` vuelve a aplicarse; y pruebas de comportamiento en la base: una segunda hija del
 mismo evento, una ronda `NULL` y una ronda `0` son rechazadas. Quedan pendientes el Tier 2
 ("exactamente una hija") y las decisiones de puntajes/acuse y triggers.
+
+---
+
+### 2026-10-13 — Calendario: tipo del evento y exactamente una hija (Tier 2 de 000016)
+
+**Contexto:** continuación de la revisión del modelo de datos. El Tier 1 había dejado un único estado
+inconsistente de la jerarquía `events` + hijas: un evento **sin ninguna hija**, que no tiene tipo ni
+nombre calculable (y su simétrico, un evento con hijas de **dos tipos distintos**). Se discutió cómo
+llevar ese invariante a la base y si la tabla `tyre_tests`, que quedó sin atributos propios, debía
+seguir existiendo.
+
+**Prompt:**
+
+> Sigamos con el modelo de datos del calendario. Un `events` sin ninguna fila hija no es de ningún
+> tipo: nada lo impide y la app tendría que chequearlo. Y hoy puede colgar una carrera y un control
+> técnico del mismo evento. Quiero que la base garantice que cada evento tiene exactamente una hija, la
+> de su tipo. Decime cuál es la forma más idiomática de lograrlo en Postgres (trigger diferido, FK
+> bidireccional o aceptarlo en el servicio) y confirmá si `tyre_tests` se conserva como tabla marcador.
+
+**Respuesta de la IA:** se evaluaron tres caminos. (a) **Trigger diferido**: `CONSTRAINT TRIGGER ...
+DEFERRABLE INITIALLY DEFERRED`; (b) **FK bidireccional** (el patrón *exclusive arc*, con
+`CHECK (num_nonnulls(...) = 1)` y una FK compuesta hija→evento); (c) no bloquearlo y validarlo en el
+servicio. Se eligió **(a)** porque "al menos un hijo" no es expresable con una FK ni con un `CHECK`
+—solo valida filas contra una tabla— y el trigger diferido es la respuesta canónica en Postgres,
+además de ser el idioma que el repositorio ya usa (`reject_mutation`, derivaciones con `plpgsql`).
+La opción (b) se descartó porque obliga a una FK **cíclica** y estrena `DEFERRABLE` (no hay ninguna en
+el proyecto) y complica la futura restricción de puntajes (§B.1), que también se apoya en el tipo del
+evento.
+
+Para que la regla sea uniforme ("todo evento tiene exactamente una hija") se conservó `tyre_tests`
+como **marcador** (una fila por prueba, hoy solo `event_id`). El tipo se agregó como `events.kind`
+(`race | tyre_test | technical_control`), y cada hija lo repite en una columna constante
+(`event_kind`) que una FK compuesta contra `events (id, kind)` obliga a coincidir: de un evento de
+carreras solo puede colgar una carrera. Con eso queda cerrado el estado "hijos de dos tipos" sin
+necesidad de `event_type_id` ni de un `CHECK` de exclusividad.
+
+La mitad "sin hija" se chequea en dos triggers que comparten una función: uno sobre `events`
+(`AFTER INSERT OR UPDATE OF kind`) que exige la hija del `kind`, y otro sobre cada hija
+(`AFTER DELETE OR UPDATE OF event_id`) que evita dejar huérfano al evento al borrar solo la hija,
+ignorando el caso "el padre también se está borrando". Ambos son diferidos para que insertar el
+evento y su hija en una misma transacción siga siendo posible (el alta de US7).
+
+**Respuesta de la IA (validación):** el primer intento usó `IF NOT CASE NEW.kind WHEN ... THEN ...
+END THEN`, que **no compila**: el parser de `plpgsql` corta la condición en el primer `THEN` de las
+ramas del `CASE` y termina con `syntax error at end of input`. La expresión se movió a una asignación
+(`has_child := CASE ... END;`) y quedó resuelta.
+
+**Resultado:** `backend/migrations/000016_events_child_integrity.{up,down}.sql` (se fusionó el Tier 2
+en la misma migración, que todavía no está en producción), `backend/seeds/demo.sql` (los eventos
+declaran su `kind`; las hijas lo heredan por `DEFAULT`), `backend/internal/db/dbgen/models.go`
+(`Event.Kind`, `Race/tyreTest/TechnicalControl.EventKind`). Verificado con `make sqlc`, `make db-reset`
+y `make check` en verde; el `down`/`up` aplican en ida y vuelta; y 11 pruebas de comportamiento en la
+base: evento sin hija rechazado al commit, evento+hija en una transacción aceptado, hija de un tipo
+distinto rechazada por FK, segunda hija del mismo tipo rechazada por `UNIQUE`, borrar solo la hija
+rechazado y borrar hija+evento aceptado, cambiar el `kind` con una hija viva rechazado, y las
+regresiones de Tier 1 (`round` NULL y `round 0`).
