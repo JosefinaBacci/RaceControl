@@ -1,4 +1,5 @@
 DROP TABLE driver_season_numbers;
+DROP FUNCTION set_driver_season_number_category();
 
 ALTER TABLE driver_team_assignments DROP COLUMN is_starter;
 
