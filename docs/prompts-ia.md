@@ -661,3 +661,33 @@ con `make db-reset`, `make sqlc` (sin cambios), `make check` en verde y el `down
 la misma fecha con otro cambio pasa, un evento sin resultados sí puede moverse, y un equipo escrito a
 mano se re-deriva. El lado del servicio (traducir `RC001` a `409` y fijar la fecha en la pantalla)
 queda para US7.
+
+---
+
+### 2026-10-13 — Append-only: se conserva el trigger y se difiere la segregación de permisos (F5)
+
+**Contexto:** último punto de la revisión del modelo. F5 preguntaba si los triggers de append-only se
+dejan o se reemplazan por un rol de aplicación con `REVOKE`/RLS. La IA había caracterizado el pasaje al
+rol como "mitad de un trabajo de DevOps".
+
+**Prompt:**
+
+> por qué decís que es muy complicado el tema del rol?
+
+**Respuesta de la IA:** se midió el cambio en concreto en lugar de sostener la estimación. Son unas
+cinco sentencias SQL (crear el rol, `USAGE` del esquema, `GRANT SELECT, INSERT, UPDATE, DELETE ON ALL
+TABLES`, el `REVOKE` de las tablas de historial y `ALTER DEFAULT PRIVILEGES`) más un campo de
+configuración y una segunda URL de conexión: la caracterización de "complicado" era incorrecta y se
+corrigió. Se verificó además que no hay trampas ocultas (las columnas `identity` no piden `USAGE` sobre
+la secuencia, las funciones de los triggers corren como el invocador con `EXECUTE` público, los
+triggers existentes funcionan bajo un rol sin privilegios y el `REVOKE` sí bloquea la mutación) y el
+estado real del proyecto (la API conecta con un usuario **superusuario y `BYPASSRLS`** y dueño de las
+19 tablas, no hay despliegue a producción, y el control documentado para "escalada desde la app" es el
+RBAC del backend).
+
+**Resultado (decisión del usuario):** se conserva el trigger de append-only, porque cubre a cualquier
+escritor (incluidas las migraciones, los seeds y `psql`, que corren como dueño) mientras que el rol
+solo cubriría la API, y la segregación de permisos queda anotada como TODO en
+`docs/sprint2/TODO.md`. No cambió código. En el mismo archivo quedó anotada, como decisión pendiente,
+la cobertura append-only de la auditoría (`score_change_log`, `score_change_log_items`,
+`score_acknowledgements`).
