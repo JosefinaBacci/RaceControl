@@ -3,8 +3,8 @@
 -- from it so a production database starts with an empty calendar instead of
 -- made-up races.
 
--- 1. events: el calendario oficial de GP/ronda. El tipo es del evento; las hijas
--- lo repiten por DEFAULT y su FK lo obliga a coincidir.
+-- 1. events: the official GP/round calendar. The kind belongs to the event; the
+-- children repeat it by DEFAULT and their FK forces it to match.
 INSERT INTO events (id, season_id, category_id, kind, name, starts_at, ends_at)
 OVERRIDING SYSTEM VALUE VALUES
     (1, 1, 1, 'race',              'Gran Premio de Singapur',          TIMESTAMPTZ '2026-10-04 15:00:00+00', TIMESTAMPTZ '2026-10-04 17:00:00+00'),
@@ -17,7 +17,7 @@ OVERRIDING SYSTEM VALUE VALUES
     (8, 1, 2, 'technical_control', 'Verificación de pesos',            TIMESTAMPTZ '2026-11-26 09:00:00+00', TIMESTAMPTZ '2026-11-26 12:00:00+00')
 ON CONFLICT (id) DO NOTHING;
 
--- 2. races: la carrera concreta (el nombre y el timing vienen de events)
+-- 2. races: the concrete race (name and timing come from events)
 INSERT INTO races (id, event_id, circuit, location, country_code, round, season_id, category_id)
 OVERRIDING SYSTEM VALUE VALUES
     (1, 1, 'Marina Bay', 'Singapore', 'sg', 18, 1, 1),
@@ -27,20 +27,20 @@ OVERRIDING SYSTEM VALUE VALUES
     (5, 7, 'Las Vegas Strip', 'Las Vegas', 'us', 7, 1, 4)
 ON CONFLICT DO NOTHING;
 
--- 3. tyre_tests: prueba de neumáticos (el nombre y el timing vienen de events)
+-- 3. tyre_tests: tyre test (name and timing come from events)
 INSERT INTO tyre_tests (id, event_id)
 OVERRIDING SYSTEM VALUE VALUES
     (1, 4)
 ON CONFLICT DO NOTHING;
 
--- 4. technical_controls: el nombre y el timing viven en events, como en toda la jerarquía
+-- 4. technical_controls: name and timing live in events, as in the whole hierarchy
 INSERT INTO technical_controls (id, event_id, control_type)
 OVERRIDING SYSTEM VALUE VALUES
     (1, 2, 'post-race'),
     (2, 8, 'weight-check')
 ON CONFLICT DO NOTHING;
 
--- 5. drivers (sin cambios)
+-- 5. drivers (unchanged)
 INSERT INTO drivers (id, first_name, last_name, license_number, country_code)
 OVERRIDING SYSTEM VALUE VALUES
     (1, 'Charles',  'Leclerc',    'FIA-0001', 'mc'),
@@ -52,7 +52,7 @@ OVERRIDING SYSTEM VALUE VALUES
     (7, 'Andrea Kimi', 'Antonelli', 'FIA-0007', 'it')
 ON CONFLICT (id) DO NOTHING;
 
--- 6. driver_team_assignments (sin cambios)
+-- 6. driver_team_assignments (unchanged)
 INSERT INTO driver_team_assignments (id, driver_id, team_id, effective_from, is_starter)
 OVERRIDING SYSTEM VALUE VALUES
     (1, 1, 1, TIMESTAMPTZ '2026-01-01 00:00:00+00', true),
@@ -64,7 +64,7 @@ OVERRIDING SYSTEM VALUE VALUES
     (7, 7, 3, TIMESTAMPTZ '2026-01-01 00:00:00+00', true)
 ON CONFLICT DO NOTHING;
 
--- 7. season_drivers (número de coche por piloto-temporada)
+-- 7. season_drivers (car number per driver-season)
 INSERT INTO season_drivers (id, driver_id, season_id, number)
 OVERRIDING SYSTEM VALUE VALUES
     (1, 1, 1, 16),
@@ -76,7 +76,7 @@ OVERRIDING SYSTEM VALUE VALUES
     (7, 7, 1, 12)
 ON CONFLICT DO NOTHING;
 
--- 8. score_entries (sin cambios)
+-- 8. score_entries (unchanged)
 INSERT INTO score_entries (id, event_id, driver_id, points)
 OVERRIDING SYSTEM VALUE VALUES
     (1, 1, 1, 25),
@@ -85,7 +85,7 @@ OVERRIDING SYSTEM VALUE VALUES
     (4, 1, 2, 12)
 ON CONFLICT (event_id, driver_id) DO NOTHING;
 
--- 9. setval para todas las secuencias
+-- 9. setval for every sequence
 SELECT setval(pg_get_serial_sequence('events',                 'id'), COALESCE((SELECT max(id) FROM events),                 0));
 SELECT setval(pg_get_serial_sequence('drivers',                'id'), COALESCE((SELECT max(id) FROM drivers),                0));
 SELECT setval(pg_get_serial_sequence('season_drivers',   'id'), COALESCE((SELECT max(id) FROM season_drivers),   0));

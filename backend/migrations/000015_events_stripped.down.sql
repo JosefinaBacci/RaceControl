@@ -1,6 +1,6 @@
--- 000015 down: devuelve starts_at/ends_at a races y tyre_tests, copiando el
--- timing real del evento (el DEFAULT now() anterior dejaba las dos iguales y el
--- CHECK ends_at > starts_at no validaba).
+-- 000015 down: returns starts_at/ends_at to races and tyre_tests, copying the
+-- real timing from the event (the previous DEFAULT now() left both equal, so the
+-- CHECK ends_at > starts_at would not hold).
 
 ALTER TABLE races ADD COLUMN starts_at timestamptz;
 ALTER TABLE races ADD COLUMN ends_at timestamptz;

@@ -1,4 +1,4 @@
--- 000012 down: revierte la jerarquía, vuelve al modelo plano de events + event_types.
+-- 000012 down: reverts the hierarchy, back to the flat events + event_types model.
 
 DROP INDEX IF EXISTS technical_controls_event_id_idx;
 DROP TABLE IF EXISTS technical_controls CASCADE;

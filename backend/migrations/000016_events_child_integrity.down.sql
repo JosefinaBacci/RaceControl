@@ -1,7 +1,7 @@
--- 000016 down: deshace la relación 1:1 y el tipo del evento, devuelve el nombre a
--- las hijas copiándolo del evento y vuelve opcional la ronda.
+-- 000016 down: undoes the 1:1 relationship and the event kind, returns the name to
+-- the children copying it from the event and makes the round optional again.
 
--- 6. Se van los triggers de "exactamente una hija" y sus funciones.
+-- 6. The "exactly one child" triggers and their functions go away.
 DROP TRIGGER events_require_child ON events;
 DROP TRIGGER races_keep_event_child ON races;
 DROP TRIGGER tyre_tests_keep_event_child ON tyre_tests;
@@ -9,7 +9,7 @@ DROP TRIGGER technical_controls_keep_event_child ON technical_controls;
 DROP FUNCTION assert_event_has_child();
 DROP FUNCTION assert_event_keeps_child();
 
--- 5. Las hijas vuelven a la FK simple a events y pierden el tipo declarado.
+-- 5. The children go back to the plain FK to events and lose the declared kind.
 ALTER TABLE races
     DROP CONSTRAINT races_event_kind_fkey,
     DROP CONSTRAINT races_event_kind_check,
@@ -31,13 +31,13 @@ ALTER TABLE technical_controls
     ADD CONSTRAINT technical_controls_event_id_fkey
         FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE RESTRICT;
 
--- 4. events pierde el tipo.
+-- 4. events loses the kind.
 ALTER TABLE events
     DROP CONSTRAINT events_kind_valid,
     DROP CONSTRAINT events_id_kind_unique,
     DROP COLUMN kind;
 
--- 3. Unicidad por evento -> índice plano
+-- 3. Uniqueness per event -> plain index
 ALTER TABLE races DROP CONSTRAINT races_event_id_unique;
 CREATE INDEX races_event_id_idx ON races (event_id);
 
@@ -47,13 +47,13 @@ CREATE INDEX tyre_tests_event_id_idx ON tyre_tests (event_id);
 ALTER TABLE technical_controls DROP CONSTRAINT technical_controls_event_id_unique;
 CREATE INDEX technical_controls_event_id_idx ON technical_controls (event_id);
 
--- 2. La ronda vuelve a ser opcional
+-- 2. The round becomes optional again
 ALTER TABLE races DROP CONSTRAINT races_round_positive;
 ALTER TABLE races
     ALTER COLUMN round DROP NOT NULL,
     ADD CONSTRAINT races_round_positive CHECK (round IS NULL OR round > 0);
 
--- 1. El nombre vuelve a las hijas, copiado del evento
+-- 1. The name returns to the children, copied from the event
 ALTER TABLE races ADD COLUMN name text;
 UPDATE races r SET name = e.name FROM events e WHERE e.id = r.event_id;
 ALTER TABLE races ALTER COLUMN name SET NOT NULL;

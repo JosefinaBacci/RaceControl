@@ -1,12 +1,12 @@
--- 000012_events_hierarchy: Jerarquía de eventos → races / tyre_tests / technical_controls
--- todos los hijos apuntan al mismo events.id (el GP/ronda del calendario oficial).
--- No hay event_types/event_type_id ni enum: cada tipo tiene su tabla propia.
+-- 000012_events_hierarchy: event hierarchy → races / tyre_tests / technical_controls.
+-- Every child points at the same events.id (the GP/round of the official calendar).
+-- There is no event_types/event_type_id nor an enum: each type has its own table.
 
--- 1. events: quitamos event_type_id y event_types (ya no los usamos)
+-- 1. events: drop event_type_id and event_types (no longer used)
 ALTER TABLE events DROP COLUMN event_type_id;
 DROP TABLE IF EXISTS event_types CASCADE;
 
--- 2. races: la carrera concreta del fin de semana (1 por GP hoy)
+-- 2. races: the concrete race of the weekend (one per GP today)
 CREATE TABLE races (
     id          bigint      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     event_id    bigint      NOT NULL REFERENCES events (id) ON DELETE RESTRICT,
@@ -21,7 +21,7 @@ CREATE INDEX races_event_id_idx ON races (event_id);
 CREATE TRIGGER races_set_updated_at BEFORE UPDATE ON races
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
--- 3. tyre_tests: prueba de neumáticos, siempre colgando del evento que la agrupa
+-- 3. tyre_tests: tyre test, always hanging from the event that groups it
 CREATE TABLE tyre_tests (
     id          bigint      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     event_id    bigint      NOT NULL REFERENCES events (id) ON DELETE RESTRICT,
@@ -36,7 +36,7 @@ CREATE INDEX tyre_tests_event_id_idx ON tyre_tests (event_id);
 CREATE TRIGGER tyre_tests_set_updated_at BEFORE UPDATE ON tyre_tests
     FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
--- 4. technical_controls: control técnico. The timing lives in events, like every
+-- 4. technical_controls: technical control. The timing lives in events, like every
 -- other event, so this table only adds the control-specific attributes.
 CREATE TABLE technical_controls (
     id           bigint      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
