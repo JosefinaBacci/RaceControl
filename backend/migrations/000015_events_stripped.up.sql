@@ -1,5 +1,5 @@
 -- 000015_events_stripped: quitar starts_at/ends_at de races y tyre_tests
--- (queden solo en events; technical_controls ya usa started_at/ended_at así que se deja)
+-- (el timing vive solo en events, igual que en technical_controls)
 
 -- 1. Quitar CHECK y NOT NULL de races primero
 ALTER TABLE races DROP CONSTRAINT races_ends_after_start;

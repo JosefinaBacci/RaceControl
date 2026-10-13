@@ -18,11 +18,13 @@ CREATE TABLE races (
     CONSTRAINT races_ends_after_start CHECK (ends_at > starts_at)
 );
 CREATE INDEX races_event_id_idx ON races (event_id);
+CREATE TRIGGER races_set_updated_at BEFORE UPDATE ON races
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
--- 3. tyre_tests: prueba de neumáticos (evento suelto o bajo GP)
+-- 3. tyre_tests: prueba de neumáticos, siempre colgando del evento que la agrupa
 CREATE TABLE tyre_tests (
     id          bigint      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    event_id    bigint      REFERENCES events (id) ON DELETE SET NULL,
+    event_id    bigint      NOT NULL REFERENCES events (id) ON DELETE RESTRICT,
     name        text        NOT NULL,
     starts_at   timestamptz NOT NULL,
     ends_at     timestamptz NOT NULL,
@@ -31,18 +33,19 @@ CREATE TABLE tyre_tests (
     CONSTRAINT tyre_tests_ends_after_start CHECK (ends_at > starts_at)
 );
 CREATE INDEX tyre_tests_event_id_idx ON tyre_tests (event_id);
+CREATE TRIGGER tyre_tests_set_updated_at BEFORE UPDATE ON tyre_tests
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
--- 4. technical_controls: control técnico (evento suelto o bajo GP)
+-- 4. technical_controls: control técnico. The timing lives in events, like every
+-- other event, so this table only adds the control-specific attributes.
 CREATE TABLE technical_controls (
     id           bigint      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     event_id     bigint      NOT NULL REFERENCES events (id) ON DELETE RESTRICT,
     name         text        NOT NULL,
     control_type text        NOT NULL,
-    started_at   timestamptz NOT NULL,
-    ended_at     timestamptz NOT NULL,
     created_at   timestamptz NOT NULL DEFAULT now(),
-    updated_at   timestamptz NOT NULL DEFAULT now(),
-    CONSTRAINT technical_controls_ends_after_start CHECK (ended_at > started_at)
+    updated_at   timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX technical_controls_event_id_idx ON technical_controls (event_id);
-
+CREATE TRIGGER technical_controls_set_updated_at BEFORE UPDATE ON technical_controls
+    FOR EACH ROW EXECUTE FUNCTION set_updated_at();

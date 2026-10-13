@@ -1,11 +1,22 @@
--- 000015 down: revierte la quita de starts_at/ends_at
+-- 000015 down: devuelve starts_at/ends_at a races y tyre_tests, copiando el
+-- timing real del evento (el DEFAULT now() anterior dejaba las dos iguales y el
+-- CHECK ends_at > starts_at no validaba).
 
--- 1. Añade columns de nuevo a tyre_tests
-ALTER TABLE tyre_tests ADD COLUMN starts_at timestamptz NOT NULL DEFAULT now();
-ALTER TABLE tyre_tests ADD COLUMN ends_at timestamptz NOT NULL DEFAULT now();
-ALTER TABLE tyre_tests ADD CONSTRAINT tyre_tests_ends_after_start CHECK (ends_at > starts_at);
+ALTER TABLE races ADD COLUMN starts_at timestamptz;
+ALTER TABLE races ADD COLUMN ends_at timestamptz;
+ALTER TABLE tyre_tests ADD COLUMN starts_at timestamptz;
+ALTER TABLE tyre_tests ADD COLUMN ends_at timestamptz;
 
--- 2. Añade columns de nuevo a races
-ALTER TABLE races ADD COLUMN starts_at timestamptz NOT NULL DEFAULT now();
-ALTER TABLE races ADD COLUMN ends_at timestamptz NOT NULL DEFAULT now();
-ALTER TABLE races ADD CONSTRAINT races_ends_after_start CHECK (ends_at > starts_at);
+UPDATE races r SET starts_at = e.starts_at, ends_at = e.ends_at
+FROM events e WHERE e.id = r.event_id;
+UPDATE tyre_tests t SET starts_at = e.starts_at, ends_at = e.ends_at
+FROM events e WHERE e.id = t.event_id;
+
+ALTER TABLE races
+    ALTER COLUMN starts_at SET NOT NULL,
+    ALTER COLUMN ends_at SET NOT NULL,
+    ADD CONSTRAINT races_ends_after_start CHECK (ends_at >= starts_at);
+ALTER TABLE tyre_tests
+    ALTER COLUMN starts_at SET NOT NULL,
+    ALTER COLUMN ends_at SET NOT NULL,
+    ADD CONSTRAINT tyre_tests_ends_after_start CHECK (ends_at >= starts_at);
