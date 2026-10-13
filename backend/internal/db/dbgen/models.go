@@ -74,13 +74,12 @@ type Notification struct {
 type Race struct {
 	ID          int64
 	EventID     int64
-	Name        string
 	CreatedAt   pgtype.Timestamptz
 	UpdatedAt   pgtype.Timestamptz
 	Circuit     string
 	Location    string
 	CountryCode string
-	Round       pgtype.Int4
+	Round       int32
 	SeasonID    int64
 	CategoryID  int64
 }
@@ -162,7 +161,6 @@ type Team struct {
 type TechnicalControl struct {
 	ID          int64
 	EventID     int64
-	Name        string
 	ControlType string
 	CreatedAt   pgtype.Timestamptz
 	UpdatedAt   pgtype.Timestamptz
@@ -171,7 +169,6 @@ type TechnicalControl struct {
 type TyreTest struct {
 	ID        int64
 	EventID   int64
-	Name      string
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 }

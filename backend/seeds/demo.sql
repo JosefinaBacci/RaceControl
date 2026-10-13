@@ -16,27 +16,27 @@ OVERRIDING SYSTEM VALUE VALUES
     (8, 1, 2, 'Verificación de pesos', TIMESTAMPTZ '2026-11-26 09:00:00+00', TIMESTAMPTZ '2026-11-26 12:00:00+00')
 ON CONFLICT (id) DO NOTHING;
 
--- 2. races: la carrera concreta (sin starts_at/ends_at; el timing viene de events)
-INSERT INTO races (id, event_id, name, circuit, location, country_code, round, season_id, category_id)
+-- 2. races: la carrera concreta (el nombre y el timing vienen de events)
+INSERT INTO races (id, event_id, circuit, location, country_code, round, season_id, category_id)
 OVERRIDING SYSTEM VALUE VALUES
-    (1, 1, 'Gran Premio de Singapur', 'Marina Bay', 'Singapore', 'sg', 18, 1, 1),
-    (2, 3, 'Gran Premio de Estados Unidos', 'Circuit of the Americas', 'Austin', 'us', 19, 1, 1),
-    (3, 5, 'Ronda 13 — Qatar', 'Lusail', 'Lusail', 'qa', 13, 1, 2),
-    (4, 6, 'Ronda 10 — Monza', 'Monza', 'Monza', 'it', 10, 1, 3),
-    (5, 7, 'Ronda 7 — Las Vegas', 'Las Vegas Strip', 'Las Vegas', 'us', 7, 1, 4)
+    (1, 1, 'Marina Bay', 'Singapore', 'sg', 18, 1, 1),
+    (2, 3, 'Circuit of the Americas', 'Austin', 'us', 19, 1, 1),
+    (3, 5, 'Lusail', 'Lusail', 'qa', 13, 1, 2),
+    (4, 6, 'Monza', 'Monza', 'it', 10, 1, 3),
+    (5, 7, 'Las Vegas Strip', 'Las Vegas', 'us', 7, 1, 4)
 ON CONFLICT DO NOTHING;
 
--- 3. tyre_tests: prueba de neumáticos (sin starts_at/ends_at)
-INSERT INTO tyre_tests (id, event_id, name)
+-- 3. tyre_tests: prueba de neumáticos (el nombre y el timing vienen de events)
+INSERT INTO tyre_tests (id, event_id)
 OVERRIDING SYSTEM VALUE VALUES
-    (1, 4, 'Prueba de neumáticos Pirelli 2027')
+    (1, 4)
 ON CONFLICT DO NOTHING;
 
--- 4. technical_controls: el timing vive en events, como en toda la jerarquía
-INSERT INTO technical_controls (id, event_id, name, control_type)
+-- 4. technical_controls: el nombre y el timing viven en events, como en toda la jerarquía
+INSERT INTO technical_controls (id, event_id, control_type)
 OVERRIDING SYSTEM VALUE VALUES
-    (1, 2, 'Control técnico post-carrera', 'post-race'),
-    (2, 8, 'Verificación de pesos', 'weight-check')
+    (1, 2, 'post-race'),
+    (2, 8, 'weight-check')
 ON CONFLICT DO NOTHING;
 
 -- 5. drivers (sin cambios)
