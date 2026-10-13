@@ -3,17 +3,18 @@
 -- from it so a production database starts with an empty calendar instead of
 -- made-up races.
 
--- 1. events: el calendario oficial de GP/ronda
-INSERT INTO events (id, season_id, category_id, name, starts_at, ends_at)
+-- 1. events: el calendario oficial de GP/ronda. El tipo es del evento; las hijas
+-- lo repiten por DEFAULT y su FK lo obliga a coincidir.
+INSERT INTO events (id, season_id, category_id, kind, name, starts_at, ends_at)
 OVERRIDING SYSTEM VALUE VALUES
-    (1, 1, 1, 'Gran Premio de Singapur', TIMESTAMPTZ '2026-10-04 15:00:00+00', TIMESTAMPTZ '2026-10-04 17:00:00+00'),
-    (2, 1, 1, 'Control técnico post-carrera', TIMESTAMPTZ '2026-10-05 09:00:00+00', TIMESTAMPTZ '2026-10-05 12:00:00+00'),
-    (3, 1, 1, 'Gran Premio de Estados Unidos', TIMESTAMPTZ '2026-10-18 16:00:00+00', TIMESTAMPTZ '2026-10-18 18:00:00+00'),
-    (4, 1, 1, 'Prueba de neumáticos Pirelli 2027', TIMESTAMPTZ '2026-10-20 09:00:00+00', TIMESTAMPTZ '2026-10-20 17:00:00+00'),
-    (5, 1, 2, 'Ronda 13 — Qatar', TIMESTAMPTZ '2026-11-27 15:00:00+00', TIMESTAMPTZ '2026-11-27 17:00:00+00'),
-    (6, 1, 3, 'Ronda 10 — Monza', TIMESTAMPTZ '2026-09-06 13:00:00+00', TIMESTAMPTZ '2026-09-06 15:00:00+00'),
-    (7, 1, 4, 'Ronda 7 — Las Vegas', TIMESTAMPTZ '2026-11-21 18:00:00+00', TIMESTAMPTZ '2026-11-21 20:00:00+00'),
-    (8, 1, 2, 'Verificación de pesos', TIMESTAMPTZ '2026-11-26 09:00:00+00', TIMESTAMPTZ '2026-11-26 12:00:00+00')
+    (1, 1, 1, 'race',              'Gran Premio de Singapur',          TIMESTAMPTZ '2026-10-04 15:00:00+00', TIMESTAMPTZ '2026-10-04 17:00:00+00'),
+    (2, 1, 1, 'technical_control', 'Control técnico post-carrera',     TIMESTAMPTZ '2026-10-05 09:00:00+00', TIMESTAMPTZ '2026-10-05 12:00:00+00'),
+    (3, 1, 1, 'race',              'Gran Premio de Estados Unidos',    TIMESTAMPTZ '2026-10-18 16:00:00+00', TIMESTAMPTZ '2026-10-18 18:00:00+00'),
+    (4, 1, 1, 'tyre_test',         'Prueba de neumáticos Pirelli 2027', TIMESTAMPTZ '2026-10-20 09:00:00+00', TIMESTAMPTZ '2026-10-20 17:00:00+00'),
+    (5, 1, 2, 'race',              'Ronda 13 — Qatar',                 TIMESTAMPTZ '2026-11-27 15:00:00+00', TIMESTAMPTZ '2026-11-27 17:00:00+00'),
+    (6, 1, 3, 'race',              'Ronda 10 — Monza',                 TIMESTAMPTZ '2026-09-06 13:00:00+00', TIMESTAMPTZ '2026-09-06 15:00:00+00'),
+    (7, 1, 4, 'race',              'Ronda 7 — Las Vegas',              TIMESTAMPTZ '2026-11-21 18:00:00+00', TIMESTAMPTZ '2026-11-21 20:00:00+00'),
+    (8, 1, 2, 'technical_control', 'Verificación de pesos',            TIMESTAMPTZ '2026-11-26 09:00:00+00', TIMESTAMPTZ '2026-11-26 12:00:00+00')
 ON CONFLICT (id) DO NOTHING;
 
 -- 2. races: la carrera concreta (el nombre y el timing vienen de events)

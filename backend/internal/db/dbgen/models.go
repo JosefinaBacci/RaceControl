@@ -52,6 +52,7 @@ type Event struct {
 	DeactivatedAt pgtype.Timestamptz
 	CreatedAt     pgtype.Timestamptz
 	UpdatedAt     pgtype.Timestamptz
+	Kind          string
 }
 
 type LoginAttempt struct {
@@ -82,6 +83,7 @@ type Race struct {
 	Round       int32
 	SeasonID    int64
 	CategoryID  int64
+	EventKind   string
 }
 
 type ScoreAcknowledgement struct {
@@ -164,6 +166,7 @@ type TechnicalControl struct {
 	ControlType string
 	CreatedAt   pgtype.Timestamptz
 	UpdatedAt   pgtype.Timestamptz
+	EventKind   string
 }
 
 type TyreTest struct {
@@ -171,6 +174,7 @@ type TyreTest struct {
 	EventID   int64
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
+	EventKind string
 }
 
 type User struct {
