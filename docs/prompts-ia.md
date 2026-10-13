@@ -611,3 +611,53 @@ base: evento sin hija rechazado al commit, evento+hija en una transacción acept
 distinto rechazada por FK, segunda hija del mismo tipo rechazada por `UNIQUE`, borrar solo la hija
 rechazado y borrar hija+evento aceptado, cambiar el `kind` con una hija viva rechazado, y las
 regresiones de Tier 1 (`round` NULL y `round 0`).
+
+---
+
+### 2026-10-13 — Alineación de los comentarios SQL del Sprint 2 al inglés
+
+**Contexto:** la convención del repositorio (AGENTS.md) pide comentarios en inglés; Go, TypeScript y
+las migraciones anteriores al Sprint 2 ya lo hacían, pero el DDL del Sprint 2 (000012–000016) y los
+comentarios por sección de `seeds/demo.sql` habían quedado en español.
+
+**Prompt:**
+
+> (tras una advertencia de la IA sobre el idioma de los comentarios) sí hacé esto y alineá los estilos
+> por favor
+
+**Resultado:** comentarios traducidos al inglés en `backend/migrations/000012`–`000016` (up y down) y
+`backend/seeds/demo.sql`. Solo comentarios: ninguna sentencia cambió, así que una base ya en la versión
+16 no necesita reseteo.
+
+---
+
+### 2026-10-13 — Equipo del resultado siempre derivado y fecha final de una carrera con resultados (000016)
+
+**Contexto:** cierre del último hallazgo de la revisión del modelo (§C.4/§C.5). El equipo acreditado de
+un resultado es una copia denormalizada del historial de pases, y solo se volvía a deducir cuando
+cambiaba el piloto o la carrera: una escritura directa sobre el equipo podía dejarlo en desacuerdo con
+el historial. Aparte, la fecha de una carrera vive en `events.starts_at` sin ninguna traba una vez
+cargados los resultados, y de esa fecha depende la deducción del equipo.
+
+**Prompt:**
+
+> dame el código concreto de lo que vas a hacer para cerrar F4
+
+**Respuesta de la IA:** se evaluó resolverlo en el servicio frente a llevarlo a la base, y se eligió la
+base (el repositorio ya traduce errores de la base en errores de dominio). Dos cambios en la 000016:
+(1) el trigger que deduce el equipo pasa de `BEFORE INSERT OR UPDATE OF event_id, driver_id` a
+`BEFORE INSERT OR UPDATE`, para que se re-deduzca en cada alta y cada edición y no se pueda escribir a
+mano; (2) un guardián `BEFORE UPDATE OF starts_at` sobre `events` rechaza mover la fecha si el evento
+ya tiene resultados, y deja pasar el caso en que la fecha se reenvía igual junto con otros cambios (la
+comparación es `IS DISTINCT FROM`). El rechazo se levanta con un SQLSTATE propio de la clase `RC`
+(`RC001`), y `db.GuardViolation` lo reconoce para que el servicio lo traduzca a un `409` cuando se
+implemente la edición del calendario (US7). Se descartaron recalcular el equipo al mostrar, reescribir
+los resultados y guardar el contrato en vez del equipo.
+
+**Resultado:** `backend/migrations/000016_events_child_integrity.{up,down}.sql` (bloques 7 y 8),
+`backend/internal/db/pgconv.go` (`GuardViolation`) y `backend/internal/db/pgconv_test.go`. Verificado
+con `make db-reset`, `make sqlc` (sin cambios), `make check` en verde y el `down`/`up` en ida y vuelta;
+7 pruebas de comportamiento en la base: la fecha de una carrera con resultados se rechaza con `RC001`,
+la misma fecha con otro cambio pasa, un evento sin resultados sí puede moverse, y un equipo escrito a
+mano se re-deriva. El lado del servicio (traducir `RC001` a `409` y fijar la fecha en la pantalla)
+queda para US7.
