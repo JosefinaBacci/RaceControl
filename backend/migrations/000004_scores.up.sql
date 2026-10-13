@@ -32,8 +32,7 @@ CREATE TABLE score_change_log (
     id            bigint      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     event_id      bigint      NOT NULL REFERENCES events (id) ON DELETE RESTRICT,
     actor_user_id bigint      NOT NULL REFERENCES users (id) ON DELETE RESTRICT,
-    changed_at    timestamptz NOT NULL DEFAULT now(),
-    summary       text        NOT NULL
+    changed_at    timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE INDEX score_change_log_event_id_idx ON score_change_log (event_id, changed_at DESC);

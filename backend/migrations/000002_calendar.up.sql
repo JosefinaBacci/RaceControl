@@ -27,6 +27,8 @@ CREATE TABLE events (
     starts_at     timestamptz NOT NULL,
     ends_at       timestamptz NOT NULL,
     round         integer,
+    is_active     boolean     NOT NULL GENERATED ALWAYS AS (deactivated_at IS NULL) STORED,
+    deactivated_at timestamptz,
     created_at    timestamptz NOT NULL DEFAULT now(),
     updated_at    timestamptz NOT NULL DEFAULT now(),
 

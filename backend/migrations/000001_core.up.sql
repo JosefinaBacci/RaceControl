@@ -13,6 +13,8 @@ CREATE TABLE categories (
     id         bigint      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     code       text        NOT NULL UNIQUE,
     name       text        NOT NULL,
+    is_active      boolean     NOT NULL GENERATED ALWAYS AS (deactivated_at IS NULL) STORED,
+    deactivated_at timestamptz,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
 
@@ -41,6 +43,8 @@ CREATE TABLE teams (
     category_id bigint      NOT NULL REFERENCES categories (id) ON DELETE RESTRICT,
     code        text        NOT NULL,
     name        text        NOT NULL,
+    is_active      boolean     NOT NULL GENERATED ALWAYS AS (deactivated_at IS NULL) STORED,
+    deactivated_at timestamptz,
     created_at  timestamptz NOT NULL DEFAULT now(),
     updated_at  timestamptz NOT NULL DEFAULT now(),
 
