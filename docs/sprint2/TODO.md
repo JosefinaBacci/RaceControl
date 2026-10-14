@@ -48,3 +48,13 @@ backend, no los privilegios de base. Es trabajo de infraestructura, no de una us
 Los hechos congelados ya tienen su guardia (`reject_mutation()`): `driver_team_assignments` (desde
 `000007`) y `score_change_log`, `score_change_log_items`, `score_acknowledgements` y `login_attempts`
 (desde `000017`). `notifications` queda fuera a propósito: tiene estado "leída" y se actualiza.
+
+## Purga de `login_attempts`
+
+**Estado:** pendiente, sin urgencia.
+
+La guardia append-only (`000017`) rechaza también el `DELETE`, así que la tabla solo crece. Con el
+volumen de este proyecto no importa; en un despliegue real haría falta una retención: una excepción
+acotada en la guardia que permita borrar intentos más viejos que N días (mucho más que la ventana de
+bloqueo de 15 minutos), corrida por un job periódico. Recién ahí tendrían sentido los índices por IP o
+por vencimiento de sesión, que hoy ninguna query usa.

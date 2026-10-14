@@ -816,3 +816,35 @@ consigna pide F1, F2, F3 y F1 Academy).
 de neumáticos no migra porque no hay circuito que inferir, y la migración falla entera sin dejar
 cambios a medias). Verificado con 19 pruebas de comportamiento, los códigos `RC001` de las guardias
 nuevas, ida y vuelta `down`/`up` y `make check`.
+
+---
+
+### 2026-10-14 — Evaluación de una segunda revisión del modelo (000018)
+
+**Contexto:** el equipo trajo una segunda lista de observaciones sobre puntajes, pilotos,
+notificaciones, sesiones y nombres, y pidió evaluarlas antes de aplicar nada.
+
+**Prompt:**
+
+> Evaluate the following (same as before): [lista: categoría del equipo vs. de la carrera y fila en
+> `season_drivers`; auditoría obligatoria de puntajes; validación del acuse; `season_drivers` al 1 de
+> enero; asignaciones sin fin y retroactivas; `UNIQUE` en ítems y notificaciones, notificaciones sin
+> tipo; posición y estado; purga de `login_attempts`, índices por IP y por vencimiento; índice de no
+> leídas; nombres `driver_season_numbers*`; quitar `is_active`; `ends_at = starts_at`; zona horaria
+> del circuito; dumps sin hashes]
+
+Seguido de: "Ok, implement the worth now and leave a note [...] for the ones that should be
+implemented in the future".
+
+**Respuesta de la IA:** verificó cada punto contra el esquema y las queries. Separó lo que conviene
+hacer ya (barato y cierra un agujero real), lo que es real pero se diseña con su user story, y lo que
+no conviene: guardar posición y estado revierte una decisión del equipo (`000006`) sin que la consigna
+lo pida; los índices por IP, por vencimiento de sesión y de no leídas no tienen query que los use;
+`is_active` es convención del proyecto y se usa; `UNIQUE (user_id, event_id)` en notificaciones
+bloquearía avisar una corrección de puntajes.
+
+**Resultado:** migración aditiva `000018` (categoría del equipo = categoría de la carrera con `RC002`,
+un ítem por piloto en cada cambio, `ends_at > starts_at`, nombres de `season_drivers`). Verificado
+con pruebas de comportamiento, ida y vuelta `down`/`up` y `make check`. Lo diferido quedó como tareas
+en `docs/sprint2/sprint.md` (US9, US11, US12, US24) y la purga de `login_attempts` en
+`docs/sprint2/TODO.md`. El dump compartido excluye los datos de `users`, `sessions` y `login_attempts`.

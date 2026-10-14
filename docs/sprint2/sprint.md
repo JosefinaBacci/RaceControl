@@ -34,7 +34,9 @@ Esquema `000002`–`000017` ya aplicado. Pendiente de la revisión del modelo:
 
 - [x] §A.6: catálogo `circuits` y eliminación de `events.name` (se edita `000016`, requiere `make db-reset`)
 - [x] F6 / B.1: puntaje solo sobre carreras (`score_entries` y `score_change_log` → `races`)
-- [ ] F6 / B.2: acuse solo de un admin de esa escudería
+- [ ] F6 / B.2: acuse solo de un admin de esa escudería (se hace con US24)
+- [x] `000018`: categoría del equipo = categoría de la carrera, un ítem por piloto en cada cambio,
+      evento con duración positiva, nombres de `season_drivers` (F8)
 - [ ] F8: renombrar los triggers de `season_drivers` (cosmético)
 - [ ] F9: volcar las decisiones en `02-modelo-de-datos.md` y registrar en `prompts-ia.md`
 
@@ -82,6 +84,16 @@ Esquema `000002`–`000017` ya aplicado. Pendiente de la revisión del modelo:
 - [ ] Queries y servicio de pilotos (alta, edición, número por temporada, rol titular/suplente)
 - [ ] Validaciones de datos
 - [ ] Restringir la gestión a los pilotos de la propia escudería
+- [ ] Modelo: `season_drivers` deriva la categoría del equipo al 1 de enero, así que un piloto que se
+      suma a mitad de temporada no puede tener número y uno que cambia de categoría queda con la
+      vieja. Una fila por (piloto, temporada, categoría), con la categoría elegida por el admin y un
+      chequeo de que el piloto tenga una asignación en esa categoría durante la temporada
+- [ ] Modelo: una asignación no se puede terminar (un piloto liberado sigue en la alineación).
+      Fila de "baja" en `driver_team_assignments` (sin escudería desde una fecha), sin romper el
+      append-only
+- [ ] Modelo: una asignación retroactiva cambia `assigned_team()` para fechas pasadas y deja viejo el
+      equipo guardado en los puntajes. Guardia: una asignación nueva empieza después de la última del
+      piloto y nunca antes de una carrera en la que ya tenga resultados
 - [ ] Formulario de alta y edición en la app del responsable de escudería
 - [ ] Tests de integración (incluido intento sobre un piloto de otra escudería)
 
@@ -98,6 +110,7 @@ Esquema `000002`–`000017` ya aplicado. Pendiente de la revisión del modelo:
 *Est. 4h · SP 3 · Valor 13*
 
 - [ ] Listado público de pilotos agrupado por escudería (alineación vigente)
+      (depende de poder terminar una asignación, ver US11)
 - [ ] Vista de detalle de cada piloto
 - [ ] Búsqueda y filtros
 - [ ] Acceso de solo lectura para todos los usuarios
@@ -118,6 +131,10 @@ Esquema `000002`–`000017` ya aplicado. Pendiente de la revisión del modelo:
 - [ ] Validaciones (negativos, vacíos, pilotos repetidos)
 - [ ] Recalcular la clasificación general al modificar un puntaje
 - [ ] Restringir a `fia_admin` y registrar fecha y autor de cada modificación (`score_change_log`)
+- [ ] Modelo: hoy nada impide cambiar `score_entries` sin escribir `score_change_log`. Trigger de
+      auditoría que escribe el log él mismo, con el autor tomado de un setting de la transacción
+      (`SET LOCAL racecontrol.actor_id`) y que falla si no está
+- [ ] Traducir `RC002` (piloto de otra categoría que la carrera) a un 4xx
 
 **Criterios de éxito**
 
@@ -148,6 +165,12 @@ Esquema `000002`–`000017` ya aplicado. Pendiente de la revisión del modelo:
 
 - [ ] Vista de puntajes para el responsable de escudería
 - [ ] Notificación al publicar o modificar puntajes
+- [ ] Modelo: una notificación solo apunta al evento, así que no distingue "publicado" de
+      "corregido". Agregar el tipo y el vínculo al cambio de puntajes que anuncia (como el acuse), con
+      la unicidad por (usuario, cambio). **No** `UNIQUE (user_id, event_id)`: bloquearía avisar una
+      corrección
+- [ ] Modelo (F6 / B.2): el acuse toma la escudería del usuario que acusa (trigger que la deriva, un
+      admin FIA no tiene) y exige que esa escudería figure en los ítems del cambio acusado
 - [ ] Botón de confirmación de recibo y su estado (pendiente / confirmada)
 - [ ] Vista de seguimiento de confirmaciones para el administrador
 

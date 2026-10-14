@@ -129,3 +129,25 @@ producción; requiere `make db-reset`).
 - **Regla en el servicio, no en la base.** "La fecha del evento cae dentro de su temporada" abarca
   `events`, `races`, `rounds`, `tyre_tests` y `technical_controls`; hacerla cumplir en la base
   exigiría cinco triggers diferidos. La valida el servicio en cada escritura.
+
+## 6. Puntajes y nombres (000018)
+
+Migración aditiva sobre `000017` (no requiere `make db-reset`).
+
+- **Categoría del puntaje.** El trigger que deriva el equipo del resultado también exige que ese
+  equipo corra en la categoría de la ronda de la carrera: un piloto de F2 no puntúa en una carrera de
+  F1. Usa `RC002`, porque es un error de carga del admin y el servicio lo responde con un 4xx.
+- **Un ítem por piloto en cada cambio.** `UNIQUE (change_log_id, driver_id)` en
+  `score_change_log_items`: dos líneas del mismo piloto dejarían ambiguos los puntos viejos y nuevos.
+- **Duración positiva.** `ends_at > starts_at`: un evento que termina cuando empieza no significa
+  nada en un calendario.
+- **Nombres de `season_drivers`.** `000013` había renombrado la tabla pero no sus restricciones,
+  índice, secuencia, triggers ni función.
+
+Quedan para su user story (detalle en `docs/sprint2/sprint.md`): el trigger de auditoría de puntajes
+(US9), `season_drivers` por categoría y el cierre y la retroactividad de las asignaciones (US11), y
+el tipo de notificación y la validación del acuse (US24). Se descartaron: guardar posición y estado
+(DNF, DSQ), porque la consigna solo pide puntajes y `000006` deriva la posición de los puntos;
+índices sin una query que los use; quitar las columnas `is_active`, que son convención del proyecto;
+y la zona horaria del circuito, que ninguna historia pide.
+
