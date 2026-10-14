@@ -3,9 +3,9 @@
 -- the guards, makes the round optional again and narrows the team derivation back
 -- to the driver and the event.
 
--- 10. The date guard goes away.
-DROP TRIGGER events_keep_final_date ON events;
-DROP FUNCTION assert_event_date_is_final();
+-- 10. The guard on raced events goes away.
+DROP TRIGGER events_keep_raced_event_final ON events;
+DROP FUNCTION assert_raced_event_is_final();
 
 -- 9. The derived team goes back to firing only when the driver or the event changes.
 DROP TRIGGER score_entries_set_team ON score_entries;

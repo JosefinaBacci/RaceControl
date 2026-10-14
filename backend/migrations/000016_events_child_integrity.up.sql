@@ -3,7 +3,7 @@
 -- unique among the active races of its championship, and runs on a circuit of
 -- the catalogue. No event name is stored: the label is composed by the backend.
 -- A result always derives its credited team and a race that already has results
--- keeps its date.
+-- keeps its date and stays on the calendar.
 
 -- 1. The name belongs to no row: the backend composes the label from the kind
 --    and the child's attributes, so a stored name could only diverge from them.
@@ -203,20 +203,22 @@ CREATE TRIGGER score_entries_set_team
     BEFORE INSERT OR UPDATE ON score_entries
     FOR EACH ROW EXECUTE FUNCTION set_score_entry_team();
 
--- 10. A race that already has results has been run: its date is final. The guard
---     fires only when the date really changes, so editing anything else on the
---     event still works.
-CREATE FUNCTION assert_event_date_is_final() RETURNS trigger AS $$
+-- 10. A race that already has results has been run: its date is final and it can
+--     no longer be removed from the calendar, or its results would hang from an
+--     event nobody sees. The guard fires only when the date or the status really
+--     changes, so editing anything else on the event still works.
+CREATE FUNCTION assert_raced_event_is_final() RETURNS trigger AS $$
 BEGIN
-    IF NEW.starts_at IS DISTINCT FROM OLD.starts_at
+    IF (NEW.starts_at IS DISTINCT FROM OLD.starts_at
+            OR NEW.deactivated_at IS DISTINCT FROM OLD.deactivated_at)
         AND EXISTS (SELECT 1 FROM score_entries WHERE event_id = NEW.id) THEN
-        RAISE EXCEPTION 'event % has results: its date is final', NEW.id
+        RAISE EXCEPTION 'event % has results: its date and status are final', NEW.id
             USING ERRCODE = 'RC001';
     END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER events_keep_final_date
-    BEFORE UPDATE OF starts_at ON events
-    FOR EACH ROW EXECUTE FUNCTION assert_event_date_is_final();
+CREATE TRIGGER events_keep_raced_event_final
+    BEFORE UPDATE OF starts_at, deactivated_at ON events
+    FOR EACH ROW EXECUTE FUNCTION assert_raced_event_is_final();

@@ -32,7 +32,7 @@ pilotos tienen que existir antes de cargar un resultado.
 
 Esquema `000002`–`000017` ya aplicado. Pendiente de la revisión del modelo:
 
-- [ ] §A.6: catálogo `circuits` y eliminación de `events.name` (se edita `000016`, requiere `make db-reset`)
+- [x] §A.6: catálogo `circuits` y eliminación de `events.name` (se edita `000016`, requiere `make db-reset`)
 - [ ] F6: puntaje solo sobre carreras (B.1) y acuse solo de un admin de esa escudería (B.2)
 - [ ] F8: renombrar los triggers de `season_drivers` (cosmético)
 - [ ] F9: volcar las decisiones en `02-modelo-de-datos.md` y registrar en `prompts-ia.md`

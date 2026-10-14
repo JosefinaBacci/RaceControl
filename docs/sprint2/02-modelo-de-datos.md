@@ -101,5 +101,6 @@ producción; requiere `make db-reset`).
   dato de referencia (`seeds/reference.sql`, los 24 circuitos de 2026): en producción hace falta para
   crear carreras. Se asume un GP por circuito; si un circuito albergara GP distintos por categoría,
   `gp_name` pasaría al evento.
-- **Fecha final y equipo derivado.** Una carrera con resultados no cambia su fecha (`RC001`, el
-  servicio responde `409`), y el equipo del resultado se re-deriva en cada escritura.
+- **Carrera disputada y equipo derivado.** Una carrera con resultados no cambia su fecha ni se da de
+  baja (`RC001`, el servicio responde `409`): sus resultados quedarían colgando de un evento que nadie
+  ve. El equipo del resultado se re-deriva en cada escritura.
