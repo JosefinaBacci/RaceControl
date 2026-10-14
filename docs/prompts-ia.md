@@ -751,3 +751,36 @@ de tipo con `ON UPDATE RESTRICT` en las otras hijas; `events.name` eliminado; ca
 12 pruebas de comportamiento (baja que libera la ronda, reactivación en conflicto, copia falsificada,
 segunda hija, evento sin hija, fecha final, cambio de tipo, cambio de categoría en cascada), ida y
 vuelta `down`/`up` con datos y `make check`. Documentado en `docs/sprint2/02-modelo-de-datos.md` §5.
+
+---
+
+### 2026-10-14 — Calendario: campeonato en las hijas y tabla `rounds` (000016)
+
+**Contexto:** revisión del equipo sobre la versión anterior de `000016`, que copiaba temporada,
+categoría y estado activo del evento en `races` (FK compuesta de cinco columnas) para que una carrera
+dada de baja liberara su ronda.
+
+**Prompt:**
+
+> Drop season_id and category_id from events, and drop events_race_identity_unique (the 5-column
+> constraint). Keep only UNIQUE (id, kind) as the FK target for the children. Each child owns its own
+> season_id and category_id as native columns, not synced copies. races loses event_is_active and
+> keeps event_kind only as the discriminator. Put round on a rounds table (season, category, number,
+> circuit, gp_name), with races pointing at it. This lets one weekend hold a sprint and a race, and the
+> uniqueness lives on a plain table, so no active-flag copy is needed.
+
+**Respuesta de la IA:** antes de implementar señaló cuatro puntos abiertos: que `races` con campeonato
+propio y además apuntando a una ronda permitía que ambos difirieran, qué distingue un sprint de la
+carrera en la misma ronda, qué pasa con la ronda vieja si se cancela y se vuelve a armar, y si
+`circuits` conserva `gp_name`. Decisiones del equipo: `races` toma el campeonato solo de la ronda;
+la consigna no pide sprints, así que la ronda tiene una sola carrera (`UNIQUE (round_id)`); las rondas
+tienen baja lógica y el número es único entre las activas (índice parcial); `gp_name` sale de
+`circuits`.
+
+**Resultado:** `000016` reescrita (requiere `make db-reset`). `events` queda con tipo, timing y baja
+lógica; `tyre_tests` y `technical_controls` con temporada y categoría propias; `races` con `round_id`;
+tablas `rounds` y `circuits`. Verificado con `make db-reset`, 15 pruebas de comportamiento (cancelar y
+rearmar una ronda, número repetido entre activas, mismo número en otra categoría, reactivación en
+conflicto, segunda carrera por ronda, segunda hija, evento sin hija, cambio de tipo, fecha y baja de
+una carrera con resultados), ida y vuelta `down`/`up` con datos y `make check`. Queda documentado como
+pendiente que la base no impide una carrera activa sobre una ronda dada de baja.

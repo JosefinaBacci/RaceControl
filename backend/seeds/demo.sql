@@ -3,39 +3,47 @@
 -- from it so a production database starts with an empty calendar instead of
 -- made-up races.
 
--- 1. events: the official calendar. The kind belongs to the event; the children
--- repeat it by DEFAULT and their FK forces it to match. No name is stored: the
--- backend composes the label from the kind and the child.
-INSERT INTO events (id, season_id, category_id, kind, starts_at, ends_at)
+-- 1. rounds: the dates of each championship, with the circuit and the Grand Prix name
+INSERT INTO rounds (id, season_id, category_id, number, circuit_id, gp_name)
 OVERRIDING SYSTEM VALUE VALUES
-    (1, 1, 1, 'race',              TIMESTAMPTZ '2026-10-04 15:00:00+00', TIMESTAMPTZ '2026-10-04 17:00:00+00'),
-    (2, 1, 1, 'technical_control', TIMESTAMPTZ '2026-10-05 09:00:00+00', TIMESTAMPTZ '2026-10-05 12:00:00+00'),
-    (3, 1, 1, 'race',              TIMESTAMPTZ '2026-10-18 16:00:00+00', TIMESTAMPTZ '2026-10-18 18:00:00+00'),
-    (4, 1, 1, 'tyre_test',         TIMESTAMPTZ '2026-10-20 09:00:00+00', TIMESTAMPTZ '2026-10-20 17:00:00+00'),
-    (5, 1, 2, 'race',              TIMESTAMPTZ '2026-11-27 15:00:00+00', TIMESTAMPTZ '2026-11-27 17:00:00+00'),
-    (6, 1, 3, 'race',              TIMESTAMPTZ '2026-09-06 13:00:00+00', TIMESTAMPTZ '2026-09-06 15:00:00+00'),
-    (7, 1, 4, 'race',              TIMESTAMPTZ '2026-11-21 18:00:00+00', TIMESTAMPTZ '2026-11-21 20:00:00+00'),
-    (8, 1, 2, 'technical_control', TIMESTAMPTZ '2026-11-26 09:00:00+00', TIMESTAMPTZ '2026-11-26 12:00:00+00')
+    (1, 1, 1, 18, 18, 'Gran Premio de Singapur'),
+    (2, 1, 1, 19, 19, 'Gran Premio de Estados Unidos'),
+    (3, 1, 2, 13, 23, 'Gran Premio de Qatar'),
+    (4, 1, 3, 10, 15, 'Gran Premio de Italia'),
+    (5, 1, 4, 7,  22, 'Gran Premio de Las Vegas')
 ON CONFLICT (id) DO NOTHING;
 
--- 2. races: round and circuit; the event id is the race's own key
-INSERT INTO races (event_id, season_id, category_id, round, circuit_id) VALUES
-    (1, 1, 1, 18, 18),
-    (3, 1, 1, 19, 19),
-    (5, 1, 2, 13, 23),
-    (6, 1, 3, 10, 15),
-    (7, 1, 4, 7, 22)
+-- 2. events: kind and timing. The children repeat the kind by DEFAULT and their FK
+-- forces it to match. No name is stored: the backend composes the label.
+INSERT INTO events (id, kind, starts_at, ends_at)
+OVERRIDING SYSTEM VALUE VALUES
+    (1, 'race',              TIMESTAMPTZ '2026-10-04 15:00:00+00', TIMESTAMPTZ '2026-10-04 17:00:00+00'),
+    (2, 'technical_control', TIMESTAMPTZ '2026-10-05 09:00:00+00', TIMESTAMPTZ '2026-10-05 12:00:00+00'),
+    (3, 'race',              TIMESTAMPTZ '2026-10-18 16:00:00+00', TIMESTAMPTZ '2026-10-18 18:00:00+00'),
+    (4, 'tyre_test',         TIMESTAMPTZ '2026-10-20 09:00:00+00', TIMESTAMPTZ '2026-10-20 17:00:00+00'),
+    (5, 'race',              TIMESTAMPTZ '2026-11-27 15:00:00+00', TIMESTAMPTZ '2026-11-27 17:00:00+00'),
+    (6, 'race',              TIMESTAMPTZ '2026-09-06 13:00:00+00', TIMESTAMPTZ '2026-09-06 15:00:00+00'),
+    (7, 'race',              TIMESTAMPTZ '2026-11-21 18:00:00+00', TIMESTAMPTZ '2026-11-21 20:00:00+00'),
+    (8, 'technical_control', TIMESTAMPTZ '2026-11-26 09:00:00+00', TIMESTAMPTZ '2026-11-26 12:00:00+00')
+ON CONFLICT (id) DO NOTHING;
+
+-- 3. races: the race of each round; the championship comes from the round
+INSERT INTO races (event_id, round_id) VALUES
+    (1, 1),
+    (3, 2),
+    (5, 3),
+    (6, 4),
+    (7, 5)
 ON CONFLICT DO NOTHING;
 
--- 3. tyre_tests: the test has no attributes of its own beyond the event
-INSERT INTO tyre_tests (event_id) VALUES
-    (4)
+-- 4. tyre_tests and technical_controls own their championship
+INSERT INTO tyre_tests (event_id, season_id, category_id) VALUES
+    (4, 1, 1)
 ON CONFLICT DO NOTHING;
 
--- 4. technical_controls: the type the FIA entered, which is also the label
-INSERT INTO technical_controls (event_id, control_type) VALUES
-    (2, 'Control técnico post-carrera'),
-    (8, 'Verificación de pesos')
+INSERT INTO technical_controls (event_id, season_id, category_id, control_type) VALUES
+    (2, 1, 1, 'Control técnico post-carrera'),
+    (8, 1, 2, 'Verificación de pesos')
 ON CONFLICT DO NOTHING;
 
 -- 5. drivers (unchanged)
@@ -84,6 +92,7 @@ OVERRIDING SYSTEM VALUE VALUES
 ON CONFLICT (event_id, driver_id) DO NOTHING;
 
 -- 9. setval for every sequence
+SELECT setval(pg_get_serial_sequence('rounds',                 'id'), COALESCE((SELECT max(id) FROM rounds),                 0));
 SELECT setval(pg_get_serial_sequence('events',                 'id'), COALESCE((SELECT max(id) FROM events),                 0));
 SELECT setval(pg_get_serial_sequence('drivers',                'id'), COALESCE((SELECT max(id) FROM drivers),                0));
 SELECT setval(pg_get_serial_sequence('season_drivers',   'id'), COALESCE((SELECT max(id) FROM season_drivers),   0));
