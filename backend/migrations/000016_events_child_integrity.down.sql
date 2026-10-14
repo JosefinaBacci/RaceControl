@@ -3,9 +3,25 @@
 -- again, drops the event kind, the round and circuit catalogues and the guards,
 -- and narrows the team derivation back to the driver and the event.
 
--- 9. The guard on raced events goes away.
+-- 10. The guards on raced events, races and rounds go away.
 DROP TRIGGER events_keep_raced_event_final ON events;
+DROP TRIGGER races_keep_raced_round ON races;
+DROP TRIGGER rounds_keep_raced_round_final ON rounds;
 DROP FUNCTION assert_raced_event_is_final();
+DROP FUNCTION assert_raced_race_keeps_round();
+DROP FUNCTION assert_raced_round_is_final();
+DROP FUNCTION race_has_results(bigint);
+
+-- 9. Scores and their change log point at the event again.
+ALTER TABLE score_entries
+    DROP CONSTRAINT score_entries_race_fkey,
+    ADD CONSTRAINT score_entries_event_id_fkey
+        FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE RESTRICT;
+
+ALTER TABLE score_change_log
+    DROP CONSTRAINT score_change_log_race_fkey,
+    ADD CONSTRAINT score_change_log_event_id_fkey
+        FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE RESTRICT;
 
 -- 8. The derived team goes back to firing only when the driver or the event changes.
 DROP TRIGGER score_entries_set_team ON score_entries;
@@ -46,6 +62,7 @@ ALTER TABLE technical_controls
 
 -- 5. The event gets its championship and name back and the race its round and
 --    free-text circuit, all rebuilt from the children, the rounds and the circuits.
+--    The tyre test loses its circuit, which the old schema had no place for.
 DROP INDEX events_starts_at_idx;
 ALTER TABLE events
     ADD COLUMN season_id bigint REFERENCES seasons (id) ON DELETE RESTRICT,
@@ -97,6 +114,7 @@ ALTER TABLE races
     ADD CONSTRAINT races_round_unique_per_season_category UNIQUE (season_id, category_id, round),
     DROP COLUMN round_id;
 
+ALTER TABLE tyre_tests DROP COLUMN circuit_id;
 DROP TABLE rounds;
 DROP TABLE circuits;
 

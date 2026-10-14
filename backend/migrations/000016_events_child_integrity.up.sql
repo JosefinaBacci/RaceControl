@@ -3,8 +3,12 @@
 -- every kind shares (kind and timing); each child owns its championship. A race
 -- runs a round of the championship, and a round is unique among the active rounds
 -- of its season and category. No event name is stored: the label is composed by
--- the backend. A result always derives its credited team and a race that already
--- has results keeps its date and stays on the calendar.
+-- the backend. Only a race takes results; a result always derives its credited
+-- team, and a race that already has results keeps its date, its round and the
+-- round's championship and circuit, and stays on the calendar.
+--
+-- A tyre test now requires a circuit that the old schema never stored, so a
+-- database that already holds tyre tests cannot migrate: run make db-reset.
 
 -- 1. The name belongs to no row: the backend composes the label from the kind
 --    and the child's attributes, so a stored name could only diverge from them.
@@ -42,6 +46,7 @@ ALTER TABLE events
 -- 4. The championship belongs to the child: a tyre test and a technical control
 --    own their season and category, and a race takes them from its round (§5).
 --    The race's copies and the FKs that kept them honest go away with them.
+--    A tyre test also runs on a circuit of the catalogue, added in §5.
 ALTER TABLE tyre_tests
     ADD COLUMN season_id bigint REFERENCES seasons (id) ON DELETE RESTRICT,
     ADD COLUMN category_id bigint REFERENCES categories (id) ON DELETE RESTRICT;
@@ -147,6 +152,9 @@ ALTER TABLE events
 
 CREATE INDEX events_starts_at_idx ON events (starts_at);
 
+ALTER TABLE tyre_tests ADD COLUMN circuit_id bigint NOT NULL REFERENCES circuits (id) ON DELETE RESTRICT;
+CREATE INDEX tyre_tests_circuit_id_idx ON tyre_tests (circuit_id);
+
 -- 6. Each child declares the event kind and pins it as its own, so its FK cannot
 --    point at an event of another kind: a race event hangs a race and a control
 --    event hangs a technical control. The column is constant, so the DEFAULT is
@@ -186,11 +194,14 @@ CREATE FUNCTION assert_event_has_child() RETURNS trigger AS $$
 DECLARE
     has_child boolean;
 BEGIN
-    has_child := CASE NEW.kind
-        WHEN 'race'              THEN EXISTS (SELECT 1 FROM races              WHERE event_id = NEW.id)
-        WHEN 'tyre_test'         THEN EXISTS (SELECT 1 FROM tyre_tests         WHERE event_id = NEW.id)
-        WHEN 'technical_control' THEN EXISTS (SELECT 1 FROM technical_controls WHERE event_id = NEW.id)
-    END;
+    -- A kind added to events_kind_valid but not here must fail loudly, not let
+    -- every event of that kind pass without a child.
+    CASE NEW.kind
+        WHEN 'race'              THEN has_child := EXISTS (SELECT 1 FROM races              WHERE event_id = NEW.id);
+        WHEN 'tyre_test'         THEN has_child := EXISTS (SELECT 1 FROM tyre_tests         WHERE event_id = NEW.id);
+        WHEN 'technical_control' THEN has_child := EXISTS (SELECT 1 FROM technical_controls WHERE event_id = NEW.id);
+        ELSE RAISE EXCEPTION 'event % has kind %, which has no child table', NEW.id, NEW.kind;
+    END CASE;
 
     IF NOT has_child THEN
         RAISE EXCEPTION 'event % of kind % has no child row', NEW.id, NEW.kind;
@@ -247,15 +258,34 @@ CREATE TRIGGER score_entries_set_team
     BEFORE INSERT OR UPDATE ON score_entries
     FOR EACH ROW EXECUTE FUNCTION set_score_entry_team();
 
--- 9. A race that already has results has been run: its date is final and it can
---    no longer be removed from the calendar, or its results would hang from an
---    event nobody sees. The guard fires only when the date or the status really
---    changes, so editing anything else on the event still works.
+-- 9. Only a race takes results. Scores and their change log point at the race
+--    instead of the event, so a tyre test or a technical control cannot get any.
+--    Notifications stay on events: any kind of event can be announced.
+ALTER TABLE score_entries
+    DROP CONSTRAINT score_entries_event_id_fkey,
+    ADD CONSTRAINT score_entries_race_fkey
+        FOREIGN KEY (event_id) REFERENCES races (event_id) ON DELETE RESTRICT;
+
+ALTER TABLE score_change_log
+    DROP CONSTRAINT score_change_log_event_id_fkey,
+    ADD CONSTRAINT score_change_log_race_fkey
+        FOREIGN KEY (event_id) REFERENCES races (event_id) ON DELETE RESTRICT;
+
+-- 10. A race that already has results has been run, so what places it is final:
+--     its date, its round, and the round's championship and circuit. Changing any
+--     of them would move the results to another date, standings table or track,
+--     and removing the race or its round would leave them hanging from something
+--     nobody sees. The round number and the Grand Prix name stay editable: rounds
+--     are renumbered after a cancellation and a typo must remain fixable. Every
+--     guard fires only on a real change, so re-sending the same values passes.
+CREATE FUNCTION race_has_results(race_event_id bigint) RETURNS boolean AS $$
+    SELECT EXISTS (SELECT 1 FROM score_entries WHERE event_id = race_event_id);
+$$ LANGUAGE sql STABLE;
+
 CREATE FUNCTION assert_raced_event_is_final() RETURNS trigger AS $$
 BEGIN
-    IF (NEW.starts_at IS DISTINCT FROM OLD.starts_at
-            OR NEW.deactivated_at IS DISTINCT FROM OLD.deactivated_at)
-        AND EXISTS (SELECT 1 FROM score_entries WHERE event_id = NEW.id) THEN
+    IF (NEW.starts_at, NEW.deactivated_at) IS DISTINCT FROM (OLD.starts_at, OLD.deactivated_at)
+        AND race_has_results(NEW.id) THEN
         RAISE EXCEPTION 'event % has results: its date and status are final', NEW.id
             USING ERRCODE = 'RC001';
     END IF;
@@ -266,3 +296,33 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER events_keep_raced_event_final
     BEFORE UPDATE OF starts_at, deactivated_at ON events
     FOR EACH ROW EXECUTE FUNCTION assert_raced_event_is_final();
+
+CREATE FUNCTION assert_raced_race_keeps_round() RETURNS trigger AS $$
+BEGIN
+    IF NEW.round_id IS DISTINCT FROM OLD.round_id AND race_has_results(NEW.event_id) THEN
+        RAISE EXCEPTION 'race % has results: its round is final', NEW.event_id
+            USING ERRCODE = 'RC001';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER races_keep_raced_round
+    BEFORE UPDATE OF round_id ON races
+    FOR EACH ROW EXECUTE FUNCTION assert_raced_race_keeps_round();
+
+CREATE FUNCTION assert_raced_round_is_final() RETURNS trigger AS $$
+BEGIN
+    IF (NEW.season_id, NEW.category_id, NEW.circuit_id, NEW.deactivated_at)
+            IS DISTINCT FROM (OLD.season_id, OLD.category_id, OLD.circuit_id, OLD.deactivated_at)
+        AND EXISTS (SELECT 1 FROM races WHERE round_id = NEW.id AND race_has_results(event_id)) THEN
+        RAISE EXCEPTION 'round % has a race with results: its championship, circuit and status are final', NEW.id
+            USING ERRCODE = 'RC001';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER rounds_keep_raced_round_final
+    BEFORE UPDATE OF season_id, category_id, circuit_id, deactivated_at ON rounds
+    FOR EACH ROW EXECUTE FUNCTION assert_raced_round_is_final();

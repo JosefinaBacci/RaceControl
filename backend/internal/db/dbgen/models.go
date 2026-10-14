@@ -191,6 +191,7 @@ type TyreTest struct {
 	UpdatedAt  pgtype.Timestamptz
 	SeasonID   int64
 	CategoryID int64
+	CircuitID  int64
 	EventKind  string
 }
 

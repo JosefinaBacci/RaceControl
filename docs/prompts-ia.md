@@ -784,3 +784,35 @@ rearmar una ronda, número repetido entre activas, mismo número en otra categor
 conflicto, segunda carrera por ronda, segunda hija, evento sin hija, cambio de tipo, fecha y baja de
 una carrera con resultados), ida y vuelta `down`/`up` con datos y `make check`. Queda documentado como
 pendiente que la base no impide una carrera activa sobre una ronda dada de baja.
+
+---
+
+### 2026-10-14 — Calendario: evaluación de una revisión externa del modelo (000016)
+
+**Contexto:** el equipo trajo una lista de siete propuestas sobre el esquema del calendario y pidió
+evaluarlas antes de aplicar nada.
+
+**Prompt:**
+
+> Evaluate the following: [lista: `control_type` como lookup o enum; `circuit_id` en `tyre_tests`;
+> puntajes apuntando a `races`; extender el bloqueo de resultados a la ronda; `ELSE` en
+> `assert_event_has_child()`; vista del calendario; trigger de "fecha dentro de la temporada"; quitar
+> las categorías si es solo F1]. Don't just apply it, think about it and give me some feedback, which
+> ones are worth doing and which ones aren't and why
+
+Seguido de: "Ok, implement the ones worth doing then".
+
+**Respuesta de la IA:** señaló que parte de la lista describía el esquema anterior (las hijas ya tenían
+campeonato y `races` ya no tenía circuito ni categoría). Recomendó hacer cuatro: puntajes sobre
+`races` (B.1), el bloqueo extendido pero sobre `races.round_id` y `rounds` (donde viven ahora esos
+datos, dejando editables el número y el nombre del GP), el `ELSE` explícito (hoy inalcanzable por el
+`CHECK`, pero protege al agregar un tipo) y `tyre_tests.circuit_id`. Postergó la vista del calendario
+a US7, con `LEFT JOIN` en lugar de `UNION` y sin textos. Descartó el enum/lookup de `control_type`
+(la consigna manda al admin a ingresar los tipos), el trigger de fecha dentro de la temporada (cinco
+triggers diferidos para una validación de una línea en el servicio) y quitar las categorías (la
+consigna pide F1, F2, F3 y F1 Academy).
+
+**Resultado:** `000016` editada con los cuatro cambios (requiere `make db-reset`; una base con pruebas
+de neumáticos no migra porque no hay circuito que inferir, y la migración falla entera sin dejar
+cambios a medias). Verificado con 19 pruebas de comportamiento, los códigos `RC001` de las guardias
+nuevas, ida y vuelta `down`/`up` y `make check`.

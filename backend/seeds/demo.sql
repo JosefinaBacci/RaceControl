@@ -36,9 +36,10 @@ INSERT INTO races (event_id, round_id) VALUES
     (7, 5)
 ON CONFLICT DO NOTHING;
 
--- 4. tyre_tests and technical_controls own their championship
-INSERT INTO tyre_tests (event_id, season_id, category_id) VALUES
-    (4, 1, 1)
+-- 4. tyre_tests and technical_controls own their championship; a tyre test also
+-- runs on a circuit
+INSERT INTO tyre_tests (event_id, season_id, category_id, circuit_id) VALUES
+    (4, 1, 1, 19)
 ON CONFLICT DO NOTHING;
 
 INSERT INTO technical_controls (event_id, season_id, category_id, control_type) VALUES
