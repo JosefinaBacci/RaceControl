@@ -3,10 +3,7 @@ package transport
 import (
 	"context"
 	"net/http"
-	"strconv"
 	"time"
-
-	"github.com/go-chi/chi/v5"
 
 	"github.com/racecontrol/backend/internal/domain"
 	"github.com/racecontrol/backend/internal/users"
@@ -144,9 +141,9 @@ func (h *userHandlers) changeOwnPassword(w http.ResponseWriter, r *http.Request)
 
 func (h *userHandlers) respondWithAccount(w http.ResponseWriter, r *http.Request, status int,
 	operation func(id int64, actor domain.Identity) (users.Account, error)) {
-	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	id, err := pathID(r)
 	if err != nil {
-		writeError(w, r, domain.ErrNotFound)
+		writeError(w, r, err)
 		return
 	}
 	actor, err := identityFrom(r)

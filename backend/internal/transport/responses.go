@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/go-chi/chi/v5"
+
 	"github.com/racecontrol/backend/internal/auth"
 	"github.com/racecontrol/backend/internal/domain"
 )
@@ -79,4 +81,13 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, destination any) error {
 		return domain.NewValidationError("body", "el cuerpo de la petición no es un JSON válido")
 	}
 	return nil
+}
+
+// pathID answers a malformed id as not found: no resource can live at that path.
+func pathID(r *http.Request) (int64, error) {
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		return 0, domain.ErrNotFound
+	}
+	return id, nil
 }
