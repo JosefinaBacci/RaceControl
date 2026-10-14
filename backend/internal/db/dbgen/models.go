@@ -20,6 +20,18 @@ type Category struct {
 	UpdatedAt     pgtype.Timestamptz
 }
 
+type Circuit struct {
+	ID            int64
+	Name          string
+	GpName        string
+	Locality      string
+	CountryCode   string
+	IsActive      bool
+	DeactivatedAt pgtype.Timestamptz
+	CreatedAt     pgtype.Timestamptz
+	UpdatedAt     pgtype.Timestamptz
+}
+
 type Driver struct {
 	ID            int64
 	FirstName     string
@@ -45,7 +57,6 @@ type Event struct {
 	ID            int64
 	SeasonID      int64
 	CategoryID    int64
-	Name          string
 	StartsAt      pgtype.Timestamptz
 	EndsAt        pgtype.Timestamptz
 	IsActive      bool
@@ -73,17 +84,15 @@ type Notification struct {
 }
 
 type Race struct {
-	ID          int64
-	EventID     int64
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
-	Circuit     string
-	Location    string
-	CountryCode string
-	Round       int32
-	SeasonID    int64
-	CategoryID  int64
-	EventKind   string
+	EventID       int64
+	CreatedAt     pgtype.Timestamptz
+	UpdatedAt     pgtype.Timestamptz
+	Round         int32
+	SeasonID      int64
+	CategoryID    int64
+	EventKind     string
+	EventIsActive bool
+	CircuitID     int64
 }
 
 type ScoreAcknowledgement struct {
@@ -161,7 +170,6 @@ type Team struct {
 }
 
 type TechnicalControl struct {
-	ID          int64
 	EventID     int64
 	ControlType string
 	CreatedAt   pgtype.Timestamptz
@@ -170,7 +178,6 @@ type TechnicalControl struct {
 }
 
 type TyreTest struct {
-	ID        int64
 	EventID   int64
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz

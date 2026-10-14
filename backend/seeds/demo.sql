@@ -3,41 +3,39 @@
 -- from it so a production database starts with an empty calendar instead of
 -- made-up races.
 
--- 1. events: the official GP/round calendar. The kind belongs to the event; the
--- children repeat it by DEFAULT and their FK forces it to match.
-INSERT INTO events (id, season_id, category_id, kind, name, starts_at, ends_at)
+-- 1. events: the official calendar. The kind belongs to the event; the children
+-- repeat it by DEFAULT and their FK forces it to match. No name is stored: the
+-- backend composes the label from the kind and the child.
+INSERT INTO events (id, season_id, category_id, kind, starts_at, ends_at)
 OVERRIDING SYSTEM VALUE VALUES
-    (1, 1, 1, 'race',              'Gran Premio de Singapur',          TIMESTAMPTZ '2026-10-04 15:00:00+00', TIMESTAMPTZ '2026-10-04 17:00:00+00'),
-    (2, 1, 1, 'technical_control', 'Control técnico post-carrera',     TIMESTAMPTZ '2026-10-05 09:00:00+00', TIMESTAMPTZ '2026-10-05 12:00:00+00'),
-    (3, 1, 1, 'race',              'Gran Premio de Estados Unidos',    TIMESTAMPTZ '2026-10-18 16:00:00+00', TIMESTAMPTZ '2026-10-18 18:00:00+00'),
-    (4, 1, 1, 'tyre_test',         'Prueba de neumáticos Pirelli 2027', TIMESTAMPTZ '2026-10-20 09:00:00+00', TIMESTAMPTZ '2026-10-20 17:00:00+00'),
-    (5, 1, 2, 'race',              'Ronda 13 — Qatar',                 TIMESTAMPTZ '2026-11-27 15:00:00+00', TIMESTAMPTZ '2026-11-27 17:00:00+00'),
-    (6, 1, 3, 'race',              'Ronda 10 — Monza',                 TIMESTAMPTZ '2026-09-06 13:00:00+00', TIMESTAMPTZ '2026-09-06 15:00:00+00'),
-    (7, 1, 4, 'race',              'Ronda 7 — Las Vegas',              TIMESTAMPTZ '2026-11-21 18:00:00+00', TIMESTAMPTZ '2026-11-21 20:00:00+00'),
-    (8, 1, 2, 'technical_control', 'Verificación de pesos',            TIMESTAMPTZ '2026-11-26 09:00:00+00', TIMESTAMPTZ '2026-11-26 12:00:00+00')
+    (1, 1, 1, 'race',              TIMESTAMPTZ '2026-10-04 15:00:00+00', TIMESTAMPTZ '2026-10-04 17:00:00+00'),
+    (2, 1, 1, 'technical_control', TIMESTAMPTZ '2026-10-05 09:00:00+00', TIMESTAMPTZ '2026-10-05 12:00:00+00'),
+    (3, 1, 1, 'race',              TIMESTAMPTZ '2026-10-18 16:00:00+00', TIMESTAMPTZ '2026-10-18 18:00:00+00'),
+    (4, 1, 1, 'tyre_test',         TIMESTAMPTZ '2026-10-20 09:00:00+00', TIMESTAMPTZ '2026-10-20 17:00:00+00'),
+    (5, 1, 2, 'race',              TIMESTAMPTZ '2026-11-27 15:00:00+00', TIMESTAMPTZ '2026-11-27 17:00:00+00'),
+    (6, 1, 3, 'race',              TIMESTAMPTZ '2026-09-06 13:00:00+00', TIMESTAMPTZ '2026-09-06 15:00:00+00'),
+    (7, 1, 4, 'race',              TIMESTAMPTZ '2026-11-21 18:00:00+00', TIMESTAMPTZ '2026-11-21 20:00:00+00'),
+    (8, 1, 2, 'technical_control', TIMESTAMPTZ '2026-11-26 09:00:00+00', TIMESTAMPTZ '2026-11-26 12:00:00+00')
 ON CONFLICT (id) DO NOTHING;
 
--- 2. races: the concrete race (name and timing come from events)
-INSERT INTO races (id, event_id, circuit, location, country_code, round, season_id, category_id)
-OVERRIDING SYSTEM VALUE VALUES
-    (1, 1, 'Marina Bay', 'Singapore', 'sg', 18, 1, 1),
-    (2, 3, 'Circuit of the Americas', 'Austin', 'us', 19, 1, 1),
-    (3, 5, 'Lusail', 'Lusail', 'qa', 13, 1, 2),
-    (4, 6, 'Monza', 'Monza', 'it', 10, 1, 3),
-    (5, 7, 'Las Vegas Strip', 'Las Vegas', 'us', 7, 1, 4)
+-- 2. races: round and circuit; the event id is the race's own key
+INSERT INTO races (event_id, season_id, category_id, round, circuit_id) VALUES
+    (1, 1, 1, 18, 18),
+    (3, 1, 1, 19, 19),
+    (5, 1, 2, 13, 23),
+    (6, 1, 3, 10, 15),
+    (7, 1, 4, 7, 22)
 ON CONFLICT DO NOTHING;
 
--- 3. tyre_tests: tyre test (name and timing come from events)
-INSERT INTO tyre_tests (id, event_id)
-OVERRIDING SYSTEM VALUE VALUES
-    (1, 4)
+-- 3. tyre_tests: the test has no attributes of its own beyond the event
+INSERT INTO tyre_tests (event_id) VALUES
+    (4)
 ON CONFLICT DO NOTHING;
 
--- 4. technical_controls: name and timing live in events, as in the whole hierarchy
-INSERT INTO technical_controls (id, event_id, control_type)
-OVERRIDING SYSTEM VALUE VALUES
-    (1, 2, 'post-race'),
-    (2, 8, 'weight-check')
+-- 4. technical_controls: the type the FIA entered, which is also the label
+INSERT INTO technical_controls (event_id, control_type) VALUES
+    (2, 'Control técnico post-carrera'),
+    (8, 'Verificación de pesos')
 ON CONFLICT DO NOTHING;
 
 -- 5. drivers (unchanged)
@@ -91,6 +89,3 @@ SELECT setval(pg_get_serial_sequence('drivers',                'id'), COALESCE((
 SELECT setval(pg_get_serial_sequence('season_drivers',   'id'), COALESCE((SELECT max(id) FROM season_drivers),   0));
 SELECT setval(pg_get_serial_sequence('driver_team_assignments', 'id'), COALESCE((SELECT max(id) FROM driver_team_assignments), 0));
 SELECT setval(pg_get_serial_sequence('score_entries',          'id'), COALESCE((SELECT max(id) FROM score_entries),          0));
-SELECT setval(pg_get_serial_sequence('races',                 'id'), COALESCE((SELECT max(id) FROM races),                 0));
-SELECT setval(pg_get_serial_sequence('tyre_tests',            'id'), COALESCE((SELECT max(id) FROM tyre_tests),            0));
-SELECT setval(pg_get_serial_sequence('technical_controls',    'id'), COALESCE((SELECT max(id) FROM technical_controls),    0));

@@ -717,3 +717,37 @@ puramente aditivo, y la regla por defecto de AGENTS es "solo archivos nuevos en 
 `score_acknowledgements` y `login_attempts`, reusando `reject_mutation()`. Se descartó darle un código
 propio (`RC002`) para traducirlo a 4xx: la API no debería ofrecer mutar la auditoría nunca, así que un
 rechazo ahí es un bug y un 500 es la respuesta correcta.
+
+---
+
+### 2026-10-14 — Calendario: PK compartida, ronda liberada por la baja y catálogo de circuitos (000016)
+
+**Contexto:** antes de implementar US7, revisión de la jerarquía `events` → `races` / `tyre_tests` /
+`technical_controls` que había quedado en `000016`, y aplicación de §A.6 (sin nombre almacenado,
+catálogo `circuits`), decidido en la revisión del modelo pero no implementado.
+
+**Prompt:**
+
+> Check the event table and children approach, is it idiomatic? Would you improve it in any way?
+
+Seguido de: "¿no perdemos alguna garantía al sacar `kind`?", "¿el trigger es idiomático?" y "decidí
+por lo que se usa en producción".
+
+**Respuesta de la IA:** la forma (padre genérico + una tabla por tipo con discriminador) es la
+estándar. Encontró tres problemas: las hijas tenían un id propio que nada referenciaba; una carrera
+dada de baja **retenía su ronda** (la unicidad vivía en `races` y la baja en `events`), lo que impedía
+volver a cargar la misma ronda en US7; y las FK declaraban `ON UPDATE CASCADE` sobre valores que no
+pueden cambiar. Propuso mover `round` a `events`; el equipo lo rechazó (la ronda es de la carrera). Se
+evaluó también eliminar `kind` de las hijas y de `events`: se demostró en una base descartable que, sin
+`kind`, un trigger que cuenta hijas deja pasar dos hijas con transacciones concurrentes salvo que
+bloquee la fila del padre, y que lo idiomático es dejar a la FK lo declarativo y al trigger solo "al
+menos una". Se conservó `kind`.
+
+**Resultado:** `000016` editada (requiere `make db-reset`): PK de cada hija = `event_id`; `races`
+copia `event_is_active` y una única FK compuesta a `events (id, kind, season_id, category_id,
+is_active)` mantiene las copias, con la ronda única solo entre carreras activas (índice parcial); FK
+de tipo con `ON UPDATE RESTRICT` en las otras hijas; `events.name` eliminado; catálogo `circuits`
+(24 circuitos de 2026 en `seeds/reference.sql`) y `races.circuit_id`. Verificado con `make db-reset`,
+12 pruebas de comportamiento (baja que libera la ronda, reactivación en conflicto, copia falsificada,
+segunda hija, evento sin hija, fecha final, cambio de tipo, cambio de categoría en cascada), ida y
+vuelta `down`/`up` con datos y `make check`. Documentado en `docs/sprint2/02-modelo-de-datos.md` §5.
