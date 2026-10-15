@@ -10,8 +10,8 @@ en verde y un commit por cambio lógico.
 
 | US | Nombre | SP | Valor | Est. | Tiempo real registrado | Estado |
 |----|--------|----|-------|------|------------------------|--------|
-| US7 | Gestión de calendario | 5 | 8 | 5h | 2.3h | ◐ |
-| US8 | Visualización y descarga de calendario | 3 | 8 | 3.5h | | ☐ |
+| US7 | Gestión de calendario | 5 | 8 | 5h | 2.3h | ☑ |
+| US8 | Visualización y descarga de calendario | 3 | 8 | 3.5h | | ◐ |
 | US11 | Gestión de pilotos | 5 | 13 | 5h | | ☐ |
 | US12 | Visualización de pilotos | 3 | 13 | 4h | | ☐ |
 | US9 | Gestión de puntajes | 3 | 8 | 3.5h | | ☐ |
@@ -64,8 +64,8 @@ Esquema `000002`–`000020` ya aplicado. Pendiente de la revisión del modelo:
 
 - [x] El administrador puede crear carreras con todos los datos correspondientes
 - [x] El administrador puede modificar y eliminar fechas existentes
-- [ ] Los cambios se reflejan de inmediato en el calendario oficial — la vista pública todavía lee
-      el mock; se cierra en US8
+- [x] Los cambios se reflejan de inmediato en el calendario oficial — la vista pública lee la API
+      desde US8
 - [x] Los demás roles no pueden crear, modificar ni eliminar carreras
 - [x] El sistema valida los campos obligatorios y las fechas inválidas
 
@@ -73,17 +73,18 @@ Esquema `000002`–`000020` ya aplicado. Pendiente de la revisión del modelo:
 
 *Est. 3.5h · SP 3 · Valor 8*
 
-- [ ] Vista del calendario sobre la API (reemplaza el mock)
-- [ ] Filtro por categoría
-- [ ] Descarga en formato estándar, incluido PDF
+- [x] Vista del calendario sobre la API (reemplaza el mock)
+- [x] Filtro por categoría
+- [x] Descarga en formato estándar, incluido PDF
 - [ ] Verificar que el archivo descargado se abra sin conexión
 
 **Criterios de éxito**
 
-- [ ] Cualquier usuario puede ver el calendario actualizado
-- [ ] El usuario puede filtrar los eventos por categoría
-- [ ] El usuario puede descargar el calendario en un formato estándar
+- [x] Cualquier usuario puede ver el calendario actualizado
+- [x] El usuario puede filtrar los eventos por categoría
+- [x] El usuario puede descargar el calendario en un formato estándar
 - [ ] El archivo descargado se puede consultar sin conexión y contiene los datos correctos
+      (pendiente de la verificación manual)
 
 ## US11 — Gestión de pilotos
 

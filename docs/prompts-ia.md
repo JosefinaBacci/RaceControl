@@ -1018,3 +1018,35 @@ respuesta del evento sumó `gpName` para que el formulario de edición pueda pre
 ronda. `make check` en verde.
 
 ---
+
+### 2026-10-15 — Visualización del calendario sobre la API (US8)
+
+**Contexto:** US7 dejó la gestión del calendario en la API, pero la vista pública del calendario, el
+panel FIA y el panel de escudería seguían leyendo los datos de ejemplo de US4, así que los cambios
+del administrador no se reflejaban. Los endpoints de descarga (`/calendar.ics` y `/calendar.pdf`)
+ya estaban hechos y probados. Este es el punto de US8 que faltaba: cerrar la brecha entre lo que
+carga la FIA y lo que ve el público.
+
+**Prompt:**
+
+> Conectar la vista pública del calendario y los paneles FIA y de escudería a la API de eventos, en
+> lugar de los mocks, con filtro por período y categoría y botones para descargar lo que se está
+> viendo en .ics y PDF. Los catálogos de estado del evento (etiquetas y colores) se comparten con el
+> formulario de gestión en vez de duplicarse, y las banderas toleran cualquier país que llegue de la
+> API sin quedar en blanco. Sacar los hooks y los datos de calendario que quedan sin uso. La
+> verificación de que el archivo descargado se abra sin conexión queda para hacerla a mano.
+
+**Respuesta de la IA:** propuso unificar los hooks de calendario en `src/data/calendar.ts` (en lugar
+de un `calendarHooks.ts` aparte), extraer las etiquetas y tonos de tipo de evento a
+`features/eventKind.ts` y darle a `Flag` un reemplazo genérico más el juego de banderas que faltaba
+(el país llega como código libre desde la API). Para las fotos por categoría, que también llegan como
+texto, agregó un `categoryPhoto` con respaldo en F1 y así sacó los `as any`. Dejó sin marcar los dos
+criterios de US8 que dependen de abrir el archivo descargado.
+
+**Resultado:** `app/src/data/calendar.ts` (con `useUpcomingEvents`, `useNextRace` y
+`calendarDownloadUrl`), `app/src/features/eventKind.ts`, `app/src/features/{EventList,NextRaceHero}.tsx`,
+`app/app/(public)/calendar.tsx`, `app/app/{fia,team}/index.tsx`, `app/src/photos.ts`,
+`app/src/illustrations/Flag.tsx` y `app/src/mocks/data.ts` (sin los datos de calendario). `make check`
+en verde.
+
+---
