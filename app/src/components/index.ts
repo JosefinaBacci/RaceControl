@@ -5,6 +5,7 @@ export { Button } from './Button';
 export { Card, CardLink } from './Card';
 export { ChipGroup } from './ChipGroup';
 export { Countdown } from './Countdown';
+export { FieldGroup } from './FieldGroup';
 export { HeroCard } from './HeroCard';
 export { IconButton } from './IconButton';
 export { ListItem } from './ListItem';

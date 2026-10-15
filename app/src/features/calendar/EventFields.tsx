@@ -1,9 +1,8 @@
-import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { Circuit, Season } from '@/api/calendar';
 import type { FieldErrors } from '@/api/formFailure';
-import { AppText, ChipGroup, TextField } from '@/components';
+import { AppText, ChipGroup, FieldGroup, TextField } from '@/components';
 import { categories } from '@/mocks/catalog';
 import { eventKindOptions, kindLabel } from '@/features/eventKind';
 import { spacing } from '@/theme';
@@ -138,21 +137,6 @@ export function EventFields({ values, onChange, errors, seasons, circuits, isKin
   );
 }
 
-function FieldGroup({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
-  return (
-    <View style={styles.group}>
-      <AppText variant="bodyStrong">{label}</AppText>
-      {children}
-      {error ? (
-        <AppText variant="caption" color="danger">
-          {error}
-        </AppText>
-      ) : null}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   fields: { gap: spacing.md },
-  group: { gap: spacing.sm },
 });

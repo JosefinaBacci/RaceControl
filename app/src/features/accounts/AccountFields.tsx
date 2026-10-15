@@ -1,10 +1,9 @@
-import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { Role } from '@/api/auth';
 import type { FieldErrors } from '@/api/formFailure';
 import { roleLabel } from '@/auth/roles';
-import { AppText, ChipGroup, TextField } from '@/components';
+import { AppText, ChipGroup, FieldGroup, TextField } from '@/components';
 import { useTeams } from '@/data/accounts';
 import { RemoteContent } from '@/features/RemoteContent';
 import { spacing } from '@/theme';
@@ -75,23 +74,6 @@ function TeamPicker({ values, onChange, error }: { values: AccountFieldValues; o
   );
 }
 
-function FieldGroup({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
-  return (
-    <View style={styles.group}>
-      <AppText variant="overline" color="textMuted">
-        {label}
-      </AppText>
-      {children}
-      {error ? (
-        <AppText variant="caption" color="danger" accessibilityLiveRegion="polite">
-          {error}
-        </AppText>
-      ) : null}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   fields: { gap: spacing.lg },
-  group: { gap: spacing.sm },
 });
