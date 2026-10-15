@@ -901,3 +901,36 @@ renombraron los paquetes a `authtest`, `dbtest`, `sessionstest` y `transporttest
 `AGENTS.md` con la regla de layout y la consecuencia de la API exportada. `go build ./...`,
 `go vet ./...` y `go test ./...` en verde y `internal/` sin ningún `_test.go`. Sin cambios de
 comportamiento.
+
+---
+
+### 2026-10-15 — Poda de triggers: se elimina el guardia del lado hijo (000020)
+
+**Contexto:** al decidir cómo cerrar el caso de la ronda cancelada, un `CONSTRAINT TRIGGER` diferido
+resultó desproporcionado (tres triggers más una función para un estado borde). Se pidió revisar qué
+otros triggers del esquema costaban más de lo que valían, partiendo de la sección de triggers de la
+revisión del modelo (§C) y de su regla rectora: llevar los invariantes a la base y no validarlos en
+la app.
+
+**Prompt:**
+
+> i think is too expensive this change in triggers, can you identify other places where triggers are
+> too much?
+
+**Respuesta de la IA:** precisó la regla rectora —un trigger gana su lugar cuando el estado no debe
+existir por ningún escritor (API, seeds, SQL) y su forma es barata; una operación del servicio o una
+validación de entrada no lo justifican— e inventarió los 29 triggers vivos. El único que protegía una
+operación que el código no hace es el par del lado hijo `assert_event_keeps_child` (tres triggers
+diferidos sobre `races`, `tyre_tests` y `technical_controls`, más una función con SQL dinámico):
+reapuntar `event_id` no es una operación porque la hija *es* su evento, y el proyecto da de baja con
+`deactivated_at` en lugar de borrar. Propuso eliminarlo. Recomendó conservar `set_updated_at`,
+`reject_mutation`, `assert_event_has_child`, el trío de finalidad y `assert_season_driver_category`
+(§7), y confirmó que `score_entries.team_id` (F4) ya no tiene `drift` porque la finalidad de la
+carrera congela `starts_at` al aparecer resultados.
+
+**Resultado:** migración aditiva `000020_drop_child_guard` (elimina la función y los tres triggers;
+el `down` los recrea), prueba de integración en `backend/tests/db/child_guard_test.go` que confirma
+que borrar una hija se acepta (contra el esquema anterior falla con `SQLSTATE P0001`), y
+`docs/sprint2/02-modelo-de-datos.md` §8 con las decisiones. La ronda cancelada queda en el servicio
+(US7, anotado en `docs/sprint2/sprint.md`) y la retroactividad de las asignaciones en US11 con un
+único `BEFORE INSERT` (`RC004`). Verificado con ida y vuelta `down`/`up` y `make check`.

@@ -110,9 +110,10 @@ producción; requiere `make db-reset`).
   recibir puntos. Los acuses cuelgan del log, así que también quedan cubiertos. `notifications` sigue
   apuntando a `events`: cualquier tipo de evento se puede notificar. B.2 (quién puede acusar) sigue
   pendiente.
-- **Pendiente conocido.** Nada en la base impide una carrera activa **sin resultados** sobre una ronda
-  dada de baja: cancelar la ronda y dar de baja su carrera lo hace el servicio en la misma
-  transacción. Con resultados, la base lo impide (punto siguiente).
+- **Ronda cancelada — la cierra el servicio (§8).** Nada en la base impide una carrera activa **sin
+  resultados** sobre una ronda dada de baja; el servicio cancela la ronda y da de baja su carrera en
+  la misma transacción, y no se agrega un trigger para esto (ver §8). Con resultados, la base lo
+  impide (punto siguiente).
 - **Sin nombre almacenado.** Se eliminó `events.name`. La etiqueta la compone el backend por tipo: la
   carrera con el nombre del GP de su ronda y el número, el control con su `control_type`, la prueba de
   neumáticos con un texto fijo y la fecha. Un solo lugar, testeable, y el texto en español no entra a
@@ -159,6 +160,33 @@ Migración aditiva sobre `000018` (no requiere `make db-reset`).
 - **Una fila por (piloto, temporada, categoría).** `UNIQUE (driver_id, season_id, category_id)`
   reemplaza a `UNIQUE (driver_id, season_id)`, así un piloto promovido de F2 a F1 mantiene un número
   en cada campeonato durante la misma temporada.
+
+## 8. Poda de triggers (000020)
+
+La revisión del modelo fijó llevar los invariantes a la base en lugar de validarlos en la app. Al
+revisar qué triggers valía la pena mantener, la regla se precisó: un trigger gana su lugar cuando el
+estado no debe existir **por ningún escritor** (API, seeds, SQL) y su forma es barata; una operación
+del servicio o una validación de entrada no lo justifican.
+
+- **Se elimina el guardia del lado hijo.** `assert_event_keeps_child` (tres `CONSTRAINT TRIGGER`
+  diferidos más una función con SQL dinámico) impedía que un evento quedara sin hija al borrar o
+  reapuntar una hija. Reapuntar `event_id` no es una operación —la hija *es* su evento— y el proyecto
+  nunca borra filas referenciadas: las da de baja con `deactivated_at`. El guardia cubría solo la
+  mitad "se borra la hija" (el caso "se borra el padre también" estaba ignorado a propósito), así que
+  vigilaba algo que el código no hace. No queda nada en su lugar: un borrado a mano por SQL es un
+  problema de SQL crudo, y `reject_mutation` es la red más simple si alguna vez se quiere. La mitad
+  "al menos una hija" (`assert_event_has_child`) se conserva: no es expresable con FK ni `CHECK`.
+- **Ronda cancelada — en el servicio, no en la base (§5).** El caso sin resultados lo cierra el
+  servicio en una transacción. Cubrir las tres vías (ronda, evento, vínculo) exigiría `DEFERRABLE` y
+  tres triggers más una función: el mismo precio que se acaba de rechazar. Con resultados lo sigue
+  impidiendo la base (`RC001`).
+- **`score_entries.team_id` no cambia (F4).** El `drift` que preocupaba lo cierra la finalidad de la
+  carrera: una vez que hay resultados, `starts_at` es inmutable (`RC001`), así que el equipo
+  materializado no puede quedar desfasado por un cambio de fecha posterior.
+- **Se conservan** `set_updated_at` (×14), `reject_mutation` (×5), `assert_event_has_child`, el trío
+  de finalidad y `assert_season_driver_category` (§7): son baratos, de escritura rara, y ninguno
+  protege una operación inexistente. La retroactividad de las asignaciones (US11) sí lleva un trigger
+  nuevo: una asignación solo puede extender el historial, porque el dato que protege ya existe.
 
 Quedan para su user story (detalle en `docs/sprint2/sprint.md`): el trigger de auditoría de puntajes
 (US9), el cierre y la retroactividad de las asignaciones (US11), y el tipo de notificación y la

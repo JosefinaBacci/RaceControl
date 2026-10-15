@@ -30,15 +30,18 @@ pilotos tienen que existir antes de cargar un resultado.
 
 ## Modelo de datos (transversal) ◐
 
-Esquema `000002`–`000017` ya aplicado. Pendiente de la revisión del modelo:
+Esquema `000002`–`000020` ya aplicado. Pendiente de la revisión del modelo:
 
 - [x] §A.6: catálogo `circuits` y eliminación de `events.name` (se edita `000016`, requiere `make db-reset`)
 - [x] F6 / B.1: puntaje solo sobre carreras (`score_entries` y `score_change_log` → `races`)
 - [ ] F6 / B.2: acuse solo de un admin de esa escudería (se hace con US24)
 - [x] `000018`: categoría del equipo = categoría de la carrera, un ítem por piloto en cada cambio,
       evento con duración positiva, nombres de `season_drivers` (F8)
-- [ ] F8: renombrar los triggers de `season_drivers` (cosmético)
-- [ ] F9: volcar las decisiones en `02-modelo-de-datos.md` y registrar en `prompts-ia.md`
+- [x] F8: renombrar los triggers de `season_drivers` (hecho por `000018`/`000019`; quedan
+      `season_drivers_assert_category` y `season_drivers_set_updated_at`)
+- [x] §C: poda de triggers (`000020`, ver `02-modelo-de-datos.md` §8). Se elimina el guardia del lado
+      hijo; la ronda cancelada queda en el servicio y `score_entries.team_id` (F4) no cambia
+- [x] F9: volcar las decisiones en `02-modelo-de-datos.md` y registrar en `prompts-ia.md`
 
 ## US7 — Gestión de calendario
 
@@ -46,7 +49,9 @@ Esquema `000002`–`000017` ya aplicado. Pendiente de la revisión del modelo:
 
 - [ ] Etiqueta del evento compuesta en `internal/calendar` (por tipo, con unit tests)
 - [ ] Queries `sqlc` de eventos y circuitos
-- [ ] Servicio: alta, modificación y baja de eventos (evento + hija en una transacción)
+- [ ] Servicio: alta, modificación y baja de eventos (evento + hija en una transacción). La baja de
+      una carrera da de baja también su ronda, para no dejar una carrera activa sobre una ronda
+      cancelada (`02-modelo-de-datos.md` §8)
 - [ ] Validaciones: campos obligatorios, `ends_at >= starts_at`, ronda única por campeonato,
       fecha congelada si la carrera ya tiene resultados (`409`)
 - [ ] Endpoints restringidos a `fia_admin`; lectura pública
