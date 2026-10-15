@@ -84,10 +84,10 @@ Esquema `000002`–`000017` ya aplicado. Pendiente de la revisión del modelo:
 - [ ] Queries y servicio de pilotos (alta, edición, número por temporada, rol titular/suplente)
 - [ ] Validaciones de datos
 - [ ] Restringir la gestión a los pilotos de la propia escudería
-- [ ] Modelo: `season_drivers` deriva la categoría del equipo al 1 de enero, así que un piloto que se
+- [x] Modelo: `season_drivers` deriva la categoría del equipo al 1 de enero, así que un piloto que se
       suma a mitad de temporada no puede tener número y uno que cambia de categoría queda con la
       vieja. Una fila por (piloto, temporada, categoría), con la categoría elegida por el admin y un
-      chequeo de que el piloto tenga una asignación en esa categoría durante la temporada
+      chequeo de que el piloto tenga una asignación en esa categoría durante la temporada (000019)
 - [ ] Modelo: una asignación no se puede terminar (un piloto liberado sigue en la alineación).
       Fila de "baja" en `driver_team_assignments` (sin escudería desde una fecha), sin romper el
       append-only

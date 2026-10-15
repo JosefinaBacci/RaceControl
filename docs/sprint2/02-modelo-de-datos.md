@@ -26,11 +26,12 @@ donde varía:
 - **Número de coche — por (piloto, temporada, categoría).** Tabla `season_drivers` (ex
   `driver_season_numbers`): `driver_id`, `season_id`, `category_id`, `number`. El número lo asigna
   el campeonato y sobrevive un cambio de equipo, por eso no tiene historial.
-  - La categoría **no** se pide: es un dato derivado de la escudería del piloto, así que un
-    trigger la materializa (mismo criterio que `score_entries.team_id` en 000008) y recién ahí
-    `UNIQUE (season_id, category_id, number)` se sostiene en la base.
-  - No se usa `UNIQUE (season_id, number)`: F1 y F2 numeran sus coches en forma independiente, así
-    que el mismo número puede repetirse entre categorías de la misma temporada.
+  - La categoría la **elige el admin** y un trigger la valida contra el historial de asignaciones
+    (§7, `000019`). En `000011` se derivaba del equipo al 1 de enero, lo que dejaba sin número a
+    quien se sumaba a mitad de temporada.
+  - `UNIQUE (season_id, category_id, number)`: no se usa `UNIQUE (season_id, number)`, porque F1 y
+    F2 numeran sus coches en forma independiente y el mismo número puede repetirse entre
+    categorías de la misma temporada.
 
 ## 3. Jerarquía de eventos (000012–000015)
 
@@ -66,8 +67,9 @@ Dos patrones, según el caso:
   guarda temporada, categoría y número juntos y el `UNIQUE` es de una sola tabla (§5). Antes
   (000014) `races` copiaba temporada y categoría del evento con una FK compuesta; el rediseño de
   000016 eliminó esa copia.
-- **Dato derivado por historial → trigger que lo materializa.** El número de piloto (§2), igual
-  que el equipo del resultado en `000008`.
+- **Dato derivado por historial → trigger que lo materializa.** El equipo del resultado en `000008`.
+  El número de piloto salió de este patrón en `000019` (§7): la categoría la elige el admin y el
+  trigger solo la valida contra el historial.
 
 Reglas transversales mantenidas: `bigint GENERATED ALWAYS AS IDENTITY`, `CHECK` en la base, **baja
 lógica** derivada (`deactivated_at` + `is_active` generada) en `users`, `drivers`, `categories`,
@@ -144,9 +146,23 @@ Migración aditiva sobre `000017` (no requiere `make db-reset`).
 - **Nombres de `season_drivers`.** `000013` había renombrado la tabla pero no sus restricciones,
   índice, secuencia, triggers ni función.
 
+## 7. Categoría del número de piloto (000019)
+
+Migración aditiva sobre `000018` (no requiere `make db-reset`).
+
+- **La categoría la elige el admin; el trigger la valida.** `000011` la derivaba del equipo del
+  piloto al 1 de enero de la temporada. Eso castigaba a quien se suma a mitad de temporada —sin
+  asignación en esa fecha, no podía tener número— y dejaba con la categoría vieja al piloto que
+  cambia de categoría. Ahora la carga el admin y el trigger exige que el piloto tenga una asignación
+  a un equipo de esa categoría cuya vigencia solape la temporada (año calendario, la misma convención
+  que `000011`). Si no, `RC003`: es un error de carga y el servicio lo responde con un 4xx.
+- **Una fila por (piloto, temporada, categoría).** `UNIQUE (driver_id, season_id, category_id)`
+  reemplaza a `UNIQUE (driver_id, season_id)`, así un piloto promovido de F2 a F1 mantiene un número
+  en cada campeonato durante la misma temporada.
+
 Quedan para su user story (detalle en `docs/sprint2/sprint.md`): el trigger de auditoría de puntajes
-(US9), `season_drivers` por categoría y el cierre y la retroactividad de las asignaciones (US11), y
-el tipo de notificación y la validación del acuse (US24). Se descartaron: guardar posición y estado
+(US9), el cierre y la retroactividad de las asignaciones (US11), y el tipo de notificación y la
+validación del acuse (US24). Se descartaron: guardar posición y estado
 (DNF, DSQ), porque la consigna solo pide puntajes y `000006` deriva la posición de los puntos;
 índices sin una query que los use; quitar las columnas `is_active`, que son convención del proyecto;
 y la zona horaria del circuito, que ninguna historia pide.

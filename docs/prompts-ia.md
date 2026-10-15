@@ -848,3 +848,31 @@ un ítem por piloto en cada cambio, `ends_at > starts_at`, nombres de `season_dr
 con pruebas de comportamiento, ida y vuelta `down`/`up` y `make check`. Lo diferido quedó como tareas
 en `docs/sprint2/sprint.md` (US9, US11, US12, US24) y la purga de `login_attempts` en
 `docs/sprint2/TODO.md`. El dump compartido excluye los datos de `users`, `sessions` y `login_attempts`.
+
+---
+
+### 2026-10-15 — Categoría del número de piloto a elección del admin (000019)
+
+**Contexto:** al revisar el esquema apareció que `season_drivers` deriva la categoría del equipo al
+1 de enero, un problema ya anotado en `docs/sprint2/sprint.md` (US11): un piloto que se suma a mitad
+de temporada no tiene asignación en esa fecha y no puede tener número, y uno que cambia de categoría
+queda con la vieja.
+
+**Prompt:**
+
+> we should solve the mid-season rookie problem
+
+**Respuesta de la IA:** propuso seguir el diseño ya escrito en `docs/sprint2/sprint.md` (US11): una
+fila por (piloto, temporada, categoría), la categoría elegida por el admin y un chequeo de que el
+piloto tenga una asignación en esa categoría durante la temporada. Señaló que la ventana de la
+temporada es el año calendario (misma convención que `000011`) y que una asignación vence cuando
+empieza la siguiente (períodos implícitos, `000007`), así que el chequeo es el solapamiento de las dos
+ventanas. Usó `RC003` para el error de carga, que el servicio responderá con un 4xx.
+
+**Resultado:** migración aditiva `000019` (`UNIQUE (driver_id, season_id, category_id)`, trigger
+`assert_season_driver_category` con `RC003`), semilla `demo.sql` con `category_id` explícito y cuatro
+pruebas de integración en `backend/internal/db/season_drivers_test.go`. Se confirmó que las pruebas
+fallan contra el esquema anterior ("no team assignment for season 1" y la violación del `UNIQUE`
+viejo). Nota técnica: `sqlc` no tolera un `DROP FUNCTION` sobre una función renombrada en una
+migración previa, así que el trigger se reemplaza con `ALTER FUNCTION ... RENAME` + `CREATE OR
+REPLACE`. Verificado con ida y vuelta `down`/`up`, `make sqlc` y `make check`.

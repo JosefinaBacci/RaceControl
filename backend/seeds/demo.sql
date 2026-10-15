@@ -71,16 +71,17 @@ OVERRIDING SYSTEM VALUE VALUES
     (7, 7, 3, TIMESTAMPTZ '2026-01-01 00:00:00+00', true)
 ON CONFLICT DO NOTHING;
 
--- 7. season_drivers (car number per driver-season)
-INSERT INTO season_drivers (id, driver_id, season_id, number)
+-- 7. season_drivers (car number per driver-season-category); every demo driver
+-- races in Formula 1, whose category is 1
+INSERT INTO season_drivers (id, driver_id, season_id, category_id, number)
 OVERRIDING SYSTEM VALUE VALUES
-    (1, 1, 1, 16),
-    (2, 2, 1, 44),
-    (3, 3, 1, 99),
-    (4, 4, 1, 1),
-    (5, 5, 1, 22),
-    (6, 6, 1, 63),
-    (7, 7, 1, 12)
+    (1, 1, 1, 1, 16),
+    (2, 2, 1, 1, 44),
+    (3, 3, 1, 1, 99),
+    (4, 4, 1, 1, 1),
+    (5, 5, 1, 1, 22),
+    (6, 6, 1, 1, 63),
+    (7, 7, 1, 1, 12)
 ON CONFLICT DO NOTHING;
 
 -- 8. score_entries (unchanged)
