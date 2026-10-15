@@ -6,12 +6,16 @@ package dbgen
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
 	CategoryIDByCode(ctx context.Context, code string) (int64, error)
 	CircuitExists(ctx context.Context, id int64) (bool, error)
 	CountFailuresSinceLastSuccess(ctx context.Context, arg CountFailuresSinceLastSuccessParams) (int64, error)
+	CreateAssignment(ctx context.Context, arg CreateAssignmentParams) error
+	CreateDriver(ctx context.Context, arg CreateDriverParams) (int64, error)
 	CreateEvent(ctx context.Context, arg CreateEventParams) (int64, error)
 	CreateRace(ctx context.Context, arg CreateRaceParams) error
 	CreateRound(ctx context.Context, arg CreateRoundParams) (int64, error)
@@ -26,27 +30,39 @@ type Querier interface {
 	GetAccount(ctx context.Context, id int64) (GetAccountRow, error)
 	GetActiveSessionByTokenHash(ctx context.Context, arg GetActiveSessionByTokenHashParams) (GetActiveSessionByTokenHashRow, error)
 	GetCalendarEvent(ctx context.Context, id int64) (CalendarEvent, error)
+	GetTeamDriver(ctx context.Context, arg GetTeamDriverParams) (GetTeamDriverRow, error)
 	GetUserByUsername(ctx context.Context, lower string) (User, error)
 	InsertLoginAttempt(ctx context.Context, arg InsertLoginAttemptParams) error
+	LatestSeason(ctx context.Context) (LatestSeasonRow, error)
 	ListAccounts(ctx context.Context, arg ListAccountsParams) ([]ListAccountsRow, error)
 	// The calendar is read through the view that joins each event with its child
 	// (000021), so the list and the detail share a single definition.
 	ListCalendarEvents(ctx context.Context, arg ListCalendarEventsParams) ([]CalendarEvent, error)
 	ListCircuits(ctx context.Context) ([]ListCircuitsRow, error)
 	ListSeasons(ctx context.Context) ([]ListSeasonsRow, error)
+	// The lineup of a team: the drivers whose latest assignment points at that team
+	// (000007, 000022). A release makes the latest assignment teamless, so the driver
+	// drops out of the list. The number is the one the driver holds in the team
+	// category for the latest season (000011, 000019); a scalar subquery keeps it
+	// nullable for a driver without a number yet.
+	ListTeamDrivers(ctx context.Context, teamID pgtype.Int8) ([]ListTeamDriversRow, error)
 	ListTeams(ctx context.Context) ([]ListTeamsRow, error)
 	ReactivateUser(ctx context.Context, id int64) error
+	ReleaseAssignment(ctx context.Context, driverID int64) error
 	RevokeSessionByTokenHash(ctx context.Context, tokenHash string) error
 	RevokeUserSessions(ctx context.Context, arg RevokeUserSessionsParams) error
 	SeasonYear(ctx context.Context, id int64) (int32, error)
+	TeamCategory(ctx context.Context, id int64) (int64, error)
 	TeamExists(ctx context.Context, id int64) (bool, error)
 	TouchSession(ctx context.Context, arg TouchSessionParams) error
 	UpdateAccount(ctx context.Context, arg UpdateAccountParams) error
+	UpdateDriver(ctx context.Context, arg UpdateDriverParams) error
 	UpdateEventTimes(ctx context.Context, arg UpdateEventTimesParams) error
 	UpdateRound(ctx context.Context, arg UpdateRoundParams) error
 	UpdateTechnicalControl(ctx context.Context, arg UpdateTechnicalControlParams) error
 	UpdateTyreTest(ctx context.Context, arg UpdateTyreTestParams) error
 	UpdateUserPasswordHash(ctx context.Context, arg UpdateUserPasswordHashParams) error
+	UpsertSeasonDriver(ctx context.Context, arg UpsertSeasonDriverParams) error
 }
 
 var _ Querier = (*Queries)(nil)

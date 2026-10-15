@@ -27,6 +27,7 @@ type Dependencies struct {
 	Users             UserManager
 	Teams             TeamCatalog
 	Calendar          CalendarManager
+	Drivers           DriverManager
 	Cookie            CookieConfig
 	AllowedOrigins    []string
 	TrustProxyHeaders bool
@@ -77,6 +78,16 @@ func NewRouter(deps Dependencies) http.Handler {
 		r.Post("/{id}/reactivate", userRoutes.reactivate)
 	})
 	router.With(sessionGuard.RequireSession).Post("/account/password", userRoutes.changeOwnPassword)
+
+	driverRoutes := &driverHandlers{drivers: deps.Drivers}
+	router.Route("/team/drivers", func(r chi.Router) {
+		r.Use(sessionGuard.RequireSession, sessionGuard.RequireRole(domain.RoleTeamAdmin))
+		r.Get("/", driverRoutes.list)
+		r.Post("/", driverRoutes.create)
+		r.Get("/{id}", driverRoutes.get)
+		r.Patch("/{id}", driverRoutes.update)
+		r.Post("/{id}/release", driverRoutes.release)
+	})
 
 	router.Route("/auth", func(r chi.Router) {
 		r.Post("/login", authRoutes.login)

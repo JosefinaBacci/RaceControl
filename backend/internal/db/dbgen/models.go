@@ -67,7 +67,7 @@ type Driver struct {
 type DriverTeamAssignment struct {
 	ID            int64
 	DriverID      int64
-	TeamID        int64
+	TeamID        pgtype.Int8
 	EffectiveFrom pgtype.Timestamptz
 	CreatedAt     pgtype.Timestamptz
 	IsStarter     bool
