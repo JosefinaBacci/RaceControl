@@ -960,3 +960,61 @@ queda como test explícito en `child_guard_test.go` en lugar de quedar implícit
 `score_guard_test.go` nuevos; `child_guard_test.go` ampliado (el evento queda sin hija y un cambio de
 `kind` posterior falla al commit); y `02-modelo-de-datos.md` §5/§8 precisados: el invariante es "una
 hija por evento verificada al insertar", no "exactamente una hija". `make check` en verde.
+
+---
+
+### 2026-10-15 — Gestión de calendario: backend (US7)
+
+**Contexto:** el esquema ya tenía los tres tipos de evento (`races`, `tyre_tests`,
+`technical_controls`) colgando de `events`, pero ningún endpoint los exponía. Se arrancó el Sprint 2
+por US7 porque el calendario es la base de los puntajes (US9). Restricción del equipo: los controles
+técnicos no se modelan más de lo que ya están, pero US7 igual los da de alta.
+
+**Prompt:**
+
+> Implementar el backend de US7: lectura pública del calendario y gestión (alta, modificación y baja)
+> restringida al administrador FIA, para carreras, pruebas de neumáticos y controles técnicos. Una
+> carrera tiene exactamente una ronda, así que el servicio escribe evento, carrera y ronda en una
+> sola transacción y la baja de la carrera da de baja también la ronda; no hay endpoint de rondas.
+> Validar campos obligatorios, `ends_at` posterior a `starts_at`, ronda única por campeonato y fecha
+> congelada si la carrera ya tiene resultados (409). La etiqueta del evento se compone en el
+> servicio, no se guarda. No modelar más de lo necesario los controles técnicos. Cubrir cada regla
+> con tests de integración contra la base real, incluido el acceso denegado a los demás roles.
+
+**Respuesta de la IA:** propuso una vista `calendar_events` (`000021`) como único modelo de lectura,
+compartido por listado y detalle, con `LEFT JOIN` hacia la hija para que sqlc tipara las columnas
+propias de cada tipo como nulables. Derivó el estado (`scheduled`/`finished`) de `ends_at` contra
+`now` en el backend en vez de guardarlo, y compuso la etiqueta por tipo: carrera con `gp_name` y
+número de ronda, prueba de neumáticos con la fecha en UTC, control técnico con su `control_type`.
+Dejó la ronda cancelada en el servicio (sin `CONSTRAINT TRIGGER`) según la decisión de §C.
+
+**Resultado:** `backend/migrations/000021_calendar_read_model.{up,down}.sql`, `backend/sql/calendar.sql`
+y `internal/db/dbgen/calendar.sql.go`, `internal/calendar/{event,validation,service}.go`,
+`internal/transport/calendar_handlers.go` y rutas, `internal/db/pgconv.go`,
+`tests/transport/calendar_integration_test.go`, `tests/calendar/event_test.go`. `make check` en
+verde.
+
+---
+
+### 2026-10-15 — Gestión de calendario: pantallas de la app (US7)
+
+**Contexto:** con los endpoints de US7 en la API, la pantalla de calendario del panel FIA seguía
+siendo la maqueta de US4 (datos de ejemplo, botones deshabilitados). Se pidió conectarla sin migrar
+todavía la vista pública, que es el primer punto de US8.
+
+**Prompt:**
+
+> Conectar la gestión del calendario de la app a la API de US7: listado con filtros de período y
+> categoría, alta, edición y baja con confirmación, mostrando cada error de la API en el campo que
+> corresponde. La vista pública del calendario queda como está hasta US8. Mantener la lógica fuera de
+> los componentes de pantalla, reutilizar el design system y los helpers existentes, y no duplicar
+> código.
+
+**Resultado:** `app/src/api/calendar.ts`, `app/src/data/calendar.ts`,
+`app/src/data/useReloadOnFocus.ts` (extraído de `accounts.ts`), `app/src/features/calendar/`
+(`eventForm.ts`, `EventFields.tsx`, `EventAdminList.tsx`) y `app/app/fia/calendar/`
+(`_layout.tsx`, `index.tsx`, `new.tsx`, `[id].tsx`) en lugar de `app/app/fia/calendar.tsx`. La
+respuesta del evento sumó `gpName` para que el formulario de edición pueda precargar el nombre de la
+ronda. `make check` en verde.
+
+---

@@ -10,7 +10,7 @@ en verde y un commit por cambio lógico.
 
 | US | Nombre | SP | Valor | Est. | Tiempo real registrado | Estado |
 |----|--------|----|-------|------|------------------------|--------|
-| US7 | Gestión de calendario | 5 | 8 | 5h | | ◐ |
+| US7 | Gestión de calendario | 5 | 8 | 5h | 2.3h | ◐ |
 | US8 | Visualización y descarga de calendario | 3 | 8 | 3.5h | | ☐ |
 | US11 | Gestión de pilotos | 5 | 13 | 5h | | ☐ |
 | US12 | Visualización de pilotos | 3 | 13 | 4h | | ☐ |
@@ -49,24 +49,25 @@ Esquema `000002`–`000020` ya aplicado. Pendiente de la revisión del modelo:
 
 *Est. 5h · SP 5 · Valor 8*
 
-- [ ] Etiqueta del evento compuesta en `internal/calendar` (por tipo, con unit tests)
-- [ ] Queries `sqlc` de eventos y circuitos
-- [ ] Servicio: alta, modificación y baja de eventos (evento + hija en una transacción). La baja de
+- [x] Etiqueta del evento compuesta en `internal/calendar` (por tipo, con unit tests)
+- [x] Queries `sqlc` de eventos y circuitos
+- [x] Servicio: alta, modificación y baja de eventos (evento + hija en una transacción). La baja de
       una carrera da de baja también su ronda, para no dejar una carrera activa sobre una ronda
       cancelada (`02-modelo-de-datos.md` §8)
-- [ ] Validaciones: campos obligatorios, `ends_at >= starts_at`, ronda única por campeonato,
+- [x] Validaciones: campos obligatorios, `ends_at >= starts_at`, ronda única por campeonato,
       fecha congelada si la carrera ya tiene resultados (`409`)
-- [ ] Endpoints restringidos a `fia_admin`; lectura pública
-- [ ] Pantalla de gestión del calendario (crear, editar, eliminar con confirmación)
-- [ ] Tests de integración (incluido acceso denegado a otros roles)
+- [x] Endpoints restringidos a `fia_admin`; lectura pública
+- [x] Pantalla de gestión del calendario (crear, editar, eliminar con confirmación)
+- [x] Tests de integración (incluido acceso denegado a otros roles)
 
 **Criterios de éxito**
 
-- [ ] El administrador puede crear carreras con todos los datos correspondientes
-- [ ] El administrador puede modificar y eliminar fechas existentes
-- [ ] Los cambios se reflejan de inmediato en el calendario oficial
-- [ ] Los demás roles no pueden crear, modificar ni eliminar carreras
-- [ ] El sistema valida los campos obligatorios y las fechas inválidas
+- [x] El administrador puede crear carreras con todos los datos correspondientes
+- [x] El administrador puede modificar y eliminar fechas existentes
+- [ ] Los cambios se reflejan de inmediato en el calendario oficial — la vista pública todavía lee
+      el mock; se cierra en US8
+- [x] Los demás roles no pueden crear, modificar ni eliminar carreras
+- [x] El sistema valida los campos obligatorios y las fechas inválidas
 
 ## US8 — Visualización y descarga de calendario
 
