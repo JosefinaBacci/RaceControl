@@ -934,3 +934,29 @@ que borrar una hija se acepta (contra el esquema anterior falla con `SQLSTATE P0
 `docs/sprint2/02-modelo-de-datos.md` §8 con las decisiones. La ronda cancelada queda en el servicio
 (US7, anotado en `docs/sprint2/sprint.md`) y la retroactividad de las asignaciones en US11 con un
 único `BEFORE INSERT` (`RC004`). Verificado con ida y vuelta `down`/`up` y `make check`.
+
+---
+
+### 2026-10-15 — Tests del invariante de una hija por evento y de los códigos `RC001`/`RC002`
+
+**Contexto:** cerrada la poda de `000020`, la documentación afirmaba "exactamente una hija" cuando el
+guardia del lado hijo ya no existía: quedaba media invariante sin test, y la mitad que sí se conserva
+(`assert_event_has_child`) solo dispara desde el evento.
+
+**Prompt:**
+
+> add the tests
+
+**Respuesta de la IA:** propuso separar por archivo los invariantes del evento y los códigos de
+guardia, reutilizando los helpers existentes (`insertTestDriver`, `assignDriver`, `insertTyreTestEvent`
+y las constantes de datos seed). Para `RC001` y `RC002` aprovechó que el evento 1 del seed ya es una
+carrera de F1 con resultados: cada aserción corre en una transacción que siempre se revierte, así el
+dato seed nunca se modifica. Cubrió: evento sin hija, segunda hija del mismo tipo (violación de PK),
+hija de otro tipo (FK compuesta), cambio de `kind` con hija presente, el trío de finalidad de una
+carrera disputada (fecha, ronda, campeonato) y `RC002`. Aclaró que la brecha del borrado de la hija
+queda como test explícito en `child_guard_test.go` en lugar de quedar implícita.
+
+**Resultado:** `backend/tests/db/event_integrity_test.go`, `race_finality_test.go` y
+`score_guard_test.go` nuevos; `child_guard_test.go` ampliado (el evento queda sin hija y un cambio de
+`kind` posterior falla al commit); y `02-modelo-de-datos.md` §5/§8 precisados: el invariante es "una
+hija por evento verificada al insertar", no "exactamente una hija". `make check` en verde.

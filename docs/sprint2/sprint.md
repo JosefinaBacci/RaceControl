@@ -42,6 +42,8 @@ Esquema `000002`–`000020` ya aplicado. Pendiente de la revisión del modelo:
 - [x] §C: poda de triggers (`000020`, ver `02-modelo-de-datos.md` §8). Se elimina el guardia del lado
       hijo; la ronda cancelada queda en el servicio y `score_entries.team_id` (F4) no cambia
 - [x] F9: volcar las decisiones en `02-modelo-de-datos.md` y registrar en `prompts-ia.md`
+- [x] Modelo: tests del invariante de una hija por evento y de los códigos `RC001`/`RC002`
+      (`backend/tests/db/event_integrity_test.go`, `race_finality_test.go`, `score_guard_test.go`)
 
 ## US7 — Gestión de calendario
 

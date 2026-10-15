@@ -87,11 +87,13 @@ producción; requiere `make db-reset`).
   Se evaluó eliminar `kind` y contar hijas con un trigger: funciona, pero con dos transacciones
   concurrentes se probó que un evento puede quedar con dos hijas si el trigger no bloquea la fila del
   padre. Se descartó: lo que se puede expresar con una FK no va a un trigger.
-- **Exactamente una hija.** "Como mucho una" la dan la PK y la FK de tipo; "al menos una" no es
-  expresable con FK ni `CHECK`, así que un `CONSTRAINT TRIGGER` diferido lo verifica al commit (se
-  inserta el evento y su hija en la misma transacción). Solo un bug del backend lo puede disparar, por
-  eso no tiene código `RC` propio: un 500 es la respuesta correcta. Un tipo que se agregue al `CHECK`
-  sin agregarse al trigger hace fallar al evento en lugar de dejarlo pasar sin hija.
+- **Una hija por evento, verificada al insertar.** "Como mucho una" la dan la PK y la FK de tipo.
+  "Al menos una" no es expresable con FK ni `CHECK`, así que un `CONSTRAINT TRIGGER` diferido lo
+  verifica al commit sobre el alta del evento y el cambio de `kind` (se inserta el evento y su hija en
+  la misma transacción). Solo un bug del backend lo puede disparar, por eso no tiene código `RC`
+  propio: un 500 es la respuesta correcta. Un tipo que se agregue al `CHECK` sin agregarse al trigger
+  hace fallar al evento en lugar de dejarlo pasar sin hija. El trigger **no** vigila el borrado de la
+  hija: esa mitad se retiró en `000020` (§8), así que un borrado por SQL crudo deja el evento sin hija.
 - **PK compartida.** La hija no tiene id propio: `event_id` es su clave primaria. Nada referenciaba el
   id de la hija, y así una carrera tiene un solo id.
 - **El campeonato es de la hija.** `events` guarda solo tipo y timing; `tyre_tests` y
@@ -175,7 +177,10 @@ del servicio o una validación de entrada no lo justifican.
   mitad "se borra la hija" (el caso "se borra el padre también" estaba ignorado a propósito), así que
   vigilaba algo que el código no hace. No queda nada en su lugar: un borrado a mano por SQL es un
   problema de SQL crudo, y `reject_mutation` es la red más simple si alguna vez se quiere. La mitad
-  "al menos una hija" (`assert_event_has_child`) se conserva: no es expresable con FK ni `CHECK`.
+  "al menos una hija" (`assert_event_has_child`) se conserva porque no es expresable con FK ni `CHECK`,
+  pero solo dispara desde el evento (alta y cambio de `kind`, §5): no cubre el borrado de la hija, que
+  es justamente el caso que deja de vigilarse. La brecha queda documentada y cubierta por tests, no
+  silenciada.
 - **Ronda cancelada — en el servicio, no en la base (§5).** El caso sin resultados lo cierra el
   servicio en una transacción. Cubrir las tres vías (ronda, evento, vínculo) exigiría `DEFERRABLE` y
   tres triggers más una función: el mismo precio que se acaba de rechazar. Con resultados lo sigue
