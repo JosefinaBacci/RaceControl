@@ -20,6 +20,7 @@ const (
 	formulaOneTeamID     = 1
 	formulaTwoCategoryID = 2
 	formulaTwoTeamID     = 5
+	seededCircuitID      = 1
 )
 
 var (
