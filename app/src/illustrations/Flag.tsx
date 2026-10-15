@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import Svg, { Circle, G, Path, Rect } from 'react-native-svg';
 
-export type FlagCode = 'us' | 'sg' | 'it' | 'qa' | 'at' | 'de' | 'gb' | 'fr' | 'es';
+export type FlagCode = string;
 
 const verticalTricolor = (left: string, middle: string, right: string) => (
   <>
@@ -13,8 +13,8 @@ const verticalTricolor = (left: string, middle: string, right: string) => (
 
 const horizontalBands = (bands: { color: string; height: number }[]) => {
   let offset = 0;
-  return bands.map((band) => {
-    const rect = <Rect key={`${band.color}-${offset}`} x={0} y={offset} width={30} height={band.height} fill={band.color} />;
+  return bands.map((band, index) => {
+    const rect = <Rect key={`${band.color}-${index}`} x={0} y={offset} width={30} height={band.height} fill={band.color} />;
     offset += band.height;
     return rect;
   });
@@ -28,21 +28,31 @@ const usStars = Array.from({ length: 12 }, (_, index) => (
   <Circle key={index} cx={1.6 + (index % 4) * 3} cy={1.6 + Math.floor(index / 4) * 3.4} r={0.55} fill="#FFFFFF" />
 ));
 
+const usFlag = (
+  <>
+    <Rect x={0} y={0} width={30} height={20} fill="#FFFFFF" />
+    {usStripes}
+    <Rect x={0} y={0} width={12} height={10.8} fill="#3C3B6E" />
+    {usStars}
+  </>
+);
+
 const qatarSerration = Array.from({ length: 9 }, (_, index) => {
   const top = (index * 20) / 9;
   const middle = top + 20 / 18;
   return `L10 ${top} L13 ${middle}`;
 }).join(' ');
 
-const flags: Record<FlagCode, ReactNode> = {
-  us: (
-    <>
-      <Rect x={0} y={0} width={30} height={20} fill="#FFFFFF" />
-      {usStripes}
-      <Rect x={0} y={0} width={12} height={10.8} fill="#3C3B6E" />
-      {usStars}
-    </>
-  ),
+const genericFlag = (
+  <>
+    <Rect x={0} y={0} width={30} height={20} fill="#2F3543" />
+    <Circle cx={15} cy={10} r={5.5} fill="none" stroke="#7F8596" strokeWidth={1} />
+    <Path d="M15 4.5 V15.5 M9.5 10 H20.5" stroke="#7F8596" strokeWidth={0.8} />
+  </>
+);
+
+const flags: Record<string, ReactNode> = {
+  us: usFlag,
   sg: (
     <>
       <Rect x={0} y={0} width={30} height={10} fill="#EF3340" />
@@ -90,12 +100,74 @@ const flags: Record<FlagCode, ReactNode> = {
       <Path d="M15 0 V20 M0 10 H30" stroke="#C8102E" strokeWidth={3.4} />
     </>
   ),
+  au: horizontalBands([
+    { color: '#012169', height: 20 / 3 },
+    { color: '#FFFFFF', height: 20 / 3 },
+    { color: '#012169', height: 20 / 3 },
+  ]),
+  ca: verticalTricolor('#D52B1E', '#FFFFFF', '#D52B1E'),
+  mc: verticalTricolor('#CE1126', '#FFFFFF', '#CE1126'),
+  jp: (
+    <>
+      <Rect x={0} y={0} width={30} height={20} fill="#FFFFFF" />
+      <Circle cx={15} cy={10} r={5.5} fill="#BC002D" />
+    </>
+  ),
+  cn: (
+    <>
+      <Rect x={0} y={0} width={30} height={20} fill="#DE2910" />
+      <Path d="M4 3 L5.5 7 L2.5 4.5 L5.5 4.5 L2.5 7 Z" fill="#FFDE00" />
+    </>
+  ),
+  bh: (
+    <>
+      <Rect x={0} y={0} width={30} height={20} fill="#FFFFFF" />
+      <Rect x={0} y={0} width={9} height={20} fill="#DA291C" />
+      <Path d="M9 0 L13 1.5 L9 3 L13 4.5 L9 6 L13 7.5 L9 9 L13 10.5 L9 12 L13 13.5 L9 15 L13 16.5 L9 18 L13 19.5 L9 20" stroke="#DA291C" strokeWidth={0.8} fill="none" />
+    </>
+  ),
+  sa: (
+    <>
+      <Rect x={0} y={0} width={30} height={20} fill="#006C35" />
+      <Circle cx={15} cy={10} r={3} fill="#FFFFFF" />
+    </>
+  ),
+  be: verticalTricolor('#000000', '#FDDA24', '#EF3340'),
+  hu: horizontalBands([
+    { color: '#CE2939', height: 20 / 3 },
+    { color: '#FFFFFF', height: 20 / 3 },
+    { color: '#477050', height: 20 / 3 },
+  ]),
+  nl: horizontalBands([
+    { color: '#AE1C28', height: 20 / 3 },
+    { color: '#FFFFFF', height: 20 / 3 },
+    { color: '#21468B', height: 20 / 3 },
+  ]),
+  az: horizontalBands([
+    { color: '#00AFCA', height: 20 / 3 },
+    { color: '#E30A17', height: 20 / 3 },
+    { color: '#009739', height: 20 / 3 },
+  ]),
+  mx: verticalTricolor('#006847', '#FFFFFF', '#CE1126'),
+  br: (
+    <>
+      <Rect x={0} y={0} width={30} height={20} fill="#009739" />
+      <Path d="M15 3 L26 10 L15 17 L4 10 Z" fill="#FEDD00" />
+      <Circle cx={15} cy={10} r={4} fill="#002776" />
+    </>
+  ),
+  ae: horizontalBands([
+    { color: '#00843D', height: 20 / 3 },
+    { color: '#FFFFFF', height: 20 / 3 },
+    { color: '#000000', height: 20 / 3 },
+  ]),
 };
 
-export function Flag({ code, width = 24 }: { code: FlagCode; width?: number }) {
+export function Flag({ code, width = 24 }: { code?: string | null; width?: number }) {
+  const key = (code ?? '').toLowerCase();
   return (
     <Svg width={width} height={(width * 2) / 3} viewBox="0 0 30 20" accessibilityRole="image">
-      {flags[code]}
+      {flags[key] ?? genericFlag}
       <Rect x={0.25} y={0.25} width={29.5} height={19.5} rx={1.5} fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth={0.5} />
     </Svg>
   );

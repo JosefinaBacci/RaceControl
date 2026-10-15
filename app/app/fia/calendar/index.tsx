@@ -7,7 +7,7 @@ import { useCalendarEvents } from '@/data/calendar';
 import { EventAdminList } from '@/features/calendar/EventAdminList';
 import { categoryFilterOptions, periodOptions } from '@/features/filters';
 import { RemoteContent } from '@/features/RemoteContent';
-import type { CategoryFilter } from '@/data/hooks';
+import type { CategoryFilter } from '@/mocks/catalog';
 
 export default function FiaCalendarScreen() {
   const [period, setPeriod] = useState<EventPeriod>('upcoming');

@@ -4,9 +4,8 @@ import { StyleSheet, View } from 'react-native';
 import { cancelEvent, type CalendarEvent } from '@/api/calendar';
 import { AppText, Badge, Card, IconButton } from '@/components';
 import { useFormSubmission } from '@/data/useFormSubmission';
+import { kindLabel } from '@/features/eventKind';
 import { colors, spacing } from '@/theme';
-
-import { kindLabel } from './eventForm';
 
 type EventAdminListProps = {
   events: CalendarEvent[];

@@ -1,17 +1,12 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 
-import { AppText, Badge, Card, ListItem, type BadgeTone } from '@/components';
+import { AppText, Badge, Card, ListItem } from '@/components';
+import { eventKindTones, kindLabel } from '@/features/eventKind';
 import { CircuitMap, Flag, circuitKeyFor } from '@/illustrations';
 import { categories } from '@/mocks/catalog';
-import { eventKindLabel, type CalendarEvent, type EventKind } from '@/mocks/data';
+import type { CalendarEvent } from '@/mocks/data';
 import { colors, radius } from '@/theme';
-
-const kindTone: Record<EventKind, BadgeTone> = {
-  race: 'accent',
-  tyre_test: 'info',
-  technical_control: 'warning',
-};
 
 const categoryLabel = Object.fromEntries(categories.map((category) => [category.value, category.label]));
 const monthFormatter = new Intl.DateTimeFormat('es-AR', { month: 'short' });
@@ -60,8 +55,8 @@ export function EventList({ title, events, action, emptyMessage = 'No hay evento
               <View style={styles.trailing}>
                 {showsMap ? <CircuitMap circuit={circuitKeyFor(event.circuit)} width={64} strokeWidth={7} color={colors.textMuted} /> : null}
                 <Badge
-                label={event.status === 'finished' ? 'Finalizado' : eventKindLabel[event.kind]}
-                tone={event.status === 'finished' ? 'neutral' : kindTone[event.kind]}
+                  label={event.status === 'finished' ? 'Finalizado' : kindLabel(event.kind)}
+                  tone={event.status === 'finished' ? 'neutral' : eventKindTones[event.kind]}
                 />
               </View>
             }

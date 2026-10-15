@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 
-import type { CategoryCode } from '@/mocks/catalog';
+import type { CategoryCode, CategoryFilter } from '@/mocks/catalog';
 import {
   calendarEvents,
   circuitFacts,
@@ -12,7 +12,6 @@ import {
   type CalendarEvent,
 } from '@/mocks/data';
 
-export type CategoryFilter = CategoryCode | 'all';
 export type EventPeriod = 'upcoming' | 'past';
 
 const byDate = (a: CalendarEvent, b: CalendarEvent) => a.date.localeCompare(b.date);

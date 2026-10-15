@@ -38,16 +38,6 @@ export const eventFormFields: readonly EventFormField[] = [
   'controlType',
 ];
 
-export const eventKindOptions: readonly { value: EventKind; label: string }[] = [
-  { value: 'race', label: 'Carrera' },
-  { value: 'tyre_test', label: 'Prueba de neumáticos' },
-  { value: 'technical_control', label: 'Control técnico' },
-];
-
-export function kindLabel(kind: EventKind): string {
-  return eventKindOptions.find((option) => option.value === kind)?.label ?? kind;
-}
-
 export type Timing = {
   startsAt: string;
   endsAt: string;

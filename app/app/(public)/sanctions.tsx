@@ -1,9 +1,10 @@
 import { useState } from 'react';
 
 import { ChipGroup, Screen } from '@/components';
-import { useSanctions, type CategoryFilter } from '@/data/hooks';
+import { useSanctions } from '@/data/hooks';
 import { categoryFilterOptions } from '@/features/filters';
 import { SanctionList } from '@/features/SanctionList';
+import type { CategoryFilter } from '@/mocks/catalog';
 
 export default function PublicSanctionsScreen() {
   const [category, setCategory] = useState<CategoryFilter>('all');

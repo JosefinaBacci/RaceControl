@@ -5,9 +5,10 @@ import type { Circuit, Season } from '@/api/calendar';
 import type { FieldErrors } from '@/api/formFailure';
 import { AppText, ChipGroup, TextField } from '@/components';
 import { categories } from '@/mocks/catalog';
+import { eventKindOptions, kindLabel } from '@/features/eventKind';
 import { spacing } from '@/theme';
 
-import { eventKindOptions, kindLabel, type EventFormField, type EventFormValues } from './eventForm';
+import type { EventFormValues, EventFormField } from './eventForm';
 
 type EventFieldsProps = {
   values: EventFormValues;

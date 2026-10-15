@@ -1,9 +1,10 @@
 import { useState } from 'react';
 
 import { ChipGroup, Screen } from '@/components';
-import { useCalendar, type CategoryFilter, type EventPeriod } from '@/data/hooks';
+import { useCalendar, type EventPeriod } from '@/data/hooks';
 import { EventList } from '@/features/EventList';
 import { categoryFilterOptions, periodOptions } from '@/features/filters';
+import type { CategoryFilter } from '@/mocks/catalog';
 
 export default function PublicCalendarScreen() {
   const [period, setPeriod] = useState<EventPeriod>('upcoming');

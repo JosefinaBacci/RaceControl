@@ -2,6 +2,8 @@ import type { FlagCode } from '@/illustrations';
 
 export type CategoryCode = 'f1' | 'f2' | 'f3' | 'academy';
 
+export type CategoryFilter = CategoryCode | 'all';
+
 export const categories: readonly { value: CategoryCode; label: string }[] = [
   { value: 'f1', label: 'F1' },
   { value: 'f2', label: 'F2' },
