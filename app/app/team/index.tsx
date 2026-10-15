@@ -4,8 +4,10 @@ import { StyleSheet, View } from 'react-native';
 import { useSession } from '@/auth/SessionProvider';
 import { Button, CardLink, HeroCard, Screen, StatRow, StatTile } from '@/components';
 import { useUpcomingEvents } from '@/data/calendar';
-import { useTeamDrivers, useTeamInbox, useTeamPoints } from '@/data/hooks';
-import { DriverCard, DriverGrid } from '@/features/DriverCard';import { EventList } from '@/features/EventList';
+import { useTeamDrivers } from '@/data/drivers';
+import { useTeamInbox, useTeamPoints } from '@/data/hooks';
+import { DriverCard, DriverGrid } from '@/features/DriverCard';
+import { EventList } from '@/features/EventList';
 import { RemoteContent } from '@/features/RemoteContent';
 import { MockNotice } from '@/features/MockNotice';
 import { categoryLabel, teamById } from '@/mocks/catalog';
@@ -15,7 +17,7 @@ import { spacing } from '@/theme';
 export default function TeamDashboardScreen() {
   const teamId = useSession().user?.teamId ?? null;
   const team = teamById(teamId);
-  const drivers = useTeamDrivers(teamId);
+  const drivers = useTeamDrivers();
   const points = useTeamPoints(teamId);
   const { pendingCount: pending } = useTeamInbox(teamId);
   const upcoming = useUpcomingEvents(3);
@@ -37,18 +39,22 @@ export default function TeamDashboardScreen() {
       </HeroCard>
       <MockNotice />
       <StatRow>
-        <StatTile label="Pilotos" value={drivers.length} />
+        <StatTile label="Pilotos" value={drivers.state.status === 'ready' ? drivers.state.data.length : 0} />
         <StatTile label="Puntos" value={points} />
         <StatTile label="Pendientes" value={pending} highlight={pending > 0} />
       </StatRow>
       <View style={styles.sectionHeader}>
         <CardLink label="Gestionar pilotos" onPress={() => router.push('/team/drivers')} />
       </View>
-      <DriverGrid>
-        {drivers.map((driver) => (
-          <DriverCard key={driver.id} driver={driver} teamColor={team.color} />
-        ))}
-      </DriverGrid>
+      <RemoteContent state={drivers.state} onRetry={drivers.reload}>
+        {(lineup) => (
+          <DriverGrid>
+            {lineup.map((driver) => (
+              <DriverCard key={driver.id} driver={driver} teamColor={team.color} />
+            ))}
+          </DriverGrid>
+        )}
+      </RemoteContent>
       <RemoteContent state={upcoming.state} onRetry={upcoming.reload}>
         {(events) => <EventList title="Próximos eventos" events={events} />}
       </RemoteContent>

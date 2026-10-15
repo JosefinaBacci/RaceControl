@@ -1,26 +1,35 @@
-import type { ReactNode } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { StyleSheet, View } from 'react-native';
+import type { ReactNode } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 
+import type { TeamDriver } from '@/api/drivers';
 import { AppText, Badge } from '@/components';
-import type { Driver } from '@/mocks/data';
 import { colors, radius, spacing } from '@/theme';
 
-export function DriverCard({ driver, teamColor }: { driver: Driver; teamColor: string }) {
-  const [firstName, ...lastNames] = driver.name.split(' ');
+type DriverCardProps = {
+  driver: TeamDriver;
+  teamColor: string;
+  onPress?: () => void;
+};
 
+export function DriverCard({ driver, teamColor, onPress }: DriverCardProps) {
   return (
-    <View style={styles.card}>
+    <Pressable
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={onPress ? `Editar ${driver.firstName} ${driver.lastName}` : undefined}
+      onPress={onPress}
+      style={styles.card}
+    >
       <LinearGradient colors={[teamColor, colors.surface]} locations={[0, 0.85]} start={{ x: 1, y: 0 }} end={{ x: 0, y: 1 }} style={StyleSheet.absoluteFill} />
-      <AppText style={styles.number}>{driver.number}</AppText>
+      <AppText style={styles.number}>{driver.number ?? '—'}</AppText>
       <View style={styles.footer}>
         <AppText variant="caption" color="textMuted">
-          {firstName}
+          {driver.firstName}
         </AppText>
-        <AppText variant="heading">{lastNames.join(' ')}</AppText>
-        <Badge label={driver.status === 'starter' ? 'Titular' : 'Suplente'} tone={driver.status === 'starter' ? 'accent' : 'neutral'} />
+        <AppText variant="heading">{driver.lastName}</AppText>
+        <Badge label={driver.isStarter ? 'Titular' : 'Suplente'} tone={driver.isStarter ? 'accent' : 'neutral'} />
       </View>
-    </View>
+    </Pressable>
   );
 }
 

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 
 import type { CategoryCode, CategoryFilter } from '@/mocks/catalog';
-import { driverStandings, drivers, notifications, sanctions, scoreNotices } from '@/mocks/data';
+import { driverStandings, notifications, sanctions, scoreNotices } from '@/mocks/data';
 
 const matchesCategory = (category: CategoryFilter) => (item: { category: CategoryCode }) =>
   category === 'all' || item.category === category;
@@ -12,10 +12,6 @@ export function useStandings(category: CategoryCode, limit?: number) {
 
 export function useSanctions(category: CategoryFilter) {
   return useMemo(() => sanctions.filter(matchesCategory(category)), [category]);
-}
-
-export function useTeamDrivers(teamId: number | null) {
-  return useMemo(() => drivers.filter((driver) => driver.teamId === teamId), [teamId]);
 }
 
 export function useTeamPoints(teamId: number | null) {

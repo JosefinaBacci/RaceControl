@@ -47,18 +47,6 @@ export const scoreNotices: ScoreNotice[] = [
   { id: 3, teamId: 3, event: 'GP de Singapur', points: 18, acknowledged: false },
 ];
 
-export type Driver = { id: number; teamId: number; name: string; number: number; status: 'starter' | 'reserve' };
-
-export const drivers: Driver[] = [
-  { id: 1, teamId: 1, name: 'Charles Leclerc', number: 16, status: 'starter' },
-  { id: 2, teamId: 1, name: 'Lewis Hamilton', number: 44, status: 'starter' },
-  { id: 3, teamId: 1, name: 'Antonio Giovinazzi', number: 99, status: 'reserve' },
-  { id: 4, teamId: 2, name: 'Max Verstappen', number: 1, status: 'starter' },
-  { id: 5, teamId: 2, name: 'Yuki Tsunoda', number: 22, status: 'starter' },
-  { id: 6, teamId: 3, name: 'George Russell', number: 63, status: 'starter' },
-  { id: 7, teamId: 3, name: 'Andrea Kimi Antonelli', number: 12, status: 'starter' },
-];
-
 export type Notification = { id: number; title: string; body: string; sentAt: string; acknowledgedBy: number; recipients: number };
 
 export const notifications: Notification[] = [
