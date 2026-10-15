@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/racecontrol/backend/internal/db"
@@ -30,6 +31,17 @@ func Pool(t *testing.T) *pgxpool.Pool {
 	t.Cleanup(pool.Close)
 
 	return pool
+}
+
+// RunAsScoreActor runs work in a transaction that declares a score actor, so the
+// audit guard (000023) lets writes to score_entries through.
+func RunAsScoreActor(ctx context.Context, pool *pgxpool.Pool, work func(tx pgx.Tx) error) error {
+	return pgx.BeginFunc(ctx, pool, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, `SELECT set_config('racecontrol.actor_id', 'test', true)`); err != nil {
+			return err
+		}
+		return work(tx)
+	})
 }
 
 func UniqueUsername(t *testing.T) string {

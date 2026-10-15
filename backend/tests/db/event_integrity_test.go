@@ -96,7 +96,12 @@ func createRaceEvent(t *testing.T, pool *pgxpool.Pool) (eventID, roundID int64) 
 	}
 
 	t.Cleanup(func() {
-		_, _ = pool.Exec(ctx, `DELETE FROM score_entries WHERE event_id = $1`, eventID)
+		if err := testdb.RunAsScoreActor(ctx, pool, func(tx pgx.Tx) error {
+			_, err := tx.Exec(ctx, `DELETE FROM score_entries WHERE event_id = $1`, eventID)
+			return err
+		}); err != nil {
+			t.Errorf("clean up score entries of event %d: %v", eventID, err)
+		}
 		_, _ = pool.Exec(ctx, `DELETE FROM races WHERE event_id = $1`, eventID)
 		if _, err := pool.Exec(ctx, `DELETE FROM events WHERE id = $1`, eventID); err != nil {
 			t.Errorf("clean up race event %d: %v", eventID, err)

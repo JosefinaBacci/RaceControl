@@ -190,11 +190,20 @@ del servicio o una validación de entrada no lo justifican.
   materializado no puede quedar desfasado por un cambio de fecha posterior.
 - **Se conservan** `set_updated_at` (×14), `reject_mutation` (×5), `assert_event_has_child`, el trío
   de finalidad y `assert_season_driver_category` (§7): son baratos, de escritura rara, y ninguno
-  protege una operación inexistente. La retroactividad de las asignaciones (US11) sí lleva un trigger
-  nuevo: una asignación solo puede extender el historial, porque el dato que protege ya existe.
+  protege una operación inexistente.
+- **Retroactividad de la asignación (US11, `000022`).** Un trigger nuevo y barato: una asignación
+  solo puede extender el historial, porque el dato que protege (el equipo derivado de una carrera ya
+  puntuada) ya existe. Ver §2.
+- **Auditoría de puntajes (US9, `000023`) — el guardia, no el armado.** La versión
+  (`score_change_log` + sus ítems) la escribe el **servicio** en la misma transacción que toca
+  `score_entries`; lo que la base garantiza es que ninguna escritura pasa sin declarar un autor
+  (`SET LOCAL racecontrol.actor_id`, o falla con `RC005`). El trigger **no** arma la versión: agrupar
+  las filas de una edición en un solo `score_change_log` exigía llevar un `change_log_id` entre filas
+  (un GUC local) o tablas de transición, y eso es más maquinaria de la que la auditoría vale para un
+  escritor único (el servicio). La brecha queda documentada: un escritor por SQL crudo que declare un
+  actor podría saltarse el log, el mismo caso de "SQL crudo" que §8 ya acepta en otras partes.
 
-Quedan para su user story (detalle en `docs/sprint2/sprint.md`): el trigger de auditoría de puntajes
-(US9), el cierre y la retroactividad de las asignaciones (US11), y el tipo de notificación y la
+Quedan para su user story (detalle en `docs/sprint2/sprint.md`): el tipo de notificación y la
 validación del acuse (US24). Se descartaron: guardar posición y estado
 (DNF, DSQ), porque la consigna solo pide puntajes y `000006` deriva la posición de los puntos;
 índices sin una query que los use; quitar las columnas `is_active`, que son convención del proyecto;

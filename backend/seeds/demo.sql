@@ -84,7 +84,9 @@ OVERRIDING SYSTEM VALUE VALUES
     (7, 7, 1, 1, 12)
 ON CONFLICT DO NOTHING;
 
--- 8. score_entries (unchanged)
+-- 8. score_entries (unchanged). Seeding is not a user change, but the audit guard
+-- (000023) still demands a declared actor, so the seed states one for the batch.
+SELECT set_config('racecontrol.actor_id', 'seed', true);
 INSERT INTO score_entries (id, event_id, driver_id, points)
 OVERRIDING SYSTEM VALUE VALUES
     (1, 1, 1, 25),

@@ -28,6 +28,7 @@ type Dependencies struct {
 	Teams             TeamCatalog
 	Calendar          CalendarManager
 	Drivers           DriverManager
+	Scores            ScoreManager
 	Cookie            CookieConfig
 	AllowedOrigins    []string
 	TrustProxyHeaders bool
@@ -56,6 +57,10 @@ func NewRouter(deps Dependencies) http.Handler {
 	router.Get("/seasons", calendarRoutes.seasons)
 	router.Get("/calendar.ics", calendarRoutes.downloadICS)
 	router.Get("/calendar.pdf", calendarRoutes.downloadPDF)
+
+	scoreRoutes := &scoreHandlers{scores: deps.Scores}
+	router.Get("/standings", scoreRoutes.standings)
+
 	router.Route("/events", func(r chi.Router) {
 		r.Get("/", calendarRoutes.list)
 		r.Get("/{id}", calendarRoutes.get)
@@ -64,6 +69,8 @@ func NewRouter(deps Dependencies) http.Handler {
 			r.Post("/", calendarRoutes.create)
 			r.Patch("/{id}", calendarRoutes.update)
 			r.Delete("/{id}", calendarRoutes.cancel)
+			r.Get("/{id}/scores", scoreRoutes.grid)
+			r.Put("/{id}/scores", scoreRoutes.replace)
 		})
 	})
 
@@ -80,6 +87,8 @@ func NewRouter(deps Dependencies) http.Handler {
 	router.With(sessionGuard.RequireSession).Post("/account/password", userRoutes.changeOwnPassword)
 
 	driverRoutes := &driverHandlers{drivers: deps.Drivers}
+	router.Get("/drivers", driverRoutes.directory)
+	router.Get("/drivers/{id}", driverRoutes.show)
 	router.Route("/team/drivers", func(r chi.Router) {
 		r.Use(sessionGuard.RequireSession, sessionGuard.RequireRole(domain.RoleTeamAdmin))
 		r.Get("/", driverRoutes.list)
@@ -124,7 +133,7 @@ func securityHeaders(next http.Handler) http.Handler {
 func corsFor(allowedOrigins []string) func(http.Handler) http.Handler {
 	return cors.Handler(cors.Options{
 		AllowedOrigins:   allowedOrigins,
-		AllowedMethods:   []string{http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodDelete},
+		AllowedMethods:   []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete},
 		AllowedHeaders:   []string{"Content-Type", "Authorization", clientPlatformHeader},
 		AllowCredentials: true,
 		MaxAge:           int((10 * time.Minute).Seconds()),

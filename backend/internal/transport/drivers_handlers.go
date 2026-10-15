@@ -14,6 +14,8 @@ type DriverManager interface {
 	Create(ctx context.Context, teamID int64, input drivers.NewDriver) (drivers.Driver, error)
 	Update(ctx context.Context, teamID, id int64, changes drivers.DriverChanges) (drivers.Driver, error)
 	Release(ctx context.Context, teamID, id int64) error
+	Directory(ctx context.Context, filter drivers.PublicFilter) ([]drivers.PublicDriver, error)
+	PublicDriver(ctx context.Context, id int64) (drivers.PublicDriver, error)
 }
 
 type driverHandlers struct {
@@ -32,6 +34,23 @@ type driverResponse struct {
 
 type driverListResponse struct {
 	Drivers []driverResponse `json:"drivers"`
+}
+
+type publicDriverResponse struct {
+	ID           int64  `json:"id"`
+	FirstName    string `json:"firstName"`
+	LastName     string `json:"lastName"`
+	CountryCode  string `json:"countryCode"`
+	IsStarter    bool   `json:"isStarter"`
+	Number       *int32 `json:"number"`
+	TeamID       int64  `json:"teamId"`
+	TeamName     string `json:"teamName"`
+	CategoryCode string `json:"categoryCode"`
+	CategoryName string `json:"categoryName"`
+}
+
+type publicDriverListResponse struct {
+	Drivers []publicDriverResponse `json:"drivers"`
 }
 
 type createDriverRequest struct {
@@ -124,6 +143,39 @@ func (h *driverHandlers) release(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// directory and show are the public reads of US12: anyone, with or without a
+// session, sees the current lineup.
+func (h *driverHandlers) directory(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query()
+	lineup, err := h.drivers.Directory(r.Context(), drivers.PublicFilter{
+		Category: query.Get("category"),
+		Search:   query.Get("q"),
+	})
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	response := publicDriverListResponse{Drivers: make([]publicDriverResponse, 0, len(lineup))}
+	for _, driver := range lineup {
+		response.Drivers = append(response.Drivers, toPublicDriverResponse(driver))
+	}
+	writeJSON(w, http.StatusOK, response)
+}
+
+func (h *driverHandlers) show(w http.ResponseWriter, r *http.Request) {
+	id, err := pathID(r)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	driver, err := h.drivers.PublicDriver(r.Context(), id)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, toPublicDriverResponse(driver))
+}
+
 func (h *driverHandlers) respondWithDriver(w http.ResponseWriter, r *http.Request, status int,
 	operation func(teamID, id int64) (drivers.Driver, error)) {
 	teamID, err := teamIDFrom(r)
@@ -166,5 +218,20 @@ func toDriverResponse(driver drivers.Driver) driverResponse {
 		CountryCode:   driver.CountryCode,
 		IsStarter:     driver.IsStarter,
 		Number:        driver.Number,
+	}
+}
+
+func toPublicDriverResponse(driver drivers.PublicDriver) publicDriverResponse {
+	return publicDriverResponse{
+		ID:           driver.ID,
+		FirstName:    driver.FirstName,
+		LastName:     driver.LastName,
+		CountryCode:  driver.CountryCode,
+		IsStarter:    driver.IsStarter,
+		Number:       driver.Number,
+		TeamID:       driver.TeamID,
+		TeamName:     driver.TeamName,
+		CategoryCode: driver.CategoryCode,
+		CategoryName: driver.CategoryName,
 	}
 }

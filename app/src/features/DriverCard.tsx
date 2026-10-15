@@ -2,12 +2,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import type { TeamDriver } from '@/api/drivers';
+import type { DriverSummary } from '@/api/drivers';
 import { AppText, Badge } from '@/components';
 import { colors, radius, spacing } from '@/theme';
 
 type DriverCardProps = {
-  driver: TeamDriver;
+  driver: DriverSummary;
   teamColor: string;
   onPress?: () => void;
 };

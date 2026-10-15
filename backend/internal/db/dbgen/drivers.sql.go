@@ -52,6 +52,60 @@ func (q *Queries) CreateDriver(ctx context.Context, arg CreateDriverParams) (int
 	return id, err
 }
 
+const getActiveDriver = `-- name: GetActiveDriver :one
+SELECT d.id, d.first_name, d.last_name, d.country_code,
+       a.is_starter, t.id AS team_id, t.name AS team_name,
+       c.code AS category_code, c.name AS category_name, sd.number
+FROM drivers d
+JOIN LATERAL (
+    SELECT a.is_starter, a.team_id
+    FROM driver_team_assignments a
+    WHERE a.driver_id = d.id AND a.effective_from <= now()
+    ORDER BY a.effective_from DESC
+    LIMIT 1
+) a ON true
+JOIN teams t ON t.id = a.team_id
+JOIN categories c ON c.id = t.category_id
+LEFT JOIN season_drivers sd
+    ON sd.driver_id = d.id
+   AND sd.category_id = c.id
+   AND sd.season_id = (SELECT max(sd2.season_id)
+                       FROM season_drivers sd2
+                       WHERE sd2.driver_id = d.id AND sd2.category_id = c.id)
+WHERE d.id = $1 AND d.is_active
+`
+
+type GetActiveDriverRow struct {
+	ID           int64
+	FirstName    string
+	LastName     string
+	CountryCode  string
+	IsStarter    bool
+	TeamID       int64
+	TeamName     string
+	CategoryCode string
+	CategoryName string
+	Number       pgtype.Int4
+}
+
+func (q *Queries) GetActiveDriver(ctx context.Context, driverID int64) (GetActiveDriverRow, error) {
+	row := q.db.QueryRow(ctx, getActiveDriver, driverID)
+	var i GetActiveDriverRow
+	err := row.Scan(
+		&i.ID,
+		&i.FirstName,
+		&i.LastName,
+		&i.CountryCode,
+		&i.IsStarter,
+		&i.TeamID,
+		&i.TeamName,
+		&i.CategoryCode,
+		&i.CategoryName,
+		&i.Number,
+	)
+	return i, err
+}
+
 const getTeamDriver = `-- name: GetTeamDriver :one
 SELECT d.id, d.first_name, d.last_name, d.license_number, d.country_code,
        a.is_starter, sd.number
@@ -117,6 +171,87 @@ func (q *Queries) LatestSeason(ctx context.Context) (LatestSeasonRow, error) {
 	var i LatestSeasonRow
 	err := row.Scan(&i.ID, &i.Year)
 	return i, err
+}
+
+const listActiveDrivers = `-- name: ListActiveDrivers :many
+
+SELECT d.id, d.first_name, d.last_name, d.country_code,
+       a.is_starter, t.id AS team_id, t.name AS team_name,
+       c.code AS category_code, c.name AS category_name, sd.number
+FROM drivers d
+JOIN LATERAL (
+    SELECT a.is_starter, a.team_id
+    FROM driver_team_assignments a
+    WHERE a.driver_id = d.id AND a.effective_from <= now()
+    ORDER BY a.effective_from DESC
+    LIMIT 1
+) a ON true
+JOIN teams t ON t.id = a.team_id
+JOIN categories c ON c.id = t.category_id
+LEFT JOIN season_drivers sd
+    ON sd.driver_id = d.id
+   AND sd.category_id = c.id
+   AND sd.season_id = (SELECT max(sd2.season_id)
+                       FROM season_drivers sd2
+                       WHERE sd2.driver_id = d.id AND sd2.category_id = c.id)
+WHERE d.is_active
+  AND ($1::text IS NULL OR c.code = $1::text)
+  AND ($2::text IS NULL
+       OR (d.first_name || ' ' || d.last_name) ILIKE '%' || $2 || '%')
+ORDER BY c.id, t.name, a.is_starter DESC, d.last_name, d.first_name
+`
+
+type ListActiveDriversParams struct {
+	CategoryCode pgtype.Text
+	Search       pgtype.Text
+}
+
+type ListActiveDriversRow struct {
+	ID           int64
+	FirstName    string
+	LastName     string
+	CountryCode  string
+	IsStarter    bool
+	TeamID       int64
+	TeamName     string
+	CategoryCode string
+	CategoryName string
+	Number       pgtype.Int4
+}
+
+// The public lineup (US12): every driver whose latest assignment points at a team,
+// with the team they belong to and their number there. A released driver has no
+// team in their latest assignment, so the join leaves them out. Search runs over
+// the full name and the category filter runs over the team's championship.
+func (q *Queries) ListActiveDrivers(ctx context.Context, arg ListActiveDriversParams) ([]ListActiveDriversRow, error) {
+	rows, err := q.db.Query(ctx, listActiveDrivers, arg.CategoryCode, arg.Search)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListActiveDriversRow{}
+	for rows.Next() {
+		var i ListActiveDriversRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.FirstName,
+			&i.LastName,
+			&i.CountryCode,
+			&i.IsStarter,
+			&i.TeamID,
+			&i.TeamName,
+			&i.CategoryCode,
+			&i.CategoryName,
+			&i.Number,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listTeamDrivers = `-- name: ListTeamDrivers :many

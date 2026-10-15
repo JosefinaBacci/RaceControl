@@ -10,6 +10,7 @@ export default function PublicLayout() {
     <Tabs screenOptions={{ ...screenOptions, headerTitle: headerLogo, headerRight: () => <HeaderSessionButton /> }}>
       <Tabs.Screen name="index" options={{ title: 'Inicio', tabBarIcon: tabIcon('home-outline') }} />
       <Tabs.Screen name="calendar" options={{ title: 'Carreras', tabBarIcon: tabIcon('flag-outline') }} />
+      <Tabs.Screen name="drivers" options={{ title: 'Pilotos', tabBarIcon: tabIcon('people-outline') }} />
       <Tabs.Screen name="standings" options={{ title: 'Puntajes', tabBarIcon: tabIcon('trophy-outline') }} />
       <Tabs.Screen name="sanctions" options={{ title: 'Sanciones', tabBarIcon: tabIcon('alert-circle-outline') }} />
     </Tabs>

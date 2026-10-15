@@ -141,8 +141,8 @@ type ScoreChangeLogItem struct {
 	ID          int64
 	ChangeLogID int64
 	DriverID    int64
-	OldPoints   pgtype.Numeric
-	NewPoints   pgtype.Numeric
+	OldPoints   *float64
+	NewPoints   *float64
 	TeamID      int64
 }
 
@@ -151,7 +151,7 @@ type ScoreEntry struct {
 	EventID   int64
 	DriverID  int64
 	TeamID    int64
-	Points    pgtype.Numeric
+	Points    float64
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 }

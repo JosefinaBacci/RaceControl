@@ -1138,3 +1138,73 @@ cambió `DriverCard` al tipo de la API. Al sumarse un tercer `FieldGroup` duplic
 maqueta. `make check` en verde.
 
 ---
+
+### 2026-10-15 — Visualización de pilotos (US12)
+
+**Contexto:** US11 dejó la alineación vigente por escudería, pero solo para el administrador de esa
+escudería (`/team/drivers`). US12 pide que cualquier persona, sin iniciar sesión, consulte la
+alineación vigente agrupada por escudería, con búsqueda y filtros, y el detalle de cada piloto.
+
+**Prompt:**
+
+> Exponer y mostrar la alineación vigente de forma pública. Agregar endpoints de solo lectura, sin
+> sesión, para listar los pilotos con su escudería y categoría (filtrables por categoría y por nombre)
+> y para el detalle de uno. La vista pública arma una pestaña de Pilotos con búsqueda y filtro de
+> categoría, agrupa la alineación por escudería y abre el detalle de cada piloto; ningún usuario sin
+> permisos puede modificar los datos. Reutilizar el read model de pilotos de US11 y no duplicar la
+> consulta de la alineación vigente.
+
+**Respuesta de la IA:** sumó `ListActiveDrivers`/`GetActiveDriver` a `sql/drivers.sql` con el mismo
+`JOIN LATERAL` de US11 (la última asignación decide el equipo, así una baja saca al piloto del
+listado) y filtros `sqlc.narg` por categoría y por nombre completo, con escape de `LIKE`. En la app
+agregó `usePublicDrivers`/`usePublicDriver`, una pestaña de Pilotos con búsqueda debounced y agrupó
+la lista plana por equipo en una sola pasada. Compartió un tipo `DriverSummary` para que `DriverCard`
+sirva a la pantalla de gestión y al directorio.
+
+**Resultado:** `backend/sql/drivers.sql` y `internal/db/dbgen/drivers.sql.go`,
+`backend/internal/drivers/directory.go`, `backend/internal/transport/drivers_handlers.go` y rutas,
+`backend/tests/transport/drivers_directory_integration_test.go`,
+`app/src/api/drivers.ts`, `app/src/data/drivers.ts`, `app/src/features/DriverCard.tsx`,
+`app/app/(public)/drivers/{index,[id],_layout}.tsx` y la pestaña en `app/app/(public)/_layout.tsx`.
+`make check` en verde.
+
+---
+
+### 2026-10-15 — Gestión de puntajes (US9)
+
+**Contexto:** el esquema ya tenía `score_entries`, `score_change_log` y sus ítems por piloto, pero
+ninguna query los tocaba y la pantalla de resultados del panel FIA seguía siendo la maqueta de US4.
+US9 pide cargar y modificar los puntajes de cada carrera, que cada cambio quede auditado con autor y
+fecha, y que la clasificación general refleje el cambio. Faltaba, además, un guardia: nada impedía
+escribir en `score_entries` sin dejar rastro.
+
+**Prompt:**
+
+> Implementar la gestión de puntajes del administrador FIA. Una carrera tiene una grilla: los
+> pilotos de su categoría con sus puntos, que se cargan y se modifican de una vez. Validar negativos,
+> campos vacíos y pilotos repetidos, rechazar un piloto que no corre en la categoría de la carrera
+> (traducir `RC002` a 4xx) y restringir todo a `fia_admin`. Cada edición tiene que quedar registrada
+> en `score_change_log` con su autor y fecha y el detalle por piloto, y la clasificación general
+> tiene que reflejarla sin recálculo manual. Como el log no debe poder saltearse, sacar un guardia en
+> la base que exija declarar el autor de la escritura.
+
+**Respuesta de la IA:** propuso el armado de la versión en el **servicio** (una fila de
+`score_change_log` + un ítem por piloto, en la misma transacción) y dejar en la base solo un guardia
+barato: `BEFORE INSERT OR UPDATE OR DELETE` en `score_entries` que exige `SET LOCAL
+racecontrol.actor_id` y falla con `RC005`. Descartó —y dejó documentado por qué— hacer que el trigger
+armara la versión: agrupar las filas de una edición en un solo log pedía llevar un `change_log_id`
+entre filas (un GUC local) o tablas de transición, más maquinaria de la que la auditoría vale. Para
+los puntos agregó un override de `numeric` a `float64` en `sqlc.yaml` y un `SetScoreActor` que corre
+`set_config(..., true)` dentro de la transacción.
+
+**Resultado:** `backend/migrations/000023_score_audit_guard.{up,down}.sql`, `backend/sql/scores.sql`
+y `internal/db/dbgen/scores.sql.go`, `backend/internal/scores/service.go`,
+`backend/internal/transport/scores_handlers.go` y rutas, `sqlc.yaml` (override de puntos),
+`seeds/demo.sql` (el seed declara un actor), `tests/testdb` y los tests que escriben
+`score_entries` directo, `backend/tests/transport/scores_integration_test.go`,
+`backend/tests/db/score_guard_test.go` (RC005),
+`app/src/api/{scores.ts,client.ts}`, `app/src/data/scores.ts`,
+`app/app/fia/results/{index,[id],_layout}.tsx` en lugar de `app/app/fia/results.tsx`. `make check` en
+verde.
+
+---

@@ -13,8 +13,8 @@ en verde y un commit por cambio lógico.
 | US7 | Gestión de calendario | 5 | 8 | 5h | 2.3h | ☑ |
 | US8 | Visualización y descarga de calendario | 3 | 8 | 3.5h | | ◐ |
 | US11 | Gestión de pilotos | 5 | 13 | 5h | | ☑ |
-| US12 | Visualización de pilotos | 3 | 13 | 4h | | ☐ |
-| US9 | Gestión de puntajes | 3 | 8 | 3.5h | | ☐ |
+| US12 | Visualización de pilotos | 3 | 13 | 4h | | ☑ |
+| US9 | Gestión de puntajes | 3 | 8 | 3.5h | | ☑ |
 | US23 | Visualización de puntajes | 5 | 13 | 5h | | ☐ |
 | US24 | Visualización y confirmación de recibo de puntajes | 5 | 13 | 6h | | ☐ |
 | US17 | Mensajería interna segura | 8 | 21 | 10h | | ☐ |
@@ -30,7 +30,7 @@ pilotos tienen que existir antes de cargar un resultado.
 
 ## Modelo de datos (transversal) ◐
 
-Esquema `000002`–`000022` ya aplicado. Pendiente de la revisión del modelo:
+Esquema `000002`–`000023` ya aplicado. Pendiente de la revisión del modelo:
 
 - [x] §A.6: catálogo `circuits` y eliminación de `events.name` (se edita `000016`, requiere `make db-reset`)
 - [x] F6 / B.1: puntaje solo sobre carreras (`score_entries` y `score_change_log` → `races`)
@@ -118,40 +118,42 @@ Esquema `000002`–`000022` ya aplicado. Pendiente de la revisión del modelo:
 
 *Est. 4h · SP 3 · Valor 13*
 
-- [ ] Listado público de pilotos agrupado por escudería (alineación vigente)
+- [x] Listado público de pilotos agrupado por escudería (alineación vigente)
       (depende de poder terminar una asignación, ver US11)
-- [ ] Vista de detalle de cada piloto
-- [ ] Búsqueda y filtros
-- [ ] Acceso de solo lectura para todos los usuarios
+- [x] Vista de detalle de cada piloto
+- [x] Búsqueda y filtros
+- [x] Acceso de solo lectura para todos los usuarios
 
 **Criterios de éxito**
 
-- [ ] Cualquier usuario puede consultar la información de los pilotos
-- [ ] La alineación vigente se muestra agrupada por escudería
-- [ ] Los datos mostrados coinciden con los cargados por cada responsable de escudería
-- [ ] Se puede buscar o filtrar pilotos
-- [ ] Los usuarios sin permisos de edición no pueden modificar la información
+- [x] Cualquier usuario puede consultar la información de los pilotos
+- [x] La alineación vigente se muestra agrupada por escudería
+- [x] Los datos mostrados coinciden con los cargados por cada responsable de escudería
+- [x] Se puede buscar o filtrar pilotos
+- [x] Los usuarios sin permisos de edición no pueden modificar la información
 
 ## US9 — Gestión de puntajes
 
 *Est. 3.5h · SP 3 · Valor 8*
 
-- [ ] Formulario de carga y modificación de puntajes por carrera
-- [ ] Validaciones (negativos, vacíos, pilotos repetidos)
-- [ ] Recalcular la clasificación general al modificar un puntaje
-- [ ] Restringir a `fia_admin` y registrar fecha y autor de cada modificación (`score_change_log`)
-- [ ] Modelo: hoy nada impide cambiar `score_entries` sin escribir `score_change_log`. Trigger de
-      auditoría que escribe el log él mismo, con el autor tomado de un setting de la transacción
-      (`SET LOCAL racecontrol.actor_id`) y que falla si no está
-- [ ] Traducir `RC002` (piloto de otra categoría que la carrera) a un 4xx
+- [x] Formulario de carga y modificación de puntajes por carrera
+- [x] Validaciones (negativos, vacíos, pilotos repetidos)
+- [x] Recalcular la clasificación general al modificar un puntaje
+- [x] Restringir a `fia_admin` y registrar fecha y autor de cada modificación (`score_change_log`)
+- [x] Modelo: nada impide cambiar `score_entries` sin declarar quién lo hizo. Guardia de auditoría
+      (`000023`, `RC005`): ninguna escritura pasa sin `SET LOCAL racecontrol.actor_id`. La versión
+      (`score_change_log` + sus ítems) la arma el **servicio** en la misma transacción, no el trigger:
+      agrupar las filas de una edición exigía estado entre filas (un `change_log_id` local o tablas de
+      transición), más maquinaria de la que la auditoría vale (`02-modelo-de-datos.md` §8)
+- [x] Traducir `RC002` (piloto de otra categoría que la carrera) a un 4xx
 
 **Criterios de éxito**
 
-- [ ] El administrador puede cargar y modificar los puntajes de cada carrera
-- [ ] El sistema rechaza valores inválidos, como negativos o vacíos
-- [ ] La clasificación general se actualiza automáticamente tras cada cambio
-- [ ] Cada modificación queda registrada con fecha y autor
-- [ ] Solo el administrador de la FIA puede editar puntajes
+- [x] El administrador puede cargar y modificar los puntajes de cada carrera
+- [x] El sistema rechaza valores inválidos, como negativos o vacíos
+- [x] La clasificación general se actualiza automáticamente tras cada cambio
+- [x] Cada modificación queda registrada con fecha y autor
+- [x] Solo el administrador de la FIA puede editar puntajes
 
 ## US23 — Visualización de puntajes
 

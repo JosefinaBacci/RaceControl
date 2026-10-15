@@ -19,6 +19,8 @@ type Querier interface {
 	CreateEvent(ctx context.Context, arg CreateEventParams) (int64, error)
 	CreateRace(ctx context.Context, arg CreateRaceParams) error
 	CreateRound(ctx context.Context, arg CreateRoundParams) (int64, error)
+	CreateScoreChangeLog(ctx context.Context, arg CreateScoreChangeLogParams) (int64, error)
+	CreateScoreChangeLogItem(ctx context.Context, arg CreateScoreChangeLogItemParams) error
 	CreateSession(ctx context.Context, arg CreateSessionParams) (int64, error)
 	CreateTechnicalControl(ctx context.Context, arg CreateTechnicalControlParams) error
 	CreateTyreTest(ctx context.Context, arg CreateTyreTestParams) error
@@ -27,18 +29,37 @@ type Querier interface {
 	DeactivateEvent(ctx context.Context, id int64) error
 	DeactivateRound(ctx context.Context, id int64) error
 	DeactivateUser(ctx context.Context, id int64) error
+	DeleteScoreEntry(ctx context.Context, arg DeleteScoreEntryParams) error
 	GetAccount(ctx context.Context, id int64) (GetAccountRow, error)
+	GetActiveDriver(ctx context.Context, driverID int64) (GetActiveDriverRow, error)
 	GetActiveSessionByTokenHash(ctx context.Context, arg GetActiveSessionByTokenHashParams) (GetActiveSessionByTokenHashRow, error)
 	GetCalendarEvent(ctx context.Context, id int64) (CalendarEvent, error)
+	// Scores belong to a race (score_entries_race_fkey, 000016): an event without a
+	// race has no grid. The audit trail (one score_change_log version plus its items)
+	// is written by the service in the same transaction; the schema only demands an
+	// actor through the guard of 000023.
+	GetRaceChampionship(ctx context.Context, eventID int64) (GetRaceChampionshipRow, error)
 	GetTeamDriver(ctx context.Context, arg GetTeamDriverParams) (GetTeamDriverRow, error)
 	GetUserByUsername(ctx context.Context, lower string) (User, error)
 	InsertLoginAttempt(ctx context.Context, arg InsertLoginAttemptParams) error
 	LatestSeason(ctx context.Context) (LatestSeasonRow, error)
 	ListAccounts(ctx context.Context, arg ListAccountsParams) ([]ListAccountsRow, error)
+	// The public lineup (US12): every driver whose latest assignment points at a team,
+	// with the team they belong to and their number there. A released driver has no
+	// team in their latest assignment, so the join leaves them out. Search runs over
+	// the full name and the category filter runs over the team's championship.
+	ListActiveDrivers(ctx context.Context, arg ListActiveDriversParams) ([]ListActiveDriversRow, error)
 	// The calendar is read through the view that joins each event with its child
 	// (000021), so the list and the detail share a single definition.
 	ListCalendarEvents(ctx context.Context, arg ListCalendarEventsParams) ([]CalendarEvent, error)
 	ListCircuits(ctx context.Context) ([]ListCircuitsRow, error)
+	// Driver standings of a championship: the general classification is derived from
+	// the entries, so it reflects every change with no recalculation to run.
+	ListDriverStandings(ctx context.Context, arg ListDriverStandingsParams) ([]ListDriverStandingsRow, error)
+	// The grid of a race: every driver whose team on the race date runs in its
+	// championship, with the number they hold there and the points already loaded
+	// (NULL when the driver has no entry yet). The service diffs against this.
+	ListRaceEligibleDrivers(ctx context.Context, eventID int64) ([]ListRaceEligibleDriversRow, error)
 	ListSeasons(ctx context.Context) ([]ListSeasonsRow, error)
 	// The lineup of a team: the drivers whose latest assignment points at that team
 	// (000007, 000022). A release makes the latest assignment teamless, so the driver
@@ -52,6 +73,9 @@ type Querier interface {
 	RevokeSessionByTokenHash(ctx context.Context, tokenHash string) error
 	RevokeUserSessions(ctx context.Context, arg RevokeUserSessionsParams) error
 	SeasonYear(ctx context.Context, id int64) (int32, error)
+	// The actor travels as a transaction-local setting so the audit guard lets the
+	// rows through (000023). set_config(..., true) reverts at COMMIT/ROLLBACK.
+	SetScoreActor(ctx context.Context, actorID string) error
 	TeamCategory(ctx context.Context, id int64) (int64, error)
 	TeamExists(ctx context.Context, id int64) (bool, error)
 	TouchSession(ctx context.Context, arg TouchSessionParams) error
@@ -62,6 +86,7 @@ type Querier interface {
 	UpdateTechnicalControl(ctx context.Context, arg UpdateTechnicalControlParams) error
 	UpdateTyreTest(ctx context.Context, arg UpdateTyreTestParams) error
 	UpdateUserPasswordHash(ctx context.Context, arg UpdateUserPasswordHashParams) error
+	UpsertScoreEntry(ctx context.Context, arg UpsertScoreEntryParams) error
 	UpsertSeasonDriver(ctx context.Context, arg UpsertSeasonDriverParams) error
 }
 

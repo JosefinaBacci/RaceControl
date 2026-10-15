@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/racecontrol/backend/internal/db"
@@ -97,15 +98,22 @@ func assignedTeam(t *testing.T, pool *pgxpool.Pool, driverID int64, at time.Time
 func insertScoreEntry(t *testing.T, pool *pgxpool.Pool, driverID, eventID int64) {
 	t.Helper()
 
-	_, err := pool.Exec(context.Background(),
-		`INSERT INTO score_entries (event_id, driver_id, points) VALUES ($1, $2, 10)`,
-		eventID, driverID)
-	if err != nil {
-		t.Fatalf("insert score entry: %v", err)
+	insert := testdb.RunAsScoreActor(context.Background(), pool, func(tx pgx.Tx) error {
+		_, err := tx.Exec(context.Background(),
+			`INSERT INTO score_entries (event_id, driver_id, points) VALUES ($1, $2, 10)`,
+			eventID, driverID)
+		return err
+	})
+	if insert != nil {
+		t.Fatalf("insert score entry: %v", insert)
 	}
 	t.Cleanup(func() {
-		if _, err := pool.Exec(context.Background(),
-			`DELETE FROM score_entries WHERE driver_id = $1`, driverID); err != nil {
+		err := testdb.RunAsScoreActor(context.Background(), pool, func(tx pgx.Tx) error {
+			_, err := tx.Exec(context.Background(),
+				`DELETE FROM score_entries WHERE driver_id = $1`, driverID)
+			return err
+		})
+		if err != nil {
 			t.Errorf("clean up score entries: %v", err)
 		}
 	})
