@@ -3,9 +3,10 @@ import { StyleSheet, View } from 'react-native';
 
 import { useSession } from '@/auth/SessionProvider';
 import { Button, CardLink, HeroCard, Screen, StatRow, StatTile } from '@/components';
-import { useTeamDrivers, useTeamInbox, useTeamPoints, useUpcomingEvents } from '@/data/hooks';
-import { DriverCard, DriverGrid } from '@/features/DriverCard';
-import { EventList } from '@/features/EventList';
+import { useUpcomingEvents } from '@/data/calendar';
+import { useTeamDrivers, useTeamInbox, useTeamPoints } from '@/data/hooks';
+import { DriverCard, DriverGrid } from '@/features/DriverCard';import { EventList } from '@/features/EventList';
+import { RemoteContent } from '@/features/RemoteContent';
 import { MockNotice } from '@/features/MockNotice';
 import { categoryLabel, teamById } from '@/mocks/catalog';
 import { teamPhoto } from '@/photos';
@@ -48,7 +49,9 @@ export default function TeamDashboardScreen() {
           <DriverCard key={driver.id} driver={driver} teamColor={team.color} />
         ))}
       </DriverGrid>
-      <EventList title="Próximos eventos" events={upcoming} />
+      <RemoteContent state={upcoming.state} onRetry={upcoming.reload}>
+        {(events) => <EventList title="Próximos eventos" events={events} />}
+      </RemoteContent>
     </Screen>
   );
 }

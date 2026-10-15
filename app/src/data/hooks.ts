@@ -1,47 +1,10 @@
 import { useMemo, useState } from 'react';
 
 import type { CategoryCode, CategoryFilter } from '@/mocks/catalog';
-import {
-  calendarEvents,
-  circuitFacts,
-  driverStandings,
-  drivers,
-  notifications,
-  sanctions,
-  scoreNotices,
-  type CalendarEvent,
-} from '@/mocks/data';
+import { driverStandings, drivers, notifications, sanctions, scoreNotices } from '@/mocks/data';
 
-export type EventPeriod = 'upcoming' | 'past';
-
-const byDate = (a: CalendarEvent, b: CalendarEvent) => a.date.localeCompare(b.date);
 const matchesCategory = (category: CategoryFilter) => (item: { category: CategoryCode }) =>
   category === 'all' || item.category === category;
-
-export function useCalendar(category: CategoryFilter, period: EventPeriod = 'upcoming') {
-  return useMemo(() => {
-    const wanted = period === 'upcoming' ? 'scheduled' : 'finished';
-    const events = calendarEvents.filter(matchesCategory(category)).filter((event) => event.status === wanted).sort(byDate);
-    return period === 'past' ? events.reverse() : events;
-  }, [category, period]);
-}
-
-export function useUpcomingEvents(limit: number) {
-  return useMemo(() => calendarEvents.filter((event) => event.status === 'scheduled').sort(byDate).slice(0, limit), [limit]);
-}
-
-export function useNextRace() {
-  return useMemo(() => {
-    const race = calendarEvents.filter((event) => event.kind === 'race' && event.status === 'scheduled').sort(byDate)[0];
-    const [year, month, day] = race.date.split('-').map(Number);
-    const [hour, minute] = (race.startTime ?? '00:00').split(':').map(Number);
-    return {
-      race,
-      startsAt: new Date(year, month - 1, day, hour, minute),
-      facts: circuitFacts[race.circuit],
-    };
-  }, []);
-}
 
 export function useStandings(category: CategoryCode, limit?: number) {
   return useMemo(() => driverStandings[category].slice(0, limit), [category, limit]);

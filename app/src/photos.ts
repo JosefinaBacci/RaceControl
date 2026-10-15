@@ -15,17 +15,22 @@ const heroF1: Photo = { source: require('../assets/photos/hero-f1.jpg'), credit:
 const loginFerrari: Photo = { source: require('../assets/photos/login-ferrari.webp'), credit: 'Imagen: Scuderia Ferrari (prensa)' };
 const teamFerrari: Photo = { source: require('../assets/photos/team-ferrari.jpg'), credit: 'Foto: Lukas Raich · CC BY-SA 4.0' };
 
-export const categoryPhotos: Record<CategoryCode, Photo> = { f1, f2, f3, academy };
+const photosByCategory: Record<string, Photo> = { f1, f2, f3, academy };
 
-const nextRacePhotos: Partial<Record<CategoryCode, Photo>> = { f1: heroF1 };
+const nextRacePhotos: Record<string, Photo> = { f1: heroF1 };
 const teamPhotos: Record<number, Photo> = { 1: teamFerrari };
 
 export const loginPhoto = loginFerrari;
 
-export function nextRacePhoto(category: CategoryCode): Photo {
-  return nextRacePhotos[category] ?? categoryPhotos[category];
+// Categories leave the API as plain strings, so unknown ones fall back to F1.
+export function categoryPhoto(category: string): Photo {
+  return photosByCategory[category] ?? photosByCategory.f1;
+}
+
+export function nextRacePhoto(category: string): Photo {
+  return nextRacePhotos[category] ?? categoryPhoto(category);
 }
 
 export function teamPhoto(teamId: number, category: CategoryCode): Photo {
-  return teamPhotos[teamId] ?? categoryPhotos[category];
+  return teamPhotos[teamId] ?? categoryPhoto(category);
 }

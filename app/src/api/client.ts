@@ -2,6 +2,8 @@ import { tokenStore } from './tokenStore';
 
 const apiBaseUrl = (process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8080').replace(/\/$/, '');
 
+export { apiBaseUrl };
+
 export type ApiErrorCode =
   | 'validation'
   | 'invalid_credentials'

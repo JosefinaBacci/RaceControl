@@ -1,37 +1,4 @@
-import type { FlagCode } from '@/illustrations';
-
 import type { CategoryCode } from './catalog';
-
-export type EventKind = 'race' | 'tyre_test' | 'technical_control';
-
-export type CalendarEvent = {
-  id: number;
-  category: CategoryCode;
-  kind: EventKind;
-  name: string;
-  circuit: string;
-  country: FlagCode;
-  date: string;
-  startTime?: string;
-  status: 'scheduled' | 'finished';
-};
-
-export const calendarEvents: CalendarEvent[] = [
-  { id: 1, category: 'f1', kind: 'race', name: 'Gran Premio de Singapur', circuit: 'Marina Bay', country: 'sg', date: '2026-10-04', status: 'finished' },
-  { id: 2, category: 'f1', kind: 'technical_control', name: 'Control técnico post-carrera', circuit: 'Marina Bay', country: 'sg', date: '2026-10-05', status: 'scheduled' },
-  { id: 3, category: 'f1', kind: 'race', name: 'Gran Premio de Estados Unidos', circuit: 'Circuit of the Americas', country: 'us', date: '2026-10-18', startTime: '16:00', status: 'scheduled' },
-  { id: 4, category: 'f1', kind: 'tyre_test', name: 'Prueba de neumáticos Pirelli 2027', circuit: 'Circuit of the Americas', country: 'us', date: '2026-10-20', status: 'scheduled' },
-  { id: 5, category: 'f2', kind: 'race', name: 'Ronda 13 — Qatar', circuit: 'Lusail', country: 'qa', date: '2026-11-27', status: 'scheduled' },
-  { id: 6, category: 'f3', kind: 'race', name: 'Ronda 10 — Monza', circuit: 'Monza', country: 'it', date: '2026-09-06', status: 'finished' },
-  { id: 7, category: 'academy', kind: 'race', name: 'Ronda 7 — Las Vegas', circuit: 'Las Vegas Strip', country: 'us', date: '2026-11-21', status: 'scheduled' },
-  { id: 8, category: 'f2', kind: 'technical_control', name: 'Verificación de pesos', circuit: 'Lusail', country: 'qa', date: '2026-11-26', status: 'scheduled' },
-];
-
-export const eventKindLabel: Record<EventKind, string> = {
-  race: 'Carrera',
-  tyre_test: 'Prueba de neumáticos',
-  technical_control: 'Control técnico',
-};
 
 export const circuitFacts: Record<string, { length: string; laps: number; distance: string; lapRecord: string }> = {
   'Circuit of the Americas': { length: '5,513 km', laps: 56, distance: '308,405 km', lapRecord: '1:36.169 (C. Leclerc, 2019)' },

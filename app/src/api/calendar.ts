@@ -1,4 +1,4 @@
-import { apiRequest } from './client';
+import { apiBaseUrl, apiRequest } from './client';
 
 export type EventKind = 'race' | 'tyre_test' | 'technical_control';
 

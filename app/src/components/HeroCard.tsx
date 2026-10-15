@@ -2,7 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import type { ReactNode } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 
-import { Flag, type FlagCode } from '@/illustrations';
+import { Flag } from '@/illustrations';
 import type { Photo } from '@/photos';
 import { colors, radius, spacing } from '@/theme';
 
@@ -13,7 +13,7 @@ type HeroCardProps = {
   title: string;
   subtitle?: string;
   accentColor?: string;
-  flag?: FlagCode;
+  flag?: string | null;
   illustration?: ReactNode;
   illustrationSide?: 'left' | 'right';
   photo?: Photo;

@@ -2,39 +2,50 @@ import type { ReactNode } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { AppText, Card, Countdown, HeroCard } from '@/components';
-import { useNextRace } from '@/data/hooks';
+import { useNextRace } from '@/data/calendar';
 import { formatEventDate } from '@/format';
+import { RemoteContent } from '@/features/RemoteContent';
 import { CircuitMap, circuitKeyFor } from '@/illustrations';
+import { circuitFacts } from '@/mocks/data';
 import { nextRacePhoto } from '@/photos';
 import { colors, spacing } from '@/theme';
 
 export function NextRaceHero({ children }: { children?: ReactNode }) {
-  const { race, startsAt, facts } = useNextRace();
+  const { state, reload } = useNextRace();
   const mapWidth = useWindowDimensions().width < 480 ? 110 : 150;
 
   return (
-    <View style={styles.stack}>
-      <HeroCard
-        overline="Próxima carrera"
-        title={race.name}
-        subtitle={`${race.circuit} · ${formatEventDate(race.date)}`}
-        flag={race.country}
-        photo={nextRacePhoto(race.category)}
-        illustration={<CircuitMap circuit={circuitKeyFor(race.circuit)} width={mapWidth} strokeWidth={6} color="#FFFFFF" showStart halo />}
-        illustrationSide="left"
-      >
-        {children}
-      </HeroCard>
-      <Countdown target={startsAt} />
-      {facts ? (
-        <Card>
-          <Fact label="Longitud" value={facts.length} />
-          <Fact label="Vueltas" value={String(facts.laps)} />
-          <Fact label="Distancia total" value={facts.distance} />
-          <Fact label="Récord de vuelta" value={facts.lapRecord} isLast />
-        </Card>
-      ) : null}
-    </View>
+    <RemoteContent state={state} onRetry={reload}>
+      {(race) => {
+        if (!race) return null;
+        const circuitName = race.circuitName ?? '';
+        const facts = circuitFacts[circuitName];
+        return (
+          <View style={styles.stack}>
+            <HeroCard
+              overline="Próxima carrera"
+              title={race.name}
+              subtitle={`${race.circuitName ?? 'Sin circuito'} · ${formatEventDate(race.startsAt)}`}
+              flag={race.countryCode}
+              photo={nextRacePhoto(race.categoryCode)}
+              illustration={<CircuitMap circuit={circuitKeyFor(circuitName)} width={mapWidth} strokeWidth={6} color="#FFFFFF" showStart halo />}
+              illustrationSide="left"
+            >
+              {children}
+            </HeroCard>
+            <Countdown target={new Date(race.startsAt)} />
+            {facts ? (
+              <Card>
+                <Fact label="Longitud" value={facts.length} />
+                <Fact label="Vueltas" value={String(facts.laps)} />
+                <Fact label="Distancia total" value={facts.distance} />
+                <Fact label="Récord de vuelta" value={facts.lapRecord} isLast />
+              </Card>
+            ) : null}
+          </View>
+        );
+      }}
+    </RemoteContent>
   );
 }
 

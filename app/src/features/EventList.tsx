@@ -1,18 +1,16 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 
+import type { CalendarEvent } from '@/api/calendar';
 import { AppText, Badge, Card, ListItem } from '@/components';
 import { eventKindTones, kindLabel } from '@/features/eventKind';
 import { CircuitMap, Flag, circuitKeyFor } from '@/illustrations';
-import { categories } from '@/mocks/catalog';
-import type { CalendarEvent } from '@/mocks/data';
 import { colors, radius } from '@/theme';
 
-const categoryLabel = Object.fromEntries(categories.map((category) => [category.value, category.label]));
 const monthFormatter = new Intl.DateTimeFormat('es-AR', { month: 'short' });
 
 function DateBlock({ isoDate }: { isoDate: string }) {
-  const [year, month, day] = isoDate.split('-').map(Number);
+  const [year, month, day] = isoDate.slice(0, 10).split('-').map(Number);
   return (
     <View style={styles.dateBlock}>
       <AppText variant="heading">{day}</AppText>
@@ -45,15 +43,17 @@ export function EventList({ title, events, action, emptyMessage = 'No hay evento
             key={event.id}
             leading={
               <View style={styles.leading}>
-                <DateBlock isoDate={event.date} />
-                <Flag code={event.country} width={26} />
+                <DateBlock isoDate={event.startsAt} />
+                <Flag code={event.countryCode} width={26} />
               </View>
             }
             title={event.name}
-            subtitle={`${event.circuit} · ${categoryLabel[event.category]}`}
+            subtitle={`${event.circuitName ?? kindLabel(event.kind)} · ${event.categoryName}`}
             trailing={
               <View style={styles.trailing}>
-                {showsMap ? <CircuitMap circuit={circuitKeyFor(event.circuit)} width={64} strokeWidth={7} color={colors.textMuted} /> : null}
+                {showsMap ? (
+                  <CircuitMap circuit={circuitKeyFor(event.circuitName ?? '')} width={64} strokeWidth={7} color={colors.textMuted} />
+                ) : null}
                 <Badge
                   label={event.status === 'finished' ? 'Finalizado' : kindLabel(event.kind)}
                   tone={event.status === 'finished' ? 'neutral' : eventKindTones[event.kind]}
