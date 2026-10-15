@@ -15,7 +15,9 @@ import (
 // guard that stopped an event from losing its child is gone. The application
 // never removes a child on its own (a child is pinned by deactivating its event),
 // so the delete now goes through instead of aborting the commit on a deferred
-// constraint trigger.
+// constraint trigger. The cost is the documented gap: the surviving half of the
+// invariant only fires from the events side, so it rejects a kind touch at commit
+// but leaves the childless event standing otherwise.
 func TestDeletingAnEventChildIsAllowed(t *testing.T) {
 	pool := testdb.Pool(t)
 	eventID := insertTyreTestEvent(t, pool)
@@ -24,6 +26,27 @@ func TestDeletingAnEventChildIsAllowed(t *testing.T) {
 		`DELETE FROM tyre_tests WHERE event_id = $1`, eventID); err != nil {
 		t.Fatalf("deleting the child of event %d should be allowed: %v", eventID, err)
 	}
+
+	if hasChild := tyreTestHasChild(t, pool, eventID); hasChild {
+		t.Fatalf("event %d should be left without a child", eventID)
+	}
+
+	if _, err := pool.Exec(context.Background(),
+		`UPDATE events SET kind = 'tyre_test' WHERE id = $1`, eventID); err == nil {
+		t.Fatalf("touching the kind of childless event %d should fail at commit", eventID)
+	}
+}
+
+func tyreTestHasChild(t *testing.T, pool *pgxpool.Pool, eventID int64) bool {
+	t.Helper()
+
+	var hasChild bool
+	err := pool.QueryRow(context.Background(),
+		`SELECT EXISTS (SELECT 1 FROM tyre_tests WHERE event_id = $1)`, eventID).Scan(&hasChild)
+	if err != nil {
+		t.Fatalf("read the children of event %d: %v", eventID, err)
+	}
+	return hasChild
 }
 
 // insertTyreTestEvent builds the smallest valid event with a child. Both rows go

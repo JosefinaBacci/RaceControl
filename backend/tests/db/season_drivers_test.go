@@ -13,7 +13,8 @@ import (
 )
 
 // Seeded reference data these tests lean on: season 1 is 2026, teams 1 and 5
-// belong to Formula 1 and Formula 2 respectively.
+// belong to Formula 1 and Formula 2 respectively, circuit 1 is Albert Park, and
+// event 1 is a raced Formula 1 round (round 1) with score entries.
 const (
 	demoSeasonID         = 1
 	formulaOneCategoryID = 1
@@ -21,6 +22,8 @@ const (
 	formulaTwoCategoryID = 2
 	formulaTwoTeamID     = 5
 	seededCircuitID      = 1
+	seededRacedEventID   = 1
+	seededRacedRoundID   = 1
 )
 
 var (
