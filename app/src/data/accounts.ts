@@ -1,10 +1,8 @@
-import { useFocusEffect } from 'expo-router';
-import { useCallback, useRef } from 'react';
-
 import { getAccount, listAccounts, type AccountFilter } from '@/api/users';
 import { listTeams } from '@/api/teams';
 
 import { useDebouncedValue } from './useDebouncedValue';
+import { useReloadOnFocus } from './useReloadOnFocus';
 import { useRemote } from './useRemote';
 
 const searchDelayMs = 300;
@@ -28,22 +26,4 @@ export function useActiveAccountCount(): number | null {
 
 export function useTeams() {
   return useRemote(listTeams, []);
-}
-
-// Coming back from the create or edit screen must show the change, but the first
-// focus is already covered by the initial load.
-function useReloadOnFocus(reload: () => void) {
-  const latestReload = useRef(reload);
-  latestReload.current = reload;
-  const isFirstFocus = useRef(true);
-
-  useFocusEffect(
-    useCallback(() => {
-      if (isFirstFocus.current) {
-        isFirstFocus.current = false;
-        return;
-      }
-      latestReload.current();
-    }, []),
-  );
 }
