@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/racecontrol/backend/internal/auth"
+	"github.com/racecontrol/backend/internal/calendar"
 	"github.com/racecontrol/backend/internal/config"
 	"github.com/racecontrol/backend/internal/db"
 	"github.com/racecontrol/backend/internal/db/dbgen"
@@ -78,6 +79,7 @@ func buildRouter(cfg config.Config, pool *pgxpool.Pool) (http.Handler, error) {
 		Sessions:          sessionService,
 		Users:             users.NewService(queries, db.NewTransactor(pool), hasher),
 		Teams:             teams.NewService(queries),
+		Calendar:          calendar.NewService(queries, db.NewTransactor(pool)),
 		Cookie:            transport.CookieConfig{Secure: cfg.IsProduction(), MaxAge: cfg.Sessions.Absolute},
 		AllowedOrigins:    cfg.CORSAllowedOrigins,
 		TrustProxyHeaders: cfg.TrustProxyHeaders,

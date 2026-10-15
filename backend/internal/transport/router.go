@@ -26,6 +26,7 @@ type Dependencies struct {
 	Sessions          SessionService
 	Users             UserManager
 	Teams             TeamCatalog
+	Calendar          CalendarManager
 	Cookie            CookieConfig
 	AllowedOrigins    []string
 	TrustProxyHeaders bool
@@ -48,6 +49,20 @@ func NewRouter(deps Dependencies) http.Handler {
 	router.Get("/healthz", healthHandler(deps.Pool))
 
 	router.Get("/teams", listTeamsHandler(deps.Teams))
+
+	calendarRoutes := &calendarHandlers{calendar: deps.Calendar}
+	router.Get("/circuits", calendarRoutes.circuits)
+	router.Get("/seasons", calendarRoutes.seasons)
+	router.Route("/events", func(r chi.Router) {
+		r.Get("/", calendarRoutes.list)
+		r.Get("/{id}", calendarRoutes.get)
+		r.Group(func(r chi.Router) {
+			r.Use(sessionGuard.RequireSession, sessionGuard.RequireRole(domain.RoleFIAAdmin))
+			r.Post("/", calendarRoutes.create)
+			r.Patch("/{id}", calendarRoutes.update)
+			r.Delete("/{id}", calendarRoutes.cancel)
+		})
+	})
 
 	userRoutes := &userHandlers{users: deps.Users}
 	router.Route("/users", func(r chi.Router) {

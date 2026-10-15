@@ -10,6 +10,27 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type CalendarEvent struct {
+	ID            int64
+	Kind          string
+	StartsAt      pgtype.Timestamptz
+	EndsAt        pgtype.Timestamptz
+	IsActive      bool
+	DeactivatedAt pgtype.Timestamptz
+	RoundID       pgtype.Int8
+	RoundNumber   pgtype.Int4
+	GpName        pgtype.Text
+	ControlType   pgtype.Text
+	SeasonID      int64
+	SeasonYear    int32
+	CategoryID    int64
+	CategoryCode  string
+	CategoryName  string
+	CircuitID     pgtype.Int8
+	CircuitName   pgtype.Text
+	CountryCode   pgtype.Text
+}
+
 type Category struct {
 	ID            int64
 	Code          string

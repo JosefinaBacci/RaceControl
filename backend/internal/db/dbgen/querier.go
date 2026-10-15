@@ -9,23 +9,43 @@ import (
 )
 
 type Querier interface {
+	CategoryIDByCode(ctx context.Context, code string) (int64, error)
+	CircuitExists(ctx context.Context, id int64) (bool, error)
 	CountFailuresSinceLastSuccess(ctx context.Context, arg CountFailuresSinceLastSuccessParams) (int64, error)
+	CreateEvent(ctx context.Context, arg CreateEventParams) (int64, error)
+	CreateRace(ctx context.Context, arg CreateRaceParams) error
+	CreateRound(ctx context.Context, arg CreateRoundParams) (int64, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (int64, error)
+	CreateTechnicalControl(ctx context.Context, arg CreateTechnicalControlParams) error
+	CreateTyreTest(ctx context.Context, arg CreateTyreTestParams) error
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateUserIfAbsent(ctx context.Context, arg CreateUserIfAbsentParams) error
+	DeactivateEvent(ctx context.Context, id int64) error
+	DeactivateRound(ctx context.Context, id int64) error
 	DeactivateUser(ctx context.Context, id int64) error
 	GetAccount(ctx context.Context, id int64) (GetAccountRow, error)
 	GetActiveSessionByTokenHash(ctx context.Context, arg GetActiveSessionByTokenHashParams) (GetActiveSessionByTokenHashRow, error)
+	GetCalendarEvent(ctx context.Context, id int64) (CalendarEvent, error)
 	GetUserByUsername(ctx context.Context, lower string) (User, error)
 	InsertLoginAttempt(ctx context.Context, arg InsertLoginAttemptParams) error
 	ListAccounts(ctx context.Context, arg ListAccountsParams) ([]ListAccountsRow, error)
+	// The calendar is read through the view that joins each event with its child
+	// (000021), so the list and the detail share a single definition.
+	ListCalendarEvents(ctx context.Context, arg ListCalendarEventsParams) ([]CalendarEvent, error)
+	ListCircuits(ctx context.Context) ([]ListCircuitsRow, error)
+	ListSeasons(ctx context.Context) ([]ListSeasonsRow, error)
 	ListTeams(ctx context.Context) ([]ListTeamsRow, error)
 	ReactivateUser(ctx context.Context, id int64) error
 	RevokeSessionByTokenHash(ctx context.Context, tokenHash string) error
 	RevokeUserSessions(ctx context.Context, arg RevokeUserSessionsParams) error
+	SeasonYear(ctx context.Context, id int64) (int32, error)
 	TeamExists(ctx context.Context, id int64) (bool, error)
 	TouchSession(ctx context.Context, arg TouchSessionParams) error
 	UpdateAccount(ctx context.Context, arg UpdateAccountParams) error
+	UpdateEventTimes(ctx context.Context, arg UpdateEventTimesParams) error
+	UpdateRound(ctx context.Context, arg UpdateRoundParams) error
+	UpdateTechnicalControl(ctx context.Context, arg UpdateTechnicalControlParams) error
+	UpdateTyreTest(ctx context.Context, arg UpdateTyreTestParams) error
 	UpdateUserPasswordHash(ctx context.Context, arg UpdateUserPasswordHashParams) error
 }
 

@@ -23,6 +23,35 @@ func Timestamptz(value time.Time) pgtype.Timestamptz {
 	return pgtype.Timestamptz{Time: value, Valid: true}
 }
 
+// TextPointer converts a nullable text into nil or a pointer to its value.
+func TextPointer(value pgtype.Text) *string {
+	if !value.Valid {
+		return nil
+	}
+	return &value.String
+}
+
+// TimePointer converts a nullable timestamptz into nil or a pointer to its value.
+func TimePointer(value pgtype.Timestamptz) *time.Time {
+	if !value.Valid {
+		return nil
+	}
+	return &value.Time
+}
+
+// Int32Pointer converts a nullable int4 into nil or a pointer to its value.
+func Int32Pointer(value pgtype.Int4) *int32 {
+	if !value.Valid {
+		return nil
+	}
+	return &value.Int32
+}
+
+// OptionalText wraps a Go string as a present text parameter.
+func OptionalText(value string) pgtype.Text {
+	return pgtype.Text{String: value, Valid: true}
+}
+
 // UniqueViolation reports whether err is a unique-constraint violation and on which constraint.
 func UniqueViolation(err error) (constraint string, isViolation bool) {
 	var pgErr *pgconn.PgError
