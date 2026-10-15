@@ -3,6 +3,7 @@ package transport
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -71,6 +72,17 @@ func writeJSON(w http.ResponseWriter, status int, body any) {
 	w.WriteHeader(status)
 	if err := json.NewEncoder(w).Encode(body); err != nil {
 		slog.Error("encode response body", "error", err)
+	}
+}
+
+// writeDownload answers with a file the client stores instead of rendering: the
+// disposition carries the name it gets on disk.
+func writeDownload(w http.ResponseWriter, r *http.Request, contentType, filename string, document []byte) {
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
+	w.WriteHeader(http.StatusOK)
+	if _, err := w.Write(document); err != nil {
+		slog.ErrorContext(r.Context(), "write download body", "path", r.URL.Path, "error", err)
 	}
 }
 

@@ -53,6 +53,8 @@ func NewRouter(deps Dependencies) http.Handler {
 	calendarRoutes := &calendarHandlers{calendar: deps.Calendar}
 	router.Get("/circuits", calendarRoutes.circuits)
 	router.Get("/seasons", calendarRoutes.seasons)
+	router.Get("/calendar.ics", calendarRoutes.downloadICS)
+	router.Get("/calendar.pdf", calendarRoutes.downloadPDF)
 	router.Route("/events", func(r chi.Router) {
 		r.Get("/", calendarRoutes.list)
 		r.Get("/{id}", calendarRoutes.get)

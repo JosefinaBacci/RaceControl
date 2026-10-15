@@ -8,11 +8,6 @@ import (
 	"github.com/racecontrol/backend/internal/calendar"
 )
 
-const (
-	eventStatusScheduled = "scheduled"
-	eventStatusFinished  = "finished"
-)
-
 type CalendarManager interface {
 	List(ctx context.Context, filter calendar.Filter) ([]calendar.Event, error)
 	Get(ctx context.Context, id int64) (calendar.Event, error)
@@ -95,12 +90,7 @@ type updateEventRequest struct {
 }
 
 func (h *calendarHandlers) list(w http.ResponseWriter, r *http.Request) {
-	query := r.URL.Query()
-	events, err := h.calendar.List(r.Context(), calendar.Filter{
-		Category: query.Get("category"),
-		Kind:     query.Get("kind"),
-		Period:   query.Get("period"),
-	})
+	events, err := h.calendar.List(r.Context(), filterOf(r))
 	if err != nil {
 		writeError(w, r, err)
 		return
@@ -112,6 +102,35 @@ func (h *calendarHandlers) list(w http.ResponseWriter, r *http.Request) {
 		response.Events = append(response.Events, toEventResponse(event, now))
 	}
 	writeJSON(w, http.StatusOK, response)
+}
+
+// The downloads honour the same filters as the list, so the file matches what
+// the calendar is showing.
+func (h *calendarHandlers) downloadICS(w http.ResponseWriter, r *http.Request) {
+	events, err := h.calendar.List(r.Context(), filterOf(r))
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeDownload(w, r, "text/calendar; charset=utf-8", "calendario-racecontrol.ics", calendar.BuildICS(events, time.Now()))
+}
+
+func (h *calendarHandlers) downloadPDF(w http.ResponseWriter, r *http.Request) {
+	events, err := h.calendar.List(r.Context(), filterOf(r))
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeDownload(w, r, "application/pdf", "calendario-racecontrol.pdf", calendar.BuildPDF(events, time.Now()))
+}
+
+func filterOf(r *http.Request) calendar.Filter {
+	query := r.URL.Query()
+	return calendar.Filter{
+		Category: query.Get("category"),
+		Kind:     query.Get("kind"),
+		Period:   query.Get("period"),
+	}
 }
 
 func (h *calendarHandlers) get(w http.ResponseWriter, r *http.Request) {
@@ -219,14 +238,7 @@ func toEventResponse(event calendar.Event, now time.Time) eventResponse {
 		CountryCode:  event.CountryCode,
 		StartsAt:     event.StartsAt,
 		EndsAt:       event.EndsAt,
-		Status:       eventStatus(event, now),
+		Status:       event.Status(now),
 		IsActive:     event.IsActive,
 	}
-}
-
-func eventStatus(event calendar.Event, now time.Time) string {
-	if event.EndsAt.After(now) {
-		return eventStatusScheduled
-	}
-	return eventStatusFinished
 }

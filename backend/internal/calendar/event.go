@@ -58,6 +58,21 @@ type Event struct {
 	CountryCode *string
 }
 
+// Status values are derived from the timing, never stored, so a race becomes
+// finished on its own and nothing has to keep it in sync.
+const (
+	StatusScheduled = "scheduled"
+	StatusFinished  = "finished"
+)
+
+// Status reports whether the event has already ended.
+func (e Event) Status(now time.Time) string {
+	if e.EndsAt.After(now) {
+		return StatusScheduled
+	}
+	return StatusFinished
+}
+
 // Name composes the label from what identifies the event by kind: a race names the
 // Grand Prix of its round and the round number, a tyre test is its fixed text and
 // date, and a control is its control type. Nothing is stored, so the label cannot
