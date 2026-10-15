@@ -1,4 +1,4 @@
-package sessions_test
+package sessionstest
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/racecontrol/backend/internal/db/dbgen"
 	"github.com/racecontrol/backend/internal/domain"
 	"github.com/racecontrol/backend/internal/sessions"
-	"github.com/racecontrol/backend/internal/testdb"
+	"github.com/racecontrol/backend/tests/testdb"
 )
 
 type fakeClock struct{ now time.Time }

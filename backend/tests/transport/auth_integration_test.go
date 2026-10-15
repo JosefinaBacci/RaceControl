@@ -1,4 +1,4 @@
-package transport_test
+package transporttest
 
 import (
 	"bytes"
@@ -21,9 +21,9 @@ import (
 	"github.com/racecontrol/backend/internal/domain"
 	"github.com/racecontrol/backend/internal/sessions"
 	"github.com/racecontrol/backend/internal/teams"
-	"github.com/racecontrol/backend/internal/testdb"
 	"github.com/racecontrol/backend/internal/transport"
 	"github.com/racecontrol/backend/internal/users"
+	"github.com/racecontrol/backend/tests/testdb"
 )
 
 const (

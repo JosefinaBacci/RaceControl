@@ -1,4 +1,4 @@
-package auth
+package authtest
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/racecontrol/backend/internal/auth"
 	"github.com/racecontrol/backend/internal/domain"
 )
 
@@ -37,7 +38,7 @@ func TestRequireSessionAndRole(t *testing.T) {
 		"fia-token":  {UserID: 1, Role: domain.RoleFIAAdmin},
 		"team-token": {UserID: 2, Role: domain.RoleTeamAdmin, TeamID: &teamID},
 	}
-	guard := NewMiddleware(resolver, statusWriter)
+	guard := auth.NewMiddleware(resolver, statusWriter)
 	ok := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })
 	fiaOnly := guard.RequireSession(guard.RequireRole(domain.RoleFIAAdmin)(ok))
 
@@ -50,7 +51,7 @@ func TestRequireSessionAndRole(t *testing.T) {
 		{"unknown token", func(r *http.Request) { r.Header.Set("Authorization", "Bearer nope") }, http.StatusUnauthorized},
 		{"team admin on fia route", func(r *http.Request) { r.Header.Set("Authorization", "Bearer team-token") }, http.StatusForbidden},
 		{"fia admin via bearer", func(r *http.Request) { r.Header.Set("Authorization", "Bearer fia-token") }, http.StatusOK},
-		{"fia admin via cookie", func(r *http.Request) { r.AddCookie(&http.Cookie{Name: SessionCookieName, Value: "fia-token"}) }, http.StatusOK},
+		{"fia admin via cookie", func(r *http.Request) { r.AddCookie(&http.Cookie{Name: auth.SessionCookieName, Value: "fia-token"}) }, http.StatusOK},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -68,7 +69,7 @@ func TestRequireSessionAndRole(t *testing.T) {
 }
 
 func TestRequireRoleWithoutSessionIsUnauthenticated(t *testing.T) {
-	guard := NewMiddleware(fakeResolver{}, statusWriter)
+	guard := auth.NewMiddleware(fakeResolver{}, statusWriter)
 	handler := guard.RequireRole(domain.RoleFIAAdmin)(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	recorder := httptest.NewRecorder()
 

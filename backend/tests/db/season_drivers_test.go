@@ -1,4 +1,4 @@
-package db_test
+package dbtest
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/racecontrol/backend/internal/db"
-	"github.com/racecontrol/backend/internal/testdb"
+	"github.com/racecontrol/backend/tests/testdb"
 )
 
 // Seeded reference data these tests lean on: season 1 is 2026, teams 1 and 5

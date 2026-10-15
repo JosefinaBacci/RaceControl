@@ -1,17 +1,19 @@
-package auth
+package authtest
 
 import (
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/racecontrol/backend/internal/auth"
 )
 
-var fastParams = Argon2Params{MemoryKiB: 1024, Iterations: 1, Parallelism: 1}
+var fastParams = auth.Argon2Params{MemoryKiB: 1024, Iterations: 1, Parallelism: 1}
 
-func newTestHasher(t *testing.T, params Argon2Params) *PasswordHasher {
+func newTestHasher(t *testing.T, params auth.Argon2Params) *auth.PasswordHasher {
 	t.Helper()
 
-	hasher, err := NewPasswordHasher(params)
+	hasher, err := auth.NewPasswordHasher(params)
 	if err != nil {
 		t.Fatalf("NewPasswordHasher: %v", err)
 	}
@@ -72,7 +74,7 @@ func TestVerifyFlagsRehashWhenConfiguredCostIncreases(t *testing.T) {
 		t.Fatalf("Hash: %v", err)
 	}
 
-	stronger := newTestHasher(t, Argon2Params{MemoryKiB: 2048, Iterations: 1, Parallelism: 1})
+	stronger := newTestHasher(t, auth.Argon2Params{MemoryKiB: 2048, Iterations: 1, Parallelism: 1})
 	check, err := stronger.Verify("correct horse battery", hash)
 	if err != nil {
 		t.Fatalf("Verify: %v", err)
@@ -85,7 +87,7 @@ func TestVerifyFlagsRehashWhenConfiguredCostIncreases(t *testing.T) {
 func TestVerifyRejectsMalformedHash(t *testing.T) {
 	hasher := newTestHasher(t, fastParams)
 	for _, malformed := range []string{"", "plain", "$bcrypt$v=19$m=1,t=1,p=1$c2FsdA$a2V5", "$argon2id$v=19$m=x$c2FsdA$a2V5"} {
-		if _, err := hasher.Verify("whatever", malformed); !errors.Is(err, ErrMalformedHash) {
+		if _, err := hasher.Verify("whatever", malformed); !errors.Is(err, auth.ErrMalformedHash) {
 			t.Errorf("Verify(%q) error = %v, want ErrMalformedHash", malformed, err)
 		}
 	}

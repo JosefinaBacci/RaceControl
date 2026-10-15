@@ -39,11 +39,16 @@ backend/
   internal/users        Servicio de gestión de usuarios (US6)
   internal/transport    Handlers, middlewares, routing (chi)
   internal/seed         Aplica las seeds
-  internal/testdb       Helpers de los tests de integración
   migrations/           Archivos .sql numerados (solo DDL) + embed.go
   seeds/                Datos de referencia idempotentes + embed.go
   sql/                  Queries que sqlc convierte en Go
   sqlc.yaml             Configuración de sqlc
+  tests/                Todos los tests, espejando los paquetes de internal/
+    tests/auth          Tests del paquete auth (paquete authtest)
+    tests/db            Tests de queries y de esquema (paquete dbtest)
+    tests/sessions      Tests del paquete sessions (paquete sessionstest)
+    tests/transport     Tests HTTP de integración (paquete transporttest)
+    tests/testdb        Helpers de los tests que tocan la base (pool, datos únicos)
 app/
   app/                  Rutas (expo-router): (public), fia, team, login
   src/api               Cliente HTTP y almacenamiento del token
@@ -119,6 +124,16 @@ evaluación.
 - Timeouts y contextos: los handlers heredan el `*http.Request` context; las queries usan
   contexto.
 - Nada de `panic` fuera de `main` y de los tests.
+
+### Tests
+
+- **Los tests viven en `backend/tests/`, nunca al lado del código.** Go solo compila los
+  `_test.go` que están en el directorio del paquete, así que un test fuera es un paquete
+  aparte que importa al que prueba: por eso solo puede tocar la API **exportada**. Si algo
+  necesita un símbolo privado, se prueba a través de la API pública del servicio.
+- Cada paquete de test espeja el de `internal/` (`tests/auth` prueba `internal/auth`) y se
+  llama `<área>test` (`authtest`, `dbtest`, `sessionstest`, `transporttest`).
+- Los tests que tocan la base usan `tests/testdb`; sin `TEST_DATABASE_URL` se saltean solos.
 
 ### Base de datos
 

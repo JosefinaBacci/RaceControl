@@ -1,4 +1,4 @@
-package transport_test
+package transporttest
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/racecontrol/backend/internal/domain"
-	"github.com/racecontrol/backend/internal/testdb"
+	"github.com/racecontrol/backend/tests/testdb"
 )
 
 const (

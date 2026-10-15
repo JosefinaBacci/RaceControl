@@ -876,3 +876,28 @@ fallan contra el esquema anterior ("no team assignment for season 1" y la violac
 viejo). Nota técnica: `sqlc` no tolera un `DROP FUNCTION` sobre una función renombrada en una
 migración previa, así que el trigger se reemplaza con `ALTER FUNCTION ... RENAME` + `CREATE OR
 REPLACE`. Verificado con ida y vuelta `down`/`up`, `make sqlc` y `make check`.
+
+---
+
+### 2026-10-15 — Mover los tests a `backend/tests/`
+
+**Contexto:** los tests estaban colocados junto al código (`internal/auth/password_test.go`,
+`internal/db/queries_test.go`, `internal/transport/*_integration_test.go`, etc.), lo que mezcla
+código de producción y de prueba en el mismo árbol.
+
+**Prompt:**
+
+> should we improve the test structure because now they are everywhere
+
+**Respuesta de la IA:** explicó que Go solo compila los `_test.go` que están en el directorio del
+paquete, así que mover los tests afuera solo puede hacerse con paquetes de test externos que
+importan al paquete bajo prueba, y por lo tanto solo alcanzan su API exportada. Verificó que los
+ocho archivos ya usaban únicamente símbolos exportados, así que el movimiento no exigía cambios de
+comportamiento. Propuso un árbol `backend/tests/` espejando `internal/`, con `testdb` como helper
+compartido, y comparó con una opción híbrida (solo los tests de integración afuera).
+
+**Resultado:** se movieron los ocho archivos de test y `internal/testdb` a `backend/tests/`, se
+renombraron los paquetes a `authtest`, `dbtest`, `sessionstest` y `transporttest`, y se actualizó
+`AGENTS.md` con la regla de layout y la consecuencia de la API exportada. `go build ./...`,
+`go vet ./...` y `go test ./...` en verde y `internal/` sin ningún `_test.go`. Sin cambios de
+comportamiento.
