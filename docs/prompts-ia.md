@@ -1050,3 +1050,91 @@ criterios de US8 que dependen de abrir el archivo descargado.
 en verde.
 
 ---
+
+### 2026-10-15 — Gestión de pilotos: modelo de las asignaciones (US11)
+
+**Contexto:** el esquema guarda las asignaciones de piloto a escudería como períodos implícitos
+append-only (`000007`): cerrar un período es insertar el siguiente, y `assigned_team()` deriva el
+equipo de una fecha. Faltaban dos reglas de US11: poder dar de baja a un piloto (sin una fila de
+baja, un piloto liberado seguiría en la alineación) y evitar que una asignación retroactiva cambie
+el equipo derivado de una carrera ya puntuada, que quedaría desfasado del equipo guardado en
+`score_entries`.
+
+**Prompt:**
+
+> Modelar en una migración nueva la baja y la retroactividad de las asignaciones. Una baja es una
+> fila de `driver_team_assignments` sin escudería desde una fecha, sin romper el append-only:
+> `assigned_team()` tiene que devolver NULL después, y los guardias que necesitan un equipo ya fallan
+> solos. Además, una asignación nueva solo puede extender el historial: tiene que empezar después de
+> la última del piloto y nunca antes de una carrera en la que ya tenga resultados, porque el puntaje
+> ya guardó el equipo con el que corrió. Usar un código de guardia propio que el servicio traduzca a
+> 4xx y cubrir cada regla con tests de esquema.
+
+**Respuesta de la IA:** hizo `team_id` nullable y agregó el trigger de extensión como `AFTER INSERT`,
+no `BEFORE`: un disparador previo corre antes de resolver el `ON CONFLICT DO NOTHING` del seed
+idempotente y lo rompía. Al ser `AFTER`, solo ve las filas realmente insertadas y excluye la propia
+fila al leer la última asignación. Código `RC004`.
+
+**Resultado:** `backend/migrations/000022_assignment_lifecycle.{up,down}.sql`,
+`backend/tests/db/assignment_lifecycle_test.go`. `make check` en verde.
+
+---
+
+### 2026-10-15 — Gestión de pilotos: backend (US11)
+
+**Contexto:** con el modelo de asignaciones listo, faltaba el backend de US11. El rol `team_admin` ya
+llevaba `team_id` en la sesión, pero ningún endpoint gestionaba pilotos: el listado y el alta seguían
+siendo maqueta.
+
+**Prompt:**
+
+> Implementar el backend de gestión de pilotos para el administrador de escudería: listar, crear,
+> editar y dar de baja pilotos de la propia escudería. Un piloto de otra escudería responde 404, no
+> 403, para no revelar que existe. El alta crea la persona y su primera asignación al equipo en una
+> transacción y, opcionalmente, el número de la temporada; la categoría del número es la del equipo,
+> nunca la elige el cliente. Cambiar el rol titular/suplente es un período nuevo de asignación, no una
+> edición. Validar nombre y apellido obligatorios, licencia de 3 a 32 caracteres, país de dos letras y
+> número entre 0 y 999, y traducir las violaciones de unicidad y los guardias del esquema a conflictos
+> o validaciones. Seguir el patrón handler → service → repo con sqlc y cubrir todo con tests de
+> integración, incluido el intento sobre un piloto de otra escudería.
+
+**Respuesta de la IA:** armó el paquete `internal/drivers` con `sql/drivers.sql` y endpoints
+`/team/drivers` restringidos a `team_admin`. Para la alineación vigente usó un `JOIN LATERAL` que
+toma la última asignación antes de decidir el equipo, para que la fila de baja saque al piloto del
+listado; sqlc no infiere la nulabilidad a través de un `LEFT JOIN LATERAL`, así que el número se lee
+con un `LEFT JOIN` a la tabla real. El número se archiva con un `upsert` por (piloto, temporada,
+categoría).
+
+**Resultado:** `backend/sql/drivers.sql` y `internal/db/dbgen/drivers.sql.go`,
+`backend/internal/drivers/{driver,validation,service}.go`,
+`backend/internal/transport/drivers_handlers.go` y rutas, `backend/tests/transport/drivers_integration_test.go`,
+y el cableado en `cmd/api/main.go`. `make check` en verde.
+
+---
+
+### 2026-10-15 — Gestión de pilotos: pantallas de la app (US11)
+
+**Contexto:** el backend de pilotos ya estaba, pero la pantalla `app/team/drivers.tsx` seguía leyendo
+la maqueta de US4 y el botón de alta estaba deshabilitado. El dashboard de escudería mostraba la
+alineación desde el mismo mock, así que los cambios del administrador no se veían.
+
+**Prompt:**
+
+> Conectar la gestión de pilotos de la app a la API de US11: listado de la alineación, alta, edición
+> con baja confirmada, con el rol y el número en el formulario. Un piloto tocado en la tarjeta abre su
+> edición. Validar cada error de la API en el campo que corresponde y reflejar los cambios de
+> inmediato. Mantener la lógica fuera de los componentes de pantalla, reutilizar el design system y no
+> duplicar código.
+
+**Respuesta de la IA:** creó `src/api/drivers.ts` y `src/data/drivers.ts` sobre `useRemote`, convirtió
+`app/team/drivers.tsx` en una carpeta (`index`, `new`, `[id]`, `_layout`) como la de usuarios, y
+cambió `DriverCard` al tipo de la API. Al sumarse un tercer `FieldGroup` duplicado, lo extrajo a
+`src/components/FieldGroup.tsx` y migró los formularios de cuentas y de eventos.
+
+**Resultado:** `app/src/api/drivers.ts`, `app/src/data/drivers.ts`,
+`app/src/features/drivers/{DriverFields.tsx,driverForm.ts}`, `app/src/features/DriverCard.tsx`,
+`app/app/team/drivers/{index,new,[id],_layout}.tsx`, `app/app/team/index.tsx`,
+`app/src/components/FieldGroup.tsx` y `app/src/{data/hooks.ts,mocks/data.ts}` sin los pilotos de la
+maqueta. `make check` en verde.
+
+---

@@ -12,7 +12,7 @@ en verde y un commit por cambio lógico.
 |----|--------|----|-------|------|------------------------|--------|
 | US7 | Gestión de calendario | 5 | 8 | 5h | 2.3h | ☑ |
 | US8 | Visualización y descarga de calendario | 3 | 8 | 3.5h | | ◐ |
-| US11 | Gestión de pilotos | 5 | 13 | 5h | | ☐ |
+| US11 | Gestión de pilotos | 5 | 13 | 5h | | ☑ |
 | US12 | Visualización de pilotos | 3 | 13 | 4h | | ☐ |
 | US9 | Gestión de puntajes | 3 | 8 | 3.5h | | ☐ |
 | US23 | Visualización de puntajes | 5 | 13 | 5h | | ☐ |
@@ -30,7 +30,7 @@ pilotos tienen que existir antes de cargar un resultado.
 
 ## Modelo de datos (transversal) ◐
 
-Esquema `000002`–`000020` ya aplicado. Pendiente de la revisión del modelo:
+Esquema `000002`–`000022` ya aplicado. Pendiente de la revisión del modelo:
 
 - [x] §A.6: catálogo `circuits` y eliminación de `events.name` (se edita `000016`, requiere `make db-reset`)
 - [x] F6 / B.1: puntaje solo sobre carreras (`score_entries` y `score_change_log` → `races`)
@@ -90,29 +90,29 @@ Esquema `000002`–`000020` ya aplicado. Pendiente de la revisión del modelo:
 
 *Est. 5h · SP 5 · Valor 13*
 
-- [ ] Queries y servicio de pilotos (alta, edición, número por temporada, rol titular/suplente)
-- [ ] Validaciones de datos
-- [ ] Restringir la gestión a los pilotos de la propia escudería
+- [x] Queries y servicio de pilotos (alta, edición, número por temporada, rol titular/suplente)
+- [x] Validaciones de datos
+- [x] Restringir la gestión a los pilotos de la propia escudería
 - [x] Modelo: `season_drivers` deriva la categoría del equipo al 1 de enero, así que un piloto que se
       suma a mitad de temporada no puede tener número y uno que cambia de categoría queda con la
       vieja. Una fila por (piloto, temporada, categoría), con la categoría elegida por el admin y un
       chequeo de que el piloto tenga una asignación en esa categoría durante la temporada (000019)
-- [ ] Modelo: una asignación no se puede terminar (un piloto liberado sigue en la alineación).
+- [x] Modelo: una asignación no se puede terminar (un piloto liberado sigue en la alineación).
       Fila de "baja" en `driver_team_assignments` (sin escudería desde una fecha), sin romper el
-      append-only
-- [ ] Modelo: una asignación retroactiva cambia `assigned_team()` para fechas pasadas y deja viejo el
+      append-only (`000022`, `team_id` nullable)
+- [x] Modelo: una asignación retroactiva cambia `assigned_team()` para fechas pasadas y deja viejo el
       equipo guardado en los puntajes. Guardia: una asignación nueva empieza después de la última del
-      piloto y nunca antes de una carrera en la que ya tenga resultados
-- [ ] Formulario de alta y edición en la app del responsable de escudería
-- [ ] Tests de integración (incluido intento sobre un piloto de otra escudería)
+      piloto y nunca antes de una carrera en la que ya tenga resultados (`000022`, RC004)
+- [x] Formulario de alta y edición en la app del responsable de escudería
+- [x] Tests de integración (incluido intento sobre un piloto de otra escudería)
 
 **Criterios de éxito**
 
-- [ ] El responsable de escudería puede cargar nuevos pilotos con su información
-- [ ] Puede modificar los datos de sus pilotos
-- [ ] No puede ver ni editar pilotos de otras escuderías
-- [ ] El sistema valida los datos obligatorios
-- [ ] Los cambios se reflejan en el sistema de forma inmediata
+- [x] El responsable de escudería puede cargar nuevos pilotos con su información
+- [x] Puede modificar los datos de sus pilotos
+- [x] No puede ver ni editar pilotos de otras escuderías
+- [x] El sistema valida los datos obligatorios
+- [x] Los cambios se reflejan en el sistema de forma inmediata
 
 ## US12 — Visualización de pilotos
 
