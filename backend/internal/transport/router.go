@@ -28,6 +28,7 @@ type Dependencies struct {
 	Teams             TeamCatalog
 	Calendar          CalendarManager
 	Drivers           DriverManager
+	Scores            ScoreBoard
 	Cookie            CookieConfig
 	AllowedOrigins    []string
 	TrustProxyHeaders bool
@@ -88,6 +89,11 @@ func NewRouter(deps Dependencies) http.Handler {
 		r.Patch("/{id}", driverRoutes.update)
 		r.Post("/{id}/release", driverRoutes.release)
 	})
+
+	scoreRoutes := &scoreHandlers{scores: deps.Scores}
+	router.Get("/results", scoreRoutes.results)
+	router.Get("/results/{id}", scoreRoutes.raceResults)
+	router.Get("/standings", scoreRoutes.standings)
 
 	router.Route("/auth", func(r chi.Router) {
 		r.Post("/login", authRoutes.login)

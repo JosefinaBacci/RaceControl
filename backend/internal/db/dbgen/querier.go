@@ -27,6 +27,9 @@ type Querier interface {
 	DeactivateEvent(ctx context.Context, id int64) error
 	DeactivateRound(ctx context.Context, id int64) error
 	DeactivateUser(ctx context.Context, id int64) error
+	// A driver is listed under the team credited in their latest race of the
+	// championship, the one they currently score for.
+	DriverStandings(ctx context.Context, arg DriverStandingsParams) ([]DriverStandingsRow, error)
 	GetAccount(ctx context.Context, id int64) (GetAccountRow, error)
 	GetActiveSessionByTokenHash(ctx context.Context, arg GetActiveSessionByTokenHashParams) (GetActiveSessionByTokenHashRow, error)
 	GetCalendarEvent(ctx context.Context, id int64) (CalendarEvent, error)
@@ -39,6 +42,12 @@ type Querier interface {
 	// (000021), so the list and the detail share a single definition.
 	ListCalendarEvents(ctx context.Context, arg ListCalendarEventsParams) ([]CalendarEvent, error)
 	ListCircuits(ctx context.Context) ([]ListCircuitsRow, error)
+	// Results and standings read the race_scores view (000024), so the position and
+	// the championship of a result have a single definition. The race each row
+	// belongs to is embedded from calendar_events (000021), which already composes
+	// what identifies a race. Points leave the database as float8 only after they
+	// were summed as numeric, so the totals are exact before the one conversion.
+	ListRaceResults(ctx context.Context, arg ListRaceResultsParams) ([]ListRaceResultsRow, error)
 	ListSeasons(ctx context.Context) ([]ListSeasonsRow, error)
 	// The lineup of a team: the drivers whose latest assignment points at that team
 	// (000007, 000022). A release makes the latest assignment teamless, so the driver
@@ -54,6 +63,7 @@ type Querier interface {
 	SeasonYear(ctx context.Context, id int64) (int32, error)
 	TeamCategory(ctx context.Context, id int64) (int64, error)
 	TeamExists(ctx context.Context, id int64) (bool, error)
+	TeamStandings(ctx context.Context, arg TeamStandingsParams) ([]TeamStandingsRow, error)
 	TouchSession(ctx context.Context, arg TouchSessionParams) error
 	UpdateAccount(ctx context.Context, arg UpdateAccountParams) error
 	UpdateDriver(ctx context.Context, arg UpdateDriverParams) error
