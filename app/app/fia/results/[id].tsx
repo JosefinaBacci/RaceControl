@@ -2,16 +2,17 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { replaceScores, type ScoreEntryInput, type ScoreGrid, type ScoreGridEntry } from '@/api/scores';
-import { AppText, Button, Card, Notice, Screen, TextField } from '@/components';
+import { replaceScores, type ScoreGrid, type ScoreGridEntry } from '@/api/scores';
+import { AppText, Button, Card, IconButton, Notice, Screen, TextField } from '@/components';
 import { useScoreGrid } from '@/data/scores';
 import { useFormSubmission } from '@/data/useFormSubmission';
 import { RemoteContent } from '@/features/RemoteContent';
+import { initialSheet, lineError, sheetEntries, type ScoreLine, type ScoreSheet } from '@/features/scores/scoreSheet';
 import { Flag } from '@/illustrations';
 import { spacing } from '@/theme';
 
 const fields = ['entries'] as const;
-const invalidPointsMessage = 'Cada puntaje tiene que ser un número mayor o igual a cero.';
+const incompleteSheetMessage = 'Hay pilotos sin puntos: completalos o marcá que no corrieron.';
 
 export default function ScoreEditorScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -30,21 +31,25 @@ export default function ScoreEditorScreen() {
 }
 
 function ScoreForm({ grid, onSaved }: { grid: ScoreGrid; onSaved: (grid: ScoreGrid) => void }) {
-  const [points, setPoints] = useState<Record<number, string>>(() => initialPoints(grid));
+  const [sheet, setSheet] = useState<ScoreSheet>(() => initialSheet(grid));
+  const [hasTriedToSave, setHasTriedToSave] = useState(false);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
   const { fieldErrors, formError, isSubmitting, submit, setFormError } = useFormSubmission(fields);
-  const entries = parseEntries(grid, points);
   const error = formError ?? fieldErrors.entries;
+  const setLine = (driverId: number, line: ScoreLine) => setSheet((previous) => ({ ...previous, [driverId]: line }));
 
   const save = async () => {
     setSavedMessage(null);
+    setHasTriedToSave(true);
+    const entries = sheetEntries(grid, sheet);
     if (entries === null) {
-      setFormError(invalidPointsMessage);
+      setFormError(incompleteSheetMessage);
       return;
     }
     const updated = await submit(() => replaceScores(grid.eventId, entries));
     if (updated) {
-      setPoints(initialPoints(updated));
+      setSheet(initialSheet(updated));
+      setHasTriedToSave(false);
       setSavedMessage('Puntajes guardados.');
       onSaved(updated);
     }
@@ -55,24 +60,33 @@ function ScoreForm({ grid, onSaved }: { grid: ScoreGrid; onSaved: (grid: ScoreGr
       {error ? <Notice tone="danger" message={error} /> : null}
       {savedMessage ? <Notice tone="success" message={savedMessage} /> : null}
       <AppText variant="caption" color="textMuted">
-        Dejá vacío al piloto que no sumó puntos: se le quita el puntaje.
+        Cargá 0 al piloto que corrió sin sumar, y marcá que no corrió al que no participó.
       </AppText>
       {grid.entries.map((entry) => (
         <ScoreRow
           key={entry.driverId}
           entry={entry}
-          value={points[entry.driverId] ?? ''}
-          onChange={(value) => setPoints((previous) => ({ ...previous, [entry.driverId]: value }))}
+          line={sheet[entry.driverId] ?? { didRace: false }}
+          showError={hasTriedToSave}
+          onChange={(line) => setLine(entry.driverId, line)}
         />
       ))}
       <View style={styles.actions}>
-        <Button label="Guardar puntajes" icon="save-outline" onPress={save} loading={isSubmitting} disabled={entries === null} />
+        <Button label="Guardar puntajes" icon="save-outline" onPress={save} loading={isSubmitting} />
       </View>
     </Card>
   );
 }
 
-function ScoreRow({ entry, value, onChange }: { entry: ScoreGridEntry; value: string; onChange: (value: string) => void }) {
+type ScoreRowProps = {
+  entry: ScoreGridEntry;
+  line: ScoreLine;
+  showError: boolean;
+  onChange: (line: ScoreLine) => void;
+};
+
+function ScoreRow({ entry, line, showError, onChange }: ScoreRowProps) {
+  const name = `${entry.firstName} ${entry.lastName}`;
   return (
     <View style={styles.row}>
       <Flag code={entry.countryCode} width={24} />
@@ -85,37 +99,37 @@ function ScoreRow({ entry, value, onChange }: { entry: ScoreGridEntry; value: st
           {entry.number === null ? '' : ` · N.º ${entry.number}`}
         </AppText>
       </View>
-      <View style={styles.pointsField}>
-        <TextField label="Puntos" value={value} onChangeText={onChange} keyboardType="decimal-pad" />
-      </View>
+      {line.didRace ? (
+        <>
+          <View style={styles.pointsField}>
+            <TextField
+              label="Puntos"
+              value={line.points}
+              onChangeText={(points) => onChange({ didRace: true, points })}
+              keyboardType="decimal-pad"
+              error={showError ? lineError(line) : null}
+            />
+          </View>
+          <IconButton
+            icon="close"
+            accessibilityLabel={`Marcar que ${name} no corrió`}
+            onPress={() => onChange({ didRace: false })}
+          />
+        </>
+      ) : (
+        <>
+          <AppText color="textMuted" style={styles.pointsField}>
+            No corrió
+          </AppText>
+          <IconButton
+            icon="add"
+            accessibilityLabel={`Cargar los puntos de ${name}`}
+            onPress={() => onChange({ didRace: true, points: '' })}
+          />
+        </>
+      )}
     </View>
   );
-}
-
-// A blank field is a driver left out; a non-numeric or negative value makes the
-// whole grid invalid (null) so the save never reaches the API.
-function parseEntries(grid: ScoreGrid, points: Record<number, string>): ScoreEntryInput[] | null {
-  const entries: ScoreEntryInput[] = [];
-  for (const entry of grid.entries) {
-    const raw = (points[entry.driverId] ?? '').trim();
-    if (raw === '') {
-      continue;
-    }
-    const value = Number(raw);
-    if (!Number.isFinite(value) || value < 0) {
-      return null;
-    }
-    entries.push({ driverId: entry.driverId, points: value });
-  }
-  return entries;
-}
-
-function initialPoints(grid: ScoreGrid): Record<number, string> {
-  const points: Record<number, string> = {};
-  for (const entry of grid.entries) {
-    points[entry.driverId] = entry.points === null ? '' : String(entry.points);
-  }
-  return points;
 }
 
 const styles = StyleSheet.create({
