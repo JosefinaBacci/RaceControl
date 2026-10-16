@@ -1,19 +1,22 @@
-import { Button, Screen } from '@/components';
-import { useNotifications } from '@/data/hooks';
-import { MockNotice } from '@/features/MockNotice';
-import { NotificationList } from '@/features/NotificationList';
+import { AppText, Screen } from '@/components';
+import { useScoreChanges } from '@/data/scores';
+import { RemoteContent } from '@/features/RemoteContent';
+import { ScoreChangeCard } from '@/features/scores/ScoreChangeCard';
 
 export default function FiaNotificationsScreen() {
-  const notifications = useNotifications();
+  const { state, reload } = useScoreChanges();
 
   return (
-    <Screen
-      title="Comunicados"
-      subtitle="Mensajes de la FIA a las escuderías y su confirmación de lectura."
-      headerAction={<Button label="Nuevo comunicado" icon="add" compact disabled />}
-    >
-      <MockNotice />
-      <NotificationList notifications={notifications} audience="sender" />
+    <Screen title="Acuses de puntajes" subtitle="Qué escuderías confirmaron cada publicación o corrección de puntajes.">
+      <RemoteContent state={state} onRetry={reload}>
+        {(changes) =>
+          changes.length === 0 ? (
+            <AppText color="textMuted">Todavía no se publicaron puntajes.</AppText>
+          ) : (
+            changes.map((change) => <ScoreChangeCard key={change.id} change={change} />)
+          )
+        }
+      </RemoteContent>
     </Screen>
   );
 }

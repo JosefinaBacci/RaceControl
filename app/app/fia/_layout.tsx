@@ -14,7 +14,7 @@ export default function FiaLayout() {
         <Tabs.Screen name="users" options={{ title: 'Usuarios', tabBarIcon: tabIcon('people-outline') }} />
         <Tabs.Screen name="calendar" options={{ title: 'Calendario', tabBarIcon: tabIcon('calendar-outline') }} />
         <Tabs.Screen name="results" options={{ title: 'Resultados', tabBarIcon: tabIcon('trophy-outline') }} />
-        <Tabs.Screen name="notifications" options={{ title: 'Comunicados', tabBarIcon: tabIcon('megaphone-outline') }} />
+        <Tabs.Screen name="notifications" options={{ title: 'Acuses', tabBarIcon: tabIcon('checkmark-done-outline') }} />
       </Tabs>
     </RoleGate>
   );

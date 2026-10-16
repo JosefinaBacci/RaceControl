@@ -5,11 +5,14 @@ import { useSession } from '@/auth/SessionProvider';
 import { Button, CardLink, HeroCard, Screen, StatRow, StatTile } from '@/components';
 import { useUpcomingEvents } from '@/data/calendar';
 import { useTeamDrivers } from '@/data/drivers';
-import { useTeamInbox, useTeamPoints } from '@/data/hooks';
+import { useTeamInbox } from '@/data/hooks';
+import { useTeamPoints } from '@/data/scores';
+import { usePendingScoreNotices } from '@/data/TeamScoreNoticesProvider';
 import { DriverCard, DriverGrid } from '@/features/DriverCard';
 import { EventList } from '@/features/EventList';
 import { RemoteContent } from '@/features/RemoteContent';
 import { MockNotice } from '@/features/MockNotice';
+import { formatPoints } from '@/format';
 import { categoryLabel, teamById } from '@/mocks/catalog';
 import { teamPhoto } from '@/photos';
 import { spacing } from '@/theme';
@@ -18,8 +21,9 @@ export default function TeamDashboardScreen() {
   const teamId = useSession().user?.teamId ?? null;
   const team = teamById(teamId);
   const drivers = useTeamDrivers();
-  const points = useTeamPoints(teamId);
-  const { pendingCount: pending } = useTeamInbox(teamId);
+  const points = useTeamPoints(teamId, team.category);
+  const pendingScores = usePendingScoreNotices();
+  const { pendingCount: pendingSanctions } = useTeamInbox(teamId);
   const upcoming = useUpcomingEvents(3);
 
   return (
@@ -31,17 +35,23 @@ export default function TeamDashboardScreen() {
         flag={team.flag}
         photo={teamPhoto(team.id, team.category)}
       >
-        {pending > 0 ? (
+        {pendingScores > 0 ? (
           <View style={styles.heroAction}>
-            <Button label={`${pending} pendientes de acuse`} icon="alert-circle-outline" compact onPress={() => router.push('/team/inbox')} />
+            <Button
+              label={`Confirmar puntajes (${pendingScores})`}
+              icon="alert-circle-outline"
+              compact
+              onPress={() => router.push('/team/notifications')}
+            />
           </View>
         ) : null}
       </HeroCard>
       <MockNotice />
       <StatRow>
         <StatTile label="Pilotos" value={drivers.state.status === 'ready' ? drivers.state.data.length : 0} />
-        <StatTile label="Puntos" value={points} />
-        <StatTile label="Pendientes" value={pending} highlight={pending > 0} />
+        <StatTile label="Puntos" value={points === null ? '—' : formatPoints(points)} />
+        <StatTile label="Puntajes sin confirmar" value={pendingScores} highlight={pendingScores > 0} />
+        <StatTile label="Sanciones sin acuse" value={pendingSanctions} highlight={pendingSanctions > 0} />
       </StatRow>
       <View style={styles.sectionHeader}>
         <CardLink label="Gestionar pilotos" onPress={() => router.push('/team/drivers')} />

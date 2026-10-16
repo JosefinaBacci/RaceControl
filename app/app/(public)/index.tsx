@@ -2,14 +2,19 @@ import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { Button, CardLink, Screen } from '@/components';
-import { useSanctions, useStandings } from '@/data/hooks';
+import { useSanctions } from '@/data/hooks';
+import { useStandings } from '@/data/scores';
 import { NextRaceHero } from '@/features/NextRaceHero';
+import { RemoteContent } from '@/features/RemoteContent';
 import { SanctionList } from '@/features/SanctionList';
+import { driverRows } from '@/features/scores/standingsRows';
 import { StandingsTable } from '@/features/StandingsTable';
 import { spacing } from '@/theme';
 
+const topDriverCount = 4;
+
 export default function PublicHomeScreen() {
-  const topDrivers = useStandings('f1', 4);
+  const standings = useStandings('f1');
   const latestSanctions = useSanctions('all').slice(0, 3);
 
   return (
@@ -23,7 +28,14 @@ export default function PublicHomeScreen() {
           </NextRaceHero>
         </View>
         <View style={styles.column}>
-          <StandingsTable rows={topDrivers} action={<CardLink label="Ver todas" onPress={() => router.push('/standings')} />} />
+          <RemoteContent state={standings.state} onRetry={standings.reload}>
+            {(data) => (
+              <StandingsTable
+                rows={driverRows(data.drivers.slice(0, topDriverCount))}
+                action={<CardLink label="Ver todas" onPress={() => router.push('/standings')} />}
+              />
+            )}
+          </RemoteContent>
           <SanctionList
             title="Últimas sanciones"
             sanctions={latestSanctions}
