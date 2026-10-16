@@ -147,9 +147,16 @@ Esquema `000002`–`000026` ya aplicado. Puntos de la revisión del modelo:
       estado entre filas (un `change_log_id` local o tablas de transición), más maquinaria de la que
       la auditoría vale (`02-modelo-de-datos.md` §8)
 - [x] Traducir `RC002` (piloto de otra categoría que la carrera) a un 4xx
-- [ ] Decidir si se guarda el orden de llegada: hoy la posición se deriva de los puntos (`RANK()` en
+- [x] Decidir si se guarda el orden de llegada: hoy la posición se deriva de los puntos (`RANK()` en
       la vista `race_scores`, `000024`), así que todos los pilotos que terminan fuera de los puntos
-      comparten la misma posición. Si se carga el orden, `race_scores` debe ordenar por él
+      comparten la misma posición. Descartado: la consigna solo pide puntajes
+      (`02-modelo-de-datos.md` §8)
+- [x] Revisión: una carrera cancelada no tiene grilla (`404`) y una que no terminó no acepta
+      resultados (`409`), porque los resultados congelan su fecha (`RC001`); la pantalla solo lista
+      carreras terminadas. Los puntos respetan `numeric(6, 2)` (hasta 9999.99 y dos decimales, antes
+      daba `500` o se redondeaba en silencio). La edición se calcula con la carrera bloqueada, así el
+      log registra los puntos que de verdad reemplazó, y el número del piloto es el de la temporada
+      de la carrera
 
 **Criterios de éxito**
 

@@ -1305,3 +1305,30 @@ sondeo. La categoría se toma de `GET /teams`. `db.Int8`/`db.Int4` reemplazan lo
 nueva de US9 en `sprint.md`. `make check` en verde.
 
 ---
+
+### 2026-10-16 — Revisión de US9 y US12 tras integrar el trabajo del equipo
+
+**Contexto:** después de integrar la carga de puntajes (US9) y el directorio de pilotos (US12), se
+revisó que nada se hubiera roto y que la implementación fuera correcta.
+
+**Prompt:**
+
+> Revisar lo que integró mi compañero: que no se haya roto nada y que todo esté bien; corregir lo que
+> falle o esté mal.
+
+**Respuesta de la IA:** `make check` en verde; el error de tipos de la app era el `router.d.ts`
+generado localmente y desactualizado, no del código. Se encontraron y corrigieron: el guardia de
+auditoría (`000026`) reusaba `RC005`, el código del acuse, y pasa a `RC006` con una migración nueva
+(`000027`); una carrera cancelada aceptaba puntajes y una futura también, lo que congelaba su fecha
+(`RC001`), así que la primera responde `404` y la segunda `409`, y la pantalla de la FIA lista solo
+carreras terminadas; un puntaje sobre 9999.99 daba `500` y uno con tres decimales se redondeaba en
+silencio (`numeric(6, 2)`), ahora ambos se rechazan; la edición se calcula dentro de la transacción
+con la carrera bloqueada, para que dos ediciones simultáneas no registren puntos viejos falsos; y el
+número del piloto en la grilla es el de la temporada de la carrera, no el último.
+
+**Resultado:** `backend/migrations/000027_*`, `backend/sql/scores.sql`,
+`backend/internal/scores/service.go`, `backend/tests/transport/scores_integration_test.go`,
+`backend/tests/db/score_guard_test.go`, `app/app/fia/results/index.tsx`, `app/src/data/scores.ts`,
+`docs/sprint2/{sprint,02-modelo-de-datos}.md`. `make check` en verde.
+
+---
