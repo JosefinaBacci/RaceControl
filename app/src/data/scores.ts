@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { getScoreGrid, getStandings, listRaceResults, listScoreChanges, type RaceResults, type ScoreChange } from '@/api/scores';
+import { getScoreGrid, getScoreHistory, getStandings, listRaceResults, listScoreChanges, type RaceResults, type ScoreChange } from '@/api/scores';
 
 import { findTeam } from './teams';
 import { useReloadOnFocus } from './useReloadOnFocus';
@@ -8,6 +8,12 @@ import { useRemote } from './useRemote';
 
 export function useScoreGrid(eventId: number) {
   const remote = useRemote(() => getScoreGrid(eventId), [eventId]);
+  useReloadOnFocus(remote.reload);
+  return remote;
+}
+
+export function useScoreHistory(eventId: number) {
+  const remote = useRemote(() => getScoreHistory(eventId), [eventId]);
   useReloadOnFocus(remote.reload);
   return remote;
 }

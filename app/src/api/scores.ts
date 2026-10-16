@@ -151,3 +151,16 @@ export async function listScoreChanges(): Promise<ScoreChange[]> {
   const response = await apiRequest<{ changes: ScoreChange[] }>('GET', '/score-changes');
   return response.changes;
 }
+
+export type ScoreRevision = {
+  id: number;
+  kind: NoticeKind;
+  changedAt: string;
+  changedBy: string;
+  items: ChangedPoints[];
+};
+
+export async function getScoreHistory(eventId: number): Promise<ScoreRevision[]> {
+  const response = await apiRequest<{ changes: ScoreRevision[] }>('GET', `/events/${eventId}/scores/history`);
+  return response.changes;
+}

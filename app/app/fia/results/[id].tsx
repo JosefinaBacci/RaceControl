@@ -4,9 +4,10 @@ import { StyleSheet, View } from 'react-native';
 
 import { replaceScores, type ScoreGrid, type ScoreGridEntry } from '@/api/scores';
 import { AppText, Button, Card, IconButton, Notice, Screen, TextField } from '@/components';
-import { useScoreGrid } from '@/data/scores';
+import { useScoreGrid, useScoreHistory } from '@/data/scores';
 import { useFormSubmission } from '@/data/useFormSubmission';
 import { RemoteContent } from '@/features/RemoteContent';
+import { ScoreHistory } from '@/features/scores/ScoreHistory';
 import { initialSheet, lineError, sheetEntries, type ScoreLine, type ScoreSheet } from '@/features/scores/scoreSheet';
 import { Flag } from '@/illustrations';
 import { spacing } from '@/theme';
@@ -17,6 +18,12 @@ const incompleteSheetMessage = 'Hay pilotos sin puntos: completalos o marcá que
 export default function ScoreEditorScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { state, reload, setData } = useScoreGrid(Number(id));
+  const history = useScoreHistory(Number(id));
+
+  const onSaved = (grid: ScoreGrid) => {
+    setData(grid);
+    history.reload();
+  };
 
   return (
     <Screen
@@ -24,7 +31,10 @@ export default function ScoreEditorScreen() {
       headerAction={<Button label="Volver" icon="arrow-back" variant="ghost" compact onPress={() => router.back()} />}
     >
       <RemoteContent state={state} onRetry={reload}>
-        {(grid) => <ScoreForm grid={grid} onSaved={setData} />}
+        {(grid) => <ScoreForm grid={grid} onSaved={onSaved} />}
+      </RemoteContent>
+      <RemoteContent state={history.state} onRetry={history.reload}>
+        {(revisions) => <ScoreHistory revisions={revisions} />}
       </RemoteContent>
     </Screen>
   );
