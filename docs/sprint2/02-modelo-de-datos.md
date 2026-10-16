@@ -197,7 +197,8 @@ del servicio o una validación de entrada no lo justifican.
 - **Auditoría de puntajes (US9, `000026`) — el guardia, no el armado.** La versión
   (`score_change_log` + sus ítems) la escribe el **servicio** en la misma transacción que toca
   `score_entries`; lo que la base garantiza es que ninguna escritura pasa sin declarar un autor
-  (`SET LOCAL racecontrol.actor_id`, o falla con `RC005`). El trigger **no** arma la versión: agrupar
+  (`SET LOCAL racecontrol.actor_id`, o falla con `RC006`; `000027` le da ese código propio, porque
+  `000026` reusaba el `RC005` del acuse). El trigger **no** arma la versión: agrupar
   las filas de una edición en un solo `score_change_log` exigía llevar un `change_log_id` entre filas
   (un GUC local) o tablas de transición, y eso es más maquinaria de la que la auditoría vale para un
   escritor único (el servicio). La brecha queda documentada: un escritor por SQL crudo que declare un

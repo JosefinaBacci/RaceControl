@@ -269,7 +269,7 @@ func pointerTo(value float64) *float64 {
 
 // translateWriteError turns what the schema refuses into the domain error the
 // transport maps: a repeated driver, a driver of another category (RC002). The
-// missing-actor guard (RC005) is a bug here, since the service always declares the
+// missing-actor guard (RC006) is a bug here, since the service always declares the
 // actor, so it surfaces as an internal error.
 func translateWriteError(err error) error {
 	if constraint, isViolation := db.UniqueViolation(err); isViolation {

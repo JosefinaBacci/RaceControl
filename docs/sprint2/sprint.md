@@ -141,10 +141,11 @@ Esquema `000002`–`000026` ya aplicado. Puntos de la revisión del modelo:
 - [x] Recalcular la clasificación general al modificar un puntaje
 - [x] Restringir a `fia_admin` y registrar fecha y autor de cada modificación (`score_change_log`)
 - [x] Modelo: nada impide cambiar `score_entries` sin declarar quién lo hizo. Guardia de auditoría
-      (`000026`, `RC005`): ninguna escritura pasa sin `SET LOCAL racecontrol.actor_id`. La versión
-      (`score_change_log` + sus ítems) la arma el **servicio** en la misma transacción, no el trigger:
-      agrupar las filas de una edición exigía estado entre filas (un `change_log_id` local o tablas de
-      transición), más maquinaria de la que la auditoría vale (`02-modelo-de-datos.md` §8)
+      (`000026`, `RC006` desde `000027`): ninguna escritura pasa sin
+      `SET LOCAL racecontrol.actor_id`. La versión (`score_change_log` + sus ítems) la arma el
+      **servicio** en la misma transacción, no el trigger: agrupar las filas de una edición exigía
+      estado entre filas (un `change_log_id` local o tablas de transición), más maquinaria de la que
+      la auditoría vale (`02-modelo-de-datos.md` §8)
 - [x] Traducir `RC002` (piloto de otra categoría que la carrera) a un 4xx
 - [ ] Decidir si se guarda el orden de llegada: hoy la posición se deriva de los puntos (`RANK()` en
       la vista `race_scores`, `000024`), así que todos los pilotos que terminan fuera de los puntos

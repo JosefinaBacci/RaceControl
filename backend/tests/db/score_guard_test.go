@@ -33,7 +33,7 @@ func TestScoreForAnotherCategoryIsRejected(t *testing.T) {
 	}
 }
 
-// TestScoreChangeWithoutActorIsRejected covers RC005: the audit guard refuses any
+// TestScoreChangeWithoutActorIsRejected covers RC006: the audit guard refuses any
 // write to score_entries that did not declare who made it.
 func TestScoreChangeWithoutActorIsRejected(t *testing.T) {
 	pool := testdb.Pool(t)
@@ -44,5 +44,5 @@ func TestScoreChangeWithoutActorIsRejected(t *testing.T) {
 		`INSERT INTO score_entries (event_id, driver_id, points) VALUES ($1, $2, 10)`,
 		seededRacedEventID, driverID)
 
-	assertGuardCode(t, err, "RC005")
+	assertGuardCode(t, err, "RC006")
 }
