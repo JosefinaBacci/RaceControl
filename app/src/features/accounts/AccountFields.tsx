@@ -4,8 +4,7 @@ import type { Role } from '@/api/auth';
 import type { FieldErrors } from '@/api/formFailure';
 import { roleLabel } from '@/auth/roles';
 import { AppText, ChipGroup, FieldGroup, TextField } from '@/components';
-import { useTeams } from '@/data/accounts';
-import { RemoteContent } from '@/features/RemoteContent';
+import { TeamPicker } from '@/features/TeamPicker';
 import { spacing } from '@/theme';
 
 export type AccountFieldValues = {
@@ -50,27 +49,10 @@ export function AccountFields({ values, onChange, errors, isRoleLocked = false }
           />
         )}
       </FieldGroup>
-      {values.role === 'team_admin' ? <TeamPicker values={values} onChange={onChange} error={errors.teamId} /> : null}
+      {values.role === 'team_admin' ? (
+        <TeamPicker teamId={values.teamId} onChange={(teamId) => onChange({ ...values, teamId })} error={errors.teamId} />
+      ) : null}
     </View>
-  );
-}
-
-function TeamPicker({ values, onChange, error }: { values: AccountFieldValues; onChange: (values: AccountFieldValues) => void; error?: string }) {
-  const { state, reload } = useTeams();
-
-  return (
-    <FieldGroup label="Escudería" error={error}>
-      <RemoteContent state={state} onRetry={reload}>
-        {(teams) => (
-          <ChipGroup
-            options={teams.map((team) => ({ value: String(team.id), label: `${team.name} · ${team.categoryName}` }))}
-            selected={values.teamId === null ? '' : String(values.teamId)}
-            onSelect={(teamId) => onChange({ ...values, teamId: Number(teamId) })}
-            accessibilityLabel="Elegir escudería"
-          />
-        )}
-      </RemoteContent>
-    </FieldGroup>
   );
 }
 
