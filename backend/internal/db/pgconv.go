@@ -2,6 +2,7 @@ package db
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -45,6 +46,18 @@ func Int32Pointer(value pgtype.Int4) *int32 {
 		return nil
 	}
 	return &value.Int32
+}
+
+// Float64Pointer converts a nullable numeric into nil or a pointer to its value.
+func Float64Pointer(value pgtype.Numeric) (*float64, error) {
+	if !value.Valid {
+		return nil, nil
+	}
+	converted, err := value.Float64Value()
+	if err != nil {
+		return nil, fmt.Errorf("convert numeric to float64: %w", err)
+	}
+	return &converted.Float64, nil
 }
 
 // OptionalText wraps a Go string as a present text parameter.

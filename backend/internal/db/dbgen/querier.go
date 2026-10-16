@@ -11,6 +11,10 @@ import (
 )
 
 type Querier interface {
+	// The team is derived from the user by a trigger that also refuses a change the
+	// team is not part of (000023, RC005). Acknowledging again keeps the first
+	// confirmation, so the call is idempotent.
+	AcknowledgeScoreChange(ctx context.Context, arg AcknowledgeScoreChangeParams) error
 	CategoryIDByCode(ctx context.Context, code string) (int64, error)
 	CircuitExists(ctx context.Context, id int64) (bool, error)
 	CountFailuresSinceLastSuccess(ctx context.Context, arg CountFailuresSinceLastSuccessParams) (int64, error)
@@ -48,6 +52,7 @@ type Querier interface {
 	// what identifies a race. Points leave the database as float8 only after they
 	// were summed as numeric, so the totals are exact before the one conversion.
 	ListRaceResults(ctx context.Context, arg ListRaceResultsParams) ([]ListRaceResultsRow, error)
+	ListScoreChangeAcknowledgements(ctx context.Context) ([]ListScoreChangeAcknowledgementsRow, error)
 	ListSeasons(ctx context.Context) ([]ListSeasonsRow, error)
 	// The lineup of a team: the drivers whose latest assignment points at that team
 	// (000007, 000022). A release makes the latest assignment teamless, so the driver
@@ -55,6 +60,11 @@ type Querier interface {
 	// category for the latest season (000011, 000019); a scalar subquery keeps it
 	// nullable for a driver without a number yet.
 	ListTeamDrivers(ctx context.Context, teamID pgtype.Int8) ([]ListTeamDriversRow, error)
+	ListTeamScoreChangeItems(ctx context.Context, arg ListTeamScoreChangeItemsParams) ([]ListTeamScoreChangeItemsRow, error)
+	// Score notices are derived from the change log by the score_notices view
+	// (000025): a team is notified of every change whose items touched it, newest
+	// first. The race is embedded from calendar_events, like in the results.
+	ListTeamScoreNotices(ctx context.Context, arg ListTeamScoreNoticesParams) ([]ListTeamScoreNoticesRow, error)
 	ListTeams(ctx context.Context) ([]ListTeamsRow, error)
 	ReactivateUser(ctx context.Context, id int64) error
 	ReleaseAssignment(ctx context.Context, driverID int64) error

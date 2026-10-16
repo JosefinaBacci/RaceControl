@@ -85,6 +85,7 @@ func buildRouter(cfg config.Config, pool *pgxpool.Pool) (http.Handler, error) {
 		Calendar:          calendar.NewService(queries, db.NewTransactor(pool)),
 		Drivers:           drivers.NewService(queries, db.NewTransactor(pool)),
 		Scores:            scoreService,
+		ScoreNotices:      scoreService,
 		Cookie:            transport.CookieConfig{Secure: cfg.IsProduction(), MaxAge: cfg.Sessions.Absolute},
 		AllowedOrigins:    cfg.CORSAllowedOrigins,
 		TrustProxyHeaders: cfg.TrustProxyHeaders,

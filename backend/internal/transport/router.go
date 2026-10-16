@@ -29,6 +29,7 @@ type Dependencies struct {
 	Calendar          CalendarManager
 	Drivers           DriverManager
 	Scores            ScoreBoard
+	ScoreNotices      ScoreNoticeManager
 	Cookie            CookieConfig
 	AllowedOrigins    []string
 	TrustProxyHeaders bool
@@ -94,6 +95,15 @@ func NewRouter(deps Dependencies) http.Handler {
 	router.Get("/results", scoreRoutes.results)
 	router.Get("/results/{id}", scoreRoutes.raceResults)
 	router.Get("/standings", scoreRoutes.standings)
+
+	noticeRoutes := &scoreNoticeHandlers{notices: deps.ScoreNotices}
+	router.Route("/team/score-notices", func(r chi.Router) {
+		r.Use(sessionGuard.RequireSession, sessionGuard.RequireRole(domain.RoleTeamAdmin))
+		r.Get("/", noticeRoutes.teamNotices)
+		r.Post("/{id}/acknowledgement", noticeRoutes.acknowledge)
+	})
+	router.With(sessionGuard.RequireSession, sessionGuard.RequireRole(domain.RoleFIAAdmin)).
+		Get("/score-changes", noticeRoutes.changes)
 
 	router.Route("/auth", func(r chi.Router) {
 		r.Post("/login", authRoutes.login)

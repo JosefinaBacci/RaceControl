@@ -63,6 +63,7 @@ func newHarness(t *testing.T) *harness {
 		Calendar:       calendar.NewService(queries, db.NewTransactor(pool)),
 		Drivers:        drivers.NewService(queries, db.NewTransactor(pool)),
 		Scores:         scoreService,
+		ScoreNotices:   scoreService,
 		Cookie:         transport.CookieConfig{MaxAge: 24 * time.Hour},
 		AllowedOrigins: []string{"http://localhost:8081"},
 	})

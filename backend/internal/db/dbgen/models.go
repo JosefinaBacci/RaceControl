@@ -175,6 +175,17 @@ type ScoreEntry struct {
 	UpdatedAt pgtype.Timestamptz
 }
 
+type ScoreNotice struct {
+	ChangeLogID    int64
+	EventID        int64
+	ChangedAt      pgtype.Timestamptz
+	ActorUserID    int64
+	TeamID         int64
+	IsPublication  bool
+	AcknowledgedAt pgtype.Timestamptz
+	AcknowledgedBy pgtype.Int8
+}
+
 type Season struct {
 	ID        int64
 	Year      int32
