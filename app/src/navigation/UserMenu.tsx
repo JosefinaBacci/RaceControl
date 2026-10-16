@@ -41,6 +41,7 @@ export function UserMenu({ user }: { user: SessionUser }) {
 
   const items: MenuItem[] = [
     { label: 'Mi panel', icon: 'grid-outline', onSelect: () => navigate(roleHome[user.role]) },
+    { label: 'Sitio público', icon: 'globe-outline', onSelect: () => navigate('/') },
     { label: 'Mi cuenta', icon: 'person-circle-outline', onSelect: () => navigate('/account') },
     { label: 'Cerrar sesión', icon: 'log-out-outline', onSelect: leave, isDestructive: true },
   ];
