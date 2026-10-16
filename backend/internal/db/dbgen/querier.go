@@ -84,6 +84,9 @@ type Querier interface {
 	// what identifies a race. Points leave the database as float8 only after they
 	// were summed as numeric, so the totals are exact before the one conversion.
 	ListRaceResults(ctx context.Context, arg ListRaceResultsParams) ([]ListRaceResultsRow, error)
+	// The history of a race as the FIA audits it: every change with its author and
+	// the before and after of each driver it touched, newest first.
+	ListRaceScoreHistory(ctx context.Context, eventID int64) ([]ListRaceScoreHistoryRow, error)
 	ListScoreChangeAcknowledgements(ctx context.Context) ([]ListScoreChangeAcknowledgementsRow, error)
 	ListSeasons(ctx context.Context) ([]ListSeasonsRow, error)
 	// The lineup of a team: the drivers whose latest assignment points at that team

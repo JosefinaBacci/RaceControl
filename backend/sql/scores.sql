@@ -108,3 +108,15 @@ FROM race_scores
 WHERE season_year = sqlc.arg(season_year) AND category_code = sqlc.arg(category_code)
 GROUP BY team_id, team_code, team_name
 ORDER BY position, team_name, team_id;
+
+-- The history of a race as the FIA audits it: every change with its author and
+-- the before and after of each driver it touched, newest first.
+-- name: ListRaceScoreHistory :many
+SELECT cl.id AS change_log_id, cl.changed_at, actor.username AS changed_by,
+       i.driver_id, d.first_name, d.last_name, i.old_points, i.new_points
+FROM score_change_log cl
+JOIN users actor ON actor.id = cl.actor_user_id
+JOIN score_change_log_items i ON i.change_log_id = cl.id
+JOIN drivers d ON d.id = i.driver_id
+WHERE cl.event_id = $1
+ORDER BY cl.changed_at DESC, cl.id DESC, d.last_name, d.first_name, d.id;

@@ -117,11 +117,15 @@ func (h *scoreNoticeHandlers) changes(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, response)
 }
 
-func toNoticeResponse(notice scores.Notice) noticeResponse {
-	items := make([]changedPointsResponse, 0, len(notice.Items))
-	for _, item := range notice.Items {
+func toChangedPointsResponses(changed []scores.ChangedPoints) []changedPointsResponse {
+	items := make([]changedPointsResponse, 0, len(changed))
+	for _, item := range changed {
 		items = append(items, changedPointsResponse(item))
 	}
+	return items
+}
+
+func toNoticeResponse(notice scores.Notice) noticeResponse {
 	return noticeResponse{
 		ID:             notice.ChangeLogID,
 		Race:           toRaceResponse(notice.Race),
@@ -130,7 +134,7 @@ func toNoticeResponse(notice scores.Notice) noticeResponse {
 		Status:         string(notice.Acknowledgement.Status),
 		AcknowledgedAt: notice.Acknowledgement.At,
 		AcknowledgedBy: notice.Acknowledgement.By,
-		Items:          items,
+		Items:          toChangedPointsResponses(notice.Items),
 	}
 }
 

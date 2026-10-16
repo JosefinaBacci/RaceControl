@@ -11,6 +11,7 @@ import (
 type ScoreBoard interface {
 	Grid(ctx context.Context, eventID int64) (scores.Grid, error)
 	Replace(ctx context.Context, eventID, actorUserID int64, entries []scores.Entry) (scores.Grid, error)
+	History(ctx context.Context, eventID int64) ([]scores.Revision, error)
 	Results(ctx context.Context, filter scores.Filter) ([]scores.RaceResults, error)
 	RaceResults(ctx context.Context, eventID int64) (scores.RaceResults, error)
 	Standings(ctx context.Context, filter scores.Filter) (scores.Standings, error)
@@ -192,6 +193,42 @@ func (h *scoreHandlers) standings(w http.ResponseWriter, r *http.Request) {
 func scoreFilterOf(r *http.Request) scores.Filter {
 	query := r.URL.Query()
 	return scores.Filter{Season: query.Get("season"), Category: query.Get("category")}
+}
+
+type revisionResponse struct {
+	ID        int64                   `json:"id"`
+	Kind      string                  `json:"kind"`
+	ChangedAt time.Time               `json:"changedAt"`
+	ChangedBy string                  `json:"changedBy"`
+	Items     []changedPointsResponse `json:"items"`
+}
+
+type scoreHistoryResponse struct {
+	Changes []revisionResponse `json:"changes"`
+}
+
+func (h *scoreHandlers) history(w http.ResponseWriter, r *http.Request) {
+	id, err := pathID(r)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	revisions, err := h.scores.History(r.Context(), id)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	response := scoreHistoryResponse{Changes: make([]revisionResponse, 0, len(revisions))}
+	for _, revision := range revisions {
+		response.Changes = append(response.Changes, revisionResponse{
+			ID:        revision.ChangeLogID,
+			Kind:      string(revision.Kind),
+			ChangedAt: revision.ChangedAt,
+			ChangedBy: revision.ChangedBy,
+			Items:     toChangedPointsResponses(revision.Items),
+		})
+	}
+	writeJSON(w, http.StatusOK, response)
 }
 
 func toScoreGridResponse(grid scores.Grid) scoreGridResponse {

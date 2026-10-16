@@ -325,6 +325,59 @@ func (q *Queries) ListRaceResults(ctx context.Context, arg ListRaceResultsParams
 	return items, nil
 }
 
+const listRaceScoreHistory = `-- name: ListRaceScoreHistory :many
+SELECT cl.id AS change_log_id, cl.changed_at, actor.username AS changed_by,
+       i.driver_id, d.first_name, d.last_name, i.old_points, i.new_points
+FROM score_change_log cl
+JOIN users actor ON actor.id = cl.actor_user_id
+JOIN score_change_log_items i ON i.change_log_id = cl.id
+JOIN drivers d ON d.id = i.driver_id
+WHERE cl.event_id = $1
+ORDER BY cl.changed_at DESC, cl.id DESC, d.last_name, d.first_name, d.id
+`
+
+type ListRaceScoreHistoryRow struct {
+	ChangeLogID int64
+	ChangedAt   pgtype.Timestamptz
+	ChangedBy   string
+	DriverID    int64
+	FirstName   string
+	LastName    string
+	OldPoints   *float64
+	NewPoints   *float64
+}
+
+// The history of a race as the FIA audits it: every change with its author and
+// the before and after of each driver it touched, newest first.
+func (q *Queries) ListRaceScoreHistory(ctx context.Context, eventID int64) ([]ListRaceScoreHistoryRow, error) {
+	rows, err := q.db.Query(ctx, listRaceScoreHistory, eventID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListRaceScoreHistoryRow{}
+	for rows.Next() {
+		var i ListRaceScoreHistoryRow
+		if err := rows.Scan(
+			&i.ChangeLogID,
+			&i.ChangedAt,
+			&i.ChangedBy,
+			&i.DriverID,
+			&i.FirstName,
+			&i.LastName,
+			&i.OldPoints,
+			&i.NewPoints,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const lockRaceScores = `-- name: LockRaceScores :exec
 SELECT 1 FROM races WHERE event_id = $1 FOR NO KEY UPDATE
 `

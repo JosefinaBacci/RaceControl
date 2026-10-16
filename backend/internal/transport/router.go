@@ -72,6 +72,7 @@ func NewRouter(deps Dependencies) http.Handler {
 			r.Delete("/{id}", calendarRoutes.cancel)
 			r.Get("/{id}/scores", scoreRoutes.grid)
 			r.Put("/{id}/scores", scoreRoutes.replace)
+			r.Get("/{id}/scores/history", scoreRoutes.history)
 		})
 	})
 

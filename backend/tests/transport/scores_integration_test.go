@@ -476,3 +476,46 @@ func (h *harness) driverStandingPoints(driverID float64, category string) float6
 	}
 	return 0
 }
+
+func TestScoreHistoryListsEveryChangeWithItsAuthor(t *testing.T) {
+	h := newHarness(t)
+	fiaAdmin, username := h.signedIn(domain.RoleFIAAdmin, 0)
+	teamAdmin, _ := h.signedIn(domain.RoleTeamAdmin, ferrariTeamID)
+	id := h.createScoreRace(fiaAdmin, "Gran Premio con Historial")
+
+	expectStatus(t, h.loadScores(fiaAdmin, id, []map[string]any{
+		{"driverId": 1, "points": 25},
+		{"driverId": 2, "points": 18},
+	}), http.StatusOK)
+	expectStatus(t, h.loadScores(fiaAdmin, id, []map[string]any{
+		{"driverId": 1, "points": 25},
+		{"driverId": 2, "points": 20},
+	}), http.StatusOK)
+
+	path := fmt.Sprintf("/events/%d/scores/history", id)
+	expectStatus(t, h.do(teamAdmin, http.MethodGet, path, nil, nil), http.StatusForbidden)
+	got := h.do(fiaAdmin, http.MethodGet, path, nil, nil)
+	expectStatus(t, got, http.StatusOK)
+
+	changes := listOf(t, got.body, "changes")
+	if len(changes) != 2 {
+		t.Fatalf("changes = %s, want the publication and one correction", got.raw)
+	}
+	correction, publication := changes[0], changes[1]
+	if correction["kind"] != "corrected" || publication["kind"] != "published" {
+		t.Fatalf("kinds = %v, %v; want corrected first, then published", correction["kind"], publication["kind"])
+	}
+	if correction["changedBy"] != username {
+		t.Fatalf("changedBy = %v, want %s", correction["changedBy"], username)
+	}
+	items := listOf(t, correction, "items")
+	if len(items) != 1 || items[0]["driverId"] != float64(2) ||
+		items[0]["oldPoints"] != float64(18) || items[0]["newPoints"] != float64(20) {
+		t.Fatalf("correction items = %v, want only driver 2 from 18 to 20", items)
+	}
+	if len(listOf(t, publication, "items")) != 2 {
+		t.Fatalf("publication items = %v, want both drivers", publication["items"])
+	}
+
+	expectStatus(t, h.do(fiaAdmin, http.MethodGet, "/events/4/scores/history", nil, nil), http.StatusNotFound)
+}
