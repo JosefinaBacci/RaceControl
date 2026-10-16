@@ -27,6 +27,20 @@ export class ApiError extends Error {
   }
 }
 
+export type QueryParams = Record<string, string | number | undefined>;
+
+// Unset values are left out, so a filter the user did not pick never reaches the API.
+export function queryString(params: QueryParams): string {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== '') {
+      search.set(key, String(value));
+    }
+  }
+  const query = search.toString();
+  return query ? `?${query}` : '';
+}
+
 type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE';
 
 export async function apiRequest<T>(method: HttpMethod, path: string, body?: unknown): Promise<T> {
