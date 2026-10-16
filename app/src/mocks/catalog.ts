@@ -11,7 +11,7 @@ export const categories: readonly { value: CategoryCode; label: string }[] = [
   { value: 'academy', label: 'F1 Academy' },
 ];
 
-export function categoryLabel(code: CategoryCode): string {
+export function categoryLabel(code: string): string {
   return categories.find((category) => category.value === code)?.label ?? '';
 }
 

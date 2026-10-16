@@ -21,7 +21,7 @@ export default function TeamDashboardScreen() {
   const teamId = useSession().user?.teamId ?? null;
   const team = teamById(teamId);
   const drivers = useTeamDrivers();
-  const points = useTeamPoints(teamId, team.category);
+  const points = useTeamPoints(teamId);
   const pendingScores = usePendingScoreNotices();
   const { pendingCount: pendingSanctions } = useTeamInbox(teamId);
   const upcoming = useUpcomingEvents(3);

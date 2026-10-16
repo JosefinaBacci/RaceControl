@@ -7,7 +7,7 @@ import { useRaceResults, useSelectedRace, useStandings } from '@/data/scores';
 import { formatEventDate, formatPoints } from '@/format';
 import { RemoteContent } from '@/features/RemoteContent';
 import { StandingsTable } from '@/features/StandingsTable';
-import { categories, categoryLabel, type CategoryCode } from '@/mocks/catalog';
+import { categories, categoryLabel } from '@/mocks/catalog';
 import { categoryPhoto } from '@/photos';
 import { spacing } from '@/theme';
 
@@ -15,14 +15,14 @@ import { driverRows, teamRows } from './standingsRows';
 
 // The championship of one category: its accumulated standings and the results
 // of each raced race, picked with the race filter.
-export function ScoreBoard({ initialCategory }: { initialCategory: CategoryCode }) {
-  const [category, setCategory] = useState<CategoryCode>(initialCategory);
+export function ScoreBoard({ initialCategory }: { initialCategory: string }) {
+  const [category, setCategory] = useState(initialCategory);
   const standings = useStandings(category);
   const results = useRaceResults(category);
 
   return (
     <>
-      <ChipGroup variant="underline" options={categories} selected={category} onSelect={setCategory} accessibilityLabel="Elegir categoría" />
+      <ChipGroup<string> variant="underline" options={categories} selected={category} onSelect={setCategory} accessibilityLabel="Elegir categoría" />
       <RemoteContent state={standings.state} onRetry={standings.reload}>
         {(data) => <ChampionshipStandings standings={data} category={category} />}
       </RemoteContent>
@@ -33,7 +33,7 @@ export function ScoreBoard({ initialCategory }: { initialCategory: CategoryCode 
   );
 }
 
-function ChampionshipStandings({ standings, category }: { standings: Standings; category: CategoryCode }) {
+function ChampionshipStandings({ standings, category }: { standings: Standings; category: string }) {
   const leader = standings.drivers[0];
 
   return (
