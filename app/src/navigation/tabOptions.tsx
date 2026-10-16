@@ -52,3 +52,8 @@ export function tabIcon(name: IconName) {
     return <Ionicons name={name} color={color} size={size} />;
   };
 }
+
+// An empty count hides the badge instead of showing a zero.
+export function tabBadge(count: number): number | undefined {
+  return count > 0 ? count : undefined;
+}
