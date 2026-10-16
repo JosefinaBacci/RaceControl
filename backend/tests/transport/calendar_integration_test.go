@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/racecontrol/backend/internal/domain"
+	"github.com/racecontrol/backend/tests/testdb"
 )
 
 const (
@@ -256,22 +257,36 @@ func TestCancellingARaceTakesItsRoundOffTheCalendar(t *testing.T) {
 	h := newHarness(t)
 	fiaAdmin, _ := h.signedIn(domain.RoleFIAAdmin, 0)
 
-	number := h.nextRoundNumber(formulaOneCategory)
-	created := h.createRace(fiaAdmin, time.Date(2026, 5, 3, 15, 0, 0, 0, time.UTC), number, "Gran Premio Cancelado")
-	expectStatus(t, created, http.StatusCreated)
-	id := eventID(t, created)
+	championship := testdb.NewChampionship(t, h.pool)
+	id := championship.AddRace(time.Now().Add(7 * 24 * time.Hour))
 
 	cancelled := h.do(fiaAdmin, http.MethodDelete, fmt.Sprintf("/events/%d", id), nil, nil)
 	expectStatus(t, cancelled, http.StatusOK)
 	if cancelled.body["isActive"] != false {
 		t.Fatalf("isActive = %v, want false", cancelled.body["isActive"])
 	}
-	if h.roundIsActive(formulaOneCategory, number) {
-		t.Fatalf("cancelling the race must also cancel its round %d", number)
+	const firstRound = 1
+	if h.roundIsActive(championship.CategoryCode, firstRound) {
+		t.Fatal("cancelling the race must also cancel its round")
 	}
 
-	if listHasID(h.listEvents("/events?category=f1"), eventID(t, created)) {
+	if listHasID(h.listEvents("/events?category="+championship.CategoryCode), id) {
 		t.Fatal("a cancelled event must leave the calendar")
+	}
+}
+
+// TestCancellingAStartedEventIsRefused: an event that already started is part of
+// the season's history, even before it has any results.
+func TestCancellingAStartedEventIsRefused(t *testing.T) {
+	h := newHarness(t)
+	fiaAdmin, _ := h.signedIn(domain.RoleFIAAdmin, 0)
+	championship := testdb.NewChampionship(t, h.pool)
+	id := championship.AddRace(time.Now().Add(-time.Hour))
+
+	got := h.do(fiaAdmin, http.MethodDelete, fmt.Sprintf("/events/%d", id), nil, nil)
+	expectStatus(t, got, http.StatusConflict)
+	if got.body["code"] != "conflict" {
+		t.Fatalf("code = %v, want conflict; body: %s", got.body["code"], got.raw)
 	}
 }
 

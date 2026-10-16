@@ -386,7 +386,7 @@ func TestScoresOnANonRaceAreNotFound(t *testing.T) {
 func TestScoresOfACancelledRaceAreNotFound(t *testing.T) {
 	h := newHarness(t)
 	fiaAdmin, _ := h.signedIn(domain.RoleFIAAdmin, 0)
-	id := h.createScoreRace(fiaAdmin, "Gran Premio Cancelado")
+	id := testdb.NewChampionship(t, h.pool).AddRace(time.Now().Add(7 * 24 * time.Hour))
 	expectStatus(t, h.do(fiaAdmin, http.MethodDelete, fmt.Sprintf("/events/%d", id), nil, nil), http.StatusOK)
 
 	expectStatus(t, h.do(fiaAdmin, http.MethodGet, fmt.Sprintf("/events/%d/scores", id), nil, nil), http.StatusNotFound)

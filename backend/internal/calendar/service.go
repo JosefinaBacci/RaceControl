@@ -270,9 +270,10 @@ func (s *Service) applyChanges(ctx context.Context, current Event, changes Event
 	return next, nil
 }
 
-// Cancel deactivates the event and, when it is a race, the round it runs. The
-// schema guards refuse both when the race already has results (RC001), so the
-// transaction rolls back and the calendar keeps a finished Grand Prix intact.
+// Cancel deactivates the event and, when it is a race, the round it runs. Only an
+// event that has not started can be cancelled: once it starts it is part of the
+// season's history. The schema guards also refuse a race with results (RC001),
+// which the time check already covers but the database enforces on its own.
 func (s *Service) Cancel(ctx context.Context, id int64) (Event, error) {
 	current, err := s.Get(ctx, id)
 	if err != nil {
@@ -280,6 +281,9 @@ func (s *Service) Cancel(ctx context.Context, id int64) (Event, error) {
 	}
 	if !current.IsActive {
 		return Event{}, domain.ErrNotFound
+	}
+	if current.HasStarted(time.Now()) {
+		return Event{}, domain.NewConflictError("", "el evento ya empezó: no se puede cancelar")
 	}
 
 	err = s.transactor.InTx(ctx, func(queries dbgen.Querier) error {

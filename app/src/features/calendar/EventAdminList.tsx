@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { cancelEvent, type CalendarEvent } from '@/api/calendar';
 import { AppText, Badge, Card, IconButton } from '@/components';
 import { useFormSubmission } from '@/data/useFormSubmission';
+import { hasStarted } from '@/features/calendar/eventTiming';
 import { kindLabel } from '@/features/eventKind';
 import { colors, spacing } from '@/theme';
 
@@ -108,12 +109,14 @@ function EventRowActions({ event, onEdit, onChanged }: EventRowProps) {
     <View style={[styles.actionsColumn, styles.actionsColumnStacked]}>
       <View style={styles.actions}>
         <IconButton icon="create-outline" accessibilityLabel={`Editar ${event.name}`} onPress={() => onEdit(event)} />
-        <IconButton
-          icon="trash-outline"
-          tone="danger"
-          accessibilityLabel={`Cancelar ${event.name}`}
-          onPress={() => setIsConfirming(true)}
-        />
+        {hasStarted(event) ? null : (
+          <IconButton
+            icon="trash-outline"
+            tone="danger"
+            accessibilityLabel={`Cancelar ${event.name}`}
+            onPress={() => setIsConfirming(true)}
+          />
+        )}
       </View>
       {formError ? (
         <AppText variant="caption" color="danger">

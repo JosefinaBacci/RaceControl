@@ -65,6 +65,11 @@ const (
 	StatusFinished  = "finished"
 )
 
+// HasStarted reports whether the event is already under way or over.
+func (e Event) HasStarted(now time.Time) bool {
+	return !e.StartsAt.After(now)
+}
+
 // Status reports whether the event has already ended.
 func (e Event) Status(now time.Time) string {
 	if e.EndsAt.After(now) {
