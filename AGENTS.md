@@ -37,6 +37,10 @@ backend/
   internal/auth         Hashing de contraseñas, login con bloqueo, middleware RBAC
   internal/sessions     Emisión, expiración y revocación de sesiones
   internal/users        Servicio de gestión de usuarios (US6)
+  internal/calendar     Calendario: eventos, rondas y circuitos (US7, US8)
+  internal/teams        Catálogo de escuderías
+  internal/drivers      Pilotos de la escudería (US11)
+  internal/scores       Resultados, clasificación y acuses de puntajes (US23, US24)
   internal/transport    Handlers, middlewares, routing (chi)
   internal/seed         Aplica las seeds
   migrations/           Archivos .sql numerados (solo DDL) + embed.go
@@ -45,6 +49,7 @@ backend/
   sqlc.yaml             Configuración de sqlc
   tests/                Todos los tests, espejando los paquetes de internal/
     tests/auth          Tests del paquete auth (paquete authtest)
+    tests/calendar      Tests del paquete calendar (paquete calendartest)
     tests/db            Tests de queries y de esquema (paquete dbtest)
     tests/sessions      Tests del paquete sessions (paquete sessionstest)
     tests/transport     Tests HTTP de integración (paquete transporttest)
@@ -54,7 +59,7 @@ app/
   src/api               Cliente HTTP y almacenamiento del token
   src/auth              Sesión, validación del login, roles
   src/components        Componentes reutilizables del design system
-  src/data              Hooks de datos: los de cuentas sobre src/api, el resto todavía sobre mocks
+  src/data              Hooks de datos sobre src/api; las sanciones y la bandeja todavía sobre mocks
   src/features          Bloques de pantalla compartidos entre roles
   src/illustrations     Ilustraciones SVG (banderas, circuitos, auto)
   src/mocks             Datos de ejemplo de US4

@@ -28,9 +28,9 @@ pilotos tienen que existir antes de cargar un resultado.
 
 ---
 
-## Modelo de datos (transversal) ◐
+## Modelo de datos (transversal) ☑
 
-Esquema `000002`–`000025` ya aplicado. Pendiente de la revisión del modelo:
+Esquema `000002`–`000025` ya aplicado. Puntos de la revisión del modelo:
 
 - [x] §A.6: catálogo `circuits` y eliminación de `events.name` (se edita `000016`, requiere `make db-reset`)
 - [x] F6 / B.1: puntaje solo sobre carreras (`score_entries` y `score_change_log` → `races`)
@@ -54,7 +54,7 @@ Esquema `000002`–`000025` ya aplicado. Pendiente de la revisión del modelo:
 - [x] Servicio: alta, modificación y baja de eventos (evento + hija en una transacción). La baja de
       una carrera da de baja también su ronda, para no dejar una carrera activa sobre una ronda
       cancelada (`02-modelo-de-datos.md` §8)
-- [x] Validaciones: campos obligatorios, `ends_at >= starts_at`, ronda única por campeonato,
+- [x] Validaciones: campos obligatorios, `ends_at > starts_at` (`000018`), ronda única por campeonato,
       fecha congelada si la carrera ya tiene resultados (`409`)
 - [x] Endpoints restringidos a `fia_admin`; lectura pública
 - [x] Pantalla de gestión del calendario (crear, editar, eliminar con confirmación)
@@ -118,8 +118,8 @@ Esquema `000002`–`000025` ya aplicado. Pendiente de la revisión del modelo:
 
 *Est. 4h · SP 3 · Valor 13*
 
-- [ ] Listado público de pilotos agrupado por escudería (alineación vigente)
-      (depende de poder terminar una asignación, ver US11)
+- [ ] Listado público de pilotos agrupado por escudería (alineación vigente; una asignación ya se
+      puede terminar con la fila de baja de `000022`, ver US11)
 - [ ] Vista de detalle de cada piloto
 - [ ] Búsqueda y filtros
 - [ ] Acceso de solo lectura para todos los usuarios
