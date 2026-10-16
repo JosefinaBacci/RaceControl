@@ -15,8 +15,8 @@ en verde y un commit por cambio lógico.
 | US11 | Gestión de pilotos | 5 | 13 | 5h | | ☑ |
 | US12 | Visualización de pilotos | 3 | 13 | 4h | | ☐ |
 | US9 | Gestión de puntajes | 3 | 8 | 3.5h | | ☐ |
-| US23 | Visualización de puntajes | 5 | 13 | 5h | | ☐ |
-| US24 | Visualización y confirmación de recibo de puntajes | 5 | 13 | 6h | | ☐ |
+| US23 | Visualización de puntajes | 5 | 13 | 5h | | ☑ |
+| US24 | Visualización y confirmación de recibo de puntajes | 5 | 13 | 6h | | ☑ |
 | US17 | Mensajería interna segura | 8 | 21 | 10h | | ☐ |
 
 **Total estimado:** 42h
@@ -168,9 +168,9 @@ Esquema `000002`–`000025` ya aplicado. Pendiente de la revisión del modelo:
 
 **Criterios de éxito**
 
-- [ ] Cualquier persona puede ver los puntajes de cada carrera sin iniciar sesión
-- [ ] Se muestra la clasificación acumulada de pilotos y escuderías
-- [ ] Los puntajes mostrados coinciden con los cargados por el administrador
+- [x] Cualquier persona puede ver los puntajes de cada carrera sin iniciar sesión
+- [x] Se muestra la clasificación acumulada de pilotos y escuderías
+- [x] Los puntajes mostrados coinciden con los cargados por el administrador
 
 ## US24 — Visualización y confirmación de recibo de puntajes
 
@@ -194,11 +194,11 @@ Esquema `000002`–`000025` ya aplicado. Pendiente de la revisión del modelo:
 
 **Criterios de éxito**
 
-- [ ] El responsable de escudería ve los puntajes de cada carrera
-- [ ] Recibe una notificación cuando se publican o modifican los resultados
-- [ ] Puede confirmar la recepción, y la confirmación queda registrada con fecha y hora
-- [ ] El estado de la notificación (pendiente o confirmada) es visible
-- [ ] El administrador puede ver qué escuderías confirmaron
+- [x] El responsable de escudería ve los puntajes de cada carrera
+- [x] Recibe una notificación cuando se publican o modifican los resultados
+- [x] Puede confirmar la recepción, y la confirmación queda registrada con fecha y hora
+- [x] El estado de la notificación (pendiente o confirmada) es visible
+- [x] El administrador puede ver qué escuderías confirmaron
 
 ## US17 — Mensajería interna segura
 
