@@ -45,6 +45,7 @@ type Querier interface {
 	// race has no grid. The audit trail (one score_change_log version plus its items)
 	// is written by the service in the same transaction; the schema only demands an
 	// actor through the guard of 000026.
+	// A cancelled race has no grid: it never ran, so it takes no results.
 	GetRaceChampionship(ctx context.Context, eventID int64) (GetRaceChampionshipRow, error)
 	GetTeamDriver(ctx context.Context, arg GetTeamDriverParams) (GetTeamDriverRow, error)
 	GetUserByUsername(ctx context.Context, lower string) (User, error)
@@ -61,7 +62,7 @@ type Querier interface {
 	ListCalendarEvents(ctx context.Context, arg ListCalendarEventsParams) ([]CalendarEvent, error)
 	ListCircuits(ctx context.Context) ([]ListCircuitsRow, error)
 	// The grid of a race: every driver whose team on the race date runs in its
-	// championship, with the number they hold there and the points already loaded
+	// championship, with the number they hold in that season and the points already loaded
 	// (NULL when the driver has no entry yet). The service diffs against this.
 	ListRaceEligibleDrivers(ctx context.Context, eventID int64) ([]ListRaceEligibleDriversRow, error)
 	// Results and standings read the race_scores view (000024), so the position and
@@ -84,6 +85,9 @@ type Querier interface {
 	// first. The race is embedded from calendar_events, like in the results.
 	ListTeamScoreNotices(ctx context.Context, arg ListTeamScoreNoticesParams) ([]ListTeamScoreNoticesRow, error)
 	ListTeams(ctx context.Context) ([]ListTeamsRow, error)
+	// Two edits of the same race take turns, so each one diffs against the scores
+	// the previous one left and the audit records the real old points.
+	LockRaceScores(ctx context.Context, eventID int64) error
 	ReactivateUser(ctx context.Context, id int64) error
 	ReleaseAssignment(ctx context.Context, driverID int64) error
 	RevokeSessionByTokenHash(ctx context.Context, tokenHash string) error

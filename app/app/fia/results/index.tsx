@@ -5,16 +5,18 @@ import { useCalendarEvents } from '@/data/calendar';
 import { formatEventDate } from '@/format';
 import { RemoteContent } from '@/features/RemoteContent';
 
+// Only finished races are listed: results freeze a race's date, so the API refuses
+// them before the race ends.
 export default function FiaResultsScreen() {
-  const { state, reload } = useCalendarEvents({ kind: 'race' });
+  const { state, reload } = useCalendarEvents({ kind: 'race', period: 'past' });
 
   return (
-    <Screen title="Puntajes" subtitle="Cargá y modificá los resultados de cada carrera.">
+    <Screen title="Puntajes" subtitle="Cargá y modificá los resultados de cada carrera terminada.">
       <Card title="Carreras">
         <RemoteContent state={state} onRetry={reload}>
           {(races) =>
             races.length === 0 ? (
-              <AppText color="textMuted">Todavía no hay carreras en el calendario.</AppText>
+              <AppText color="textMuted">Todavía no terminó ninguna carrera.</AppText>
             ) : (
               races.map((race, index) => (
                 <ListItem

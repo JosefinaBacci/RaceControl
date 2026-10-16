@@ -360,6 +360,8 @@ func TestScoresRejectBadInput(t *testing.T) {
 		"empty points":    {{"driverId": 1}},
 		"repeated driver": {{"driverId": 1, "points": 10}, {"driverId": 1, "points": 20}},
 		"unknown driver":  {{"driverId": 999999999, "points": 10}},
+		"too many points": {{"driverId": 1, "points": 10000}},
+		"third decimal":   {{"driverId": 1, "points": 0.125}},
 	}
 	for name, entries := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -379,6 +381,33 @@ func TestScoresOnANonRaceAreNotFound(t *testing.T) {
 	// Seeded event 4 is a tyre test: only races take results.
 	expectStatus(t, h.do(fiaAdmin, http.MethodGet, "/events/4/scores", nil, nil), http.StatusNotFound)
 	expectStatus(t, h.loadScores(fiaAdmin, 4, []map[string]any{{"driverId": 1, "points": 10}}), http.StatusNotFound)
+}
+
+func TestScoresOfACancelledRaceAreNotFound(t *testing.T) {
+	h := newHarness(t)
+	fiaAdmin, _ := h.signedIn(domain.RoleFIAAdmin, 0)
+	id := h.createScoreRace(fiaAdmin, "Gran Premio Cancelado")
+	expectStatus(t, h.do(fiaAdmin, http.MethodDelete, fmt.Sprintf("/events/%d", id), nil, nil), http.StatusOK)
+
+	expectStatus(t, h.do(fiaAdmin, http.MethodGet, fmt.Sprintf("/events/%d/scores", id), nil, nil), http.StatusNotFound)
+	expectStatus(t, h.loadScores(fiaAdmin, id, []map[string]any{{"driverId": 1, "points": 10}}), http.StatusNotFound)
+}
+
+// TestScoresWaitForTheRaceToFinish: results freeze the date of a race (RC001), so
+// scoring one that has not run would lock the calendar on a guess.
+func TestScoresWaitForTheRaceToFinish(t *testing.T) {
+	h := newHarness(t)
+	fiaAdmin, _ := h.signedIn(domain.RoleFIAAdmin, 0)
+	championship := testdb.NewChampionship(t, h.pool)
+	driver := championship.AddDriver(championship.AddTeam("Equipo A"), "Alonso")
+	upcoming := championship.AddRace(time.Now().Add(7 * 24 * time.Hour))
+
+	h.scoreGrid(fiaAdmin, upcoming)
+	got := h.loadScores(fiaAdmin, upcoming, []map[string]any{{"driverId": driver, "points": 25}})
+	expectStatus(t, got, http.StatusConflict)
+	if got.body["code"] != "conflict" {
+		t.Fatalf("code = %v, want conflict; body: %s", got.body["code"], got.raw)
+	}
 }
 
 func TestScoreChangeIsAuditedWithItsAuthor(t *testing.T) {

@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -50,6 +52,7 @@ type Grid struct {
 	EventID      int64
 	CategoryCode string
 	CategoryName string
+	RaceEndsAt   time.Time
 	Entries      []GridEntry
 }
 
@@ -63,15 +66,24 @@ type Entry struct {
 // Grid is the race's score sheet: its championship and every driver that can be
 // scored in it.
 func (s *Service) Grid(ctx context.Context, eventID int64) (Grid, error) {
-	championship, err := s.championship(ctx, eventID)
+	return loadGrid(ctx, s.queries, eventID)
+}
+
+func loadGrid(ctx context.Context, queries dbgen.Querier, eventID int64) (Grid, error) {
+	championship, err := raceChampionship(ctx, queries, eventID)
 	if err != nil {
 		return Grid{}, err
 	}
-	rows, err := s.queries.ListRaceEligibleDrivers(ctx, eventID)
+	rows, err := queries.ListRaceEligibleDrivers(ctx, eventID)
 	if err != nil {
 		return Grid{}, fmt.Errorf("list drivers of race %d: %w", eventID, err)
 	}
-	grid := Grid{EventID: eventID, CategoryCode: championship.CategoryCode, CategoryName: championship.CategoryName}
+	grid := Grid{
+		EventID:      eventID,
+		CategoryCode: championship.CategoryCode,
+		CategoryName: championship.CategoryName,
+		RaceEndsAt:   championship.EndsAt.Time,
+	}
 	grid.Entries = make([]GridEntry, 0, len(rows))
 	for _, row := range rows {
 		grid.Entries = append(grid.Entries, GridEntry{
@@ -92,40 +104,64 @@ func (s *Service) Grid(ctx context.Context, eventID int64) (Grid, error) {
 // drivers, removes the ones left out and records the whole edit as one change,
 // attributed to the actor, in a single transaction.
 func (s *Service) Replace(ctx context.Context, eventID, actorUserID int64, entries []Entry) (Grid, error) {
-	grid, err := s.Grid(ctx, eventID)
-	if err != nil {
-		return Grid{}, err
-	}
-	changes, err := diff(grid, entries)
-	if err != nil {
-		return Grid{}, err
-	}
-	if len(changes) == 0 {
-		return grid, nil
-	}
-
-	err = s.transactor.InTx(ctx, func(queries dbgen.Querier) error {
-		if err := queries.SetScoreActor(ctx, strconv.FormatInt(actorUserID, 10)); err != nil {
-			return fmt.Errorf("declare score actor: %w", err)
-		}
-		logID, err := queries.CreateScoreChangeLog(ctx, dbgen.CreateScoreChangeLogParams{
-			EventID:     eventID,
-			ActorUserID: actorUserID,
-		})
-		if err != nil {
-			return fmt.Errorf("record change of race %d: %w", eventID, err)
-		}
-		for _, change := range changes {
-			if err := applyChange(ctx, queries, eventID, logID, change); err != nil {
-				return err
-			}
-		}
-		return nil
+	edit := scoreEdit{eventID: eventID, actorUserID: actorUserID, entries: entries}
+	err := s.transactor.InTx(ctx, func(queries dbgen.Querier) error {
+		return replaceScores(ctx, queries, edit)
 	})
 	if err != nil {
 		return Grid{}, translateWriteError(err)
 	}
 	return s.Grid(ctx, eventID)
+}
+
+type scoreEdit struct {
+	eventID     int64
+	actorUserID int64
+	entries     []Entry
+}
+
+// replaceScores diffs against the grid read under the race lock, so the audit
+// records the points the edit actually replaced. A race takes results only once
+// it has finished: results freeze its date (RC001), so loading them earlier would
+// lock the calendar on a guess.
+func replaceScores(ctx context.Context, queries dbgen.Querier, edit scoreEdit) error {
+	if err := queries.LockRaceScores(ctx, edit.eventID); err != nil {
+		return fmt.Errorf("lock scores of race %d: %w", edit.eventID, err)
+	}
+	grid, err := loadGrid(ctx, queries, edit.eventID)
+	if err != nil {
+		return err
+	}
+	if grid.RaceEndsAt.After(time.Now()) {
+		return domain.NewConflictError("eventId", "la carrera todavía no terminó: no tiene resultados para cargar")
+	}
+	changes, err := diff(grid, edit.entries)
+	if err != nil {
+		return err
+	}
+	if len(changes) == 0 {
+		return nil
+	}
+	return recordChanges(ctx, queries, edit, changes)
+}
+
+func recordChanges(ctx context.Context, queries dbgen.Querier, edit scoreEdit, changes []change) error {
+	if err := queries.SetScoreActor(ctx, strconv.FormatInt(edit.actorUserID, 10)); err != nil {
+		return fmt.Errorf("declare score actor: %w", err)
+	}
+	logID, err := queries.CreateScoreChangeLog(ctx, dbgen.CreateScoreChangeLogParams{
+		EventID:     edit.eventID,
+		ActorUserID: edit.actorUserID,
+	})
+	if err != nil {
+		return fmt.Errorf("record change of race %d: %w", edit.eventID, err)
+	}
+	for _, change := range changes {
+		if err := applyChange(ctx, queries, edit.eventID, logID, change); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Filter picks a championship. The season is a year and defaults to the latest
@@ -169,8 +205,8 @@ func optionalCategory(raw string) pgtype.Text {
 	return pgtype.Text{String: category, Valid: category != ""}
 }
 
-func (s *Service) championship(ctx context.Context, eventID int64) (dbgen.GetRaceChampionshipRow, error) {
-	row, err := s.queries.GetRaceChampionship(ctx, eventID)
+func raceChampionship(ctx context.Context, queries dbgen.Querier, eventID int64) (dbgen.GetRaceChampionshipRow, error) {
+	row, err := queries.GetRaceChampionship(ctx, eventID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return dbgen.GetRaceChampionshipRow{}, domain.ErrNotFound
 	}
@@ -206,11 +242,8 @@ func diff(grid Grid, entries []Entry) ([]change, error) {
 		if _, repeated := desired[entry.DriverID]; repeated {
 			return nil, domain.NewValidationError("entries", "no se puede repetir un piloto en la grilla")
 		}
-		if entry.Points == nil {
-			return nil, domain.NewValidationError("entries", "cada piloto necesita sus puntos")
-		}
-		if *entry.Points < 0 {
-			return nil, domain.NewValidationError("entries", "los puntos no pueden ser negativos")
+		if err := validatePoints(entry.Points); err != nil {
+			return nil, err
 		}
 		desired[entry.DriverID] = *entry.Points
 		order = append(order, entry.DriverID)
@@ -234,6 +267,33 @@ func diff(grid Grid, entries []Entry) ([]change, error) {
 		changes = append(changes, change{driverID: entry.DriverID, old: entry.Points})
 	}
 	return changes, nil
+}
+
+// maxPoints is the largest value score_entries.points (numeric(6, 2)) holds, and
+// the column keeps two decimals, so a third one would be rounded away unnoticed.
+const (
+	maxPoints        = 9999.99
+	pointsScale      = 100
+	decimalTolerance = 1e-9
+)
+
+func validatePoints(points *float64) error {
+	switch {
+	case points == nil:
+		return domain.NewValidationError("entries", "cada piloto necesita sus puntos")
+	case *points < 0:
+		return domain.NewValidationError("entries", "los puntos no pueden ser negativos")
+	case *points > maxPoints:
+		return domain.NewValidationError("entries", fmt.Sprintf("los puntos no pueden superar %.2f", maxPoints))
+	case !hasAtMostTwoDecimals(*points):
+		return domain.NewValidationError("entries", "los puntos admiten hasta dos decimales")
+	}
+	return nil
+}
+
+func hasAtMostTwoDecimals(points float64) bool {
+	scaled := points * pointsScale
+	return math.Abs(scaled-math.Round(scaled)) < decimalTolerance
 }
 
 func applyChange(ctx context.Context, queries dbgen.Querier, eventID, logID int64, change change) error {

@@ -136,11 +136,12 @@ func (q *Queries) DriverStandings(ctx context.Context, arg DriverStandingsParams
 const getRaceChampionship = `-- name: GetRaceChampionship :one
 
 SELECT c.id AS category_id, c.code AS category_code, c.name AS category_name,
-       ro.season_id
+       ro.season_id, e.ends_at
 FROM races r
+JOIN events e ON e.id = r.event_id
 JOIN rounds ro ON ro.id = r.round_id
 JOIN categories c ON c.id = ro.category_id
-WHERE r.event_id = $1
+WHERE r.event_id = $1 AND e.is_active AND ro.is_active
 `
 
 type GetRaceChampionshipRow struct {
@@ -148,12 +149,14 @@ type GetRaceChampionshipRow struct {
 	CategoryCode string
 	CategoryName string
 	SeasonID     int64
+	EndsAt       pgtype.Timestamptz
 }
 
 // Scores belong to a race (score_entries_race_fkey, 000016): an event without a
 // race has no grid. The audit trail (one score_change_log version plus its items)
 // is written by the service in the same transaction; the schema only demands an
 // actor through the guard of 000026.
+// A cancelled race has no grid: it never ran, so it takes no results.
 func (q *Queries) GetRaceChampionship(ctx context.Context, eventID int64) (GetRaceChampionshipRow, error) {
 	row := q.db.QueryRow(ctx, getRaceChampionship, eventID)
 	var i GetRaceChampionshipRow
@@ -162,6 +165,7 @@ func (q *Queries) GetRaceChampionship(ctx context.Context, eventID int64) (GetRa
 		&i.CategoryCode,
 		&i.CategoryName,
 		&i.SeasonID,
+		&i.EndsAt,
 	)
 	return i, err
 }
@@ -184,9 +188,7 @@ JOIN teams t ON t.id = a.team_id
 LEFT JOIN season_drivers sd
     ON sd.driver_id = d.id
    AND sd.category_id = ro.category_id
-   AND sd.season_id = (SELECT max(sd2.season_id)
-                       FROM season_drivers sd2
-                       WHERE sd2.driver_id = d.id AND sd2.category_id = ro.category_id)
+   AND sd.season_id = ro.season_id
 LEFT JOIN score_entries se ON se.event_id = r.event_id AND se.driver_id = d.id
 WHERE d.is_active AND t.category_id = ro.category_id
 ORDER BY t.name, d.last_name, d.first_name
@@ -204,7 +206,7 @@ type ListRaceEligibleDriversRow struct {
 }
 
 // The grid of a race: every driver whose team on the race date runs in its
-// championship, with the number they hold there and the points already loaded
+// championship, with the number they hold in that season and the points already loaded
 // (NULL when the driver has no entry yet). The service diffs against this.
 func (q *Queries) ListRaceEligibleDrivers(ctx context.Context, eventID int64) ([]ListRaceEligibleDriversRow, error) {
 	rows, err := q.db.Query(ctx, listRaceEligibleDrivers, eventID)
@@ -321,6 +323,17 @@ func (q *Queries) ListRaceResults(ctx context.Context, arg ListRaceResultsParams
 		return nil, err
 	}
 	return items, nil
+}
+
+const lockRaceScores = `-- name: LockRaceScores :exec
+SELECT 1 FROM races WHERE event_id = $1 FOR NO KEY UPDATE
+`
+
+// Two edits of the same race take turns, so each one diffs against the scores
+// the previous one left and the audit records the real old points.
+func (q *Queries) LockRaceScores(ctx context.Context, eventID int64) error {
+	_, err := q.db.Exec(ctx, lockRaceScores, eventID)
+	return err
 }
 
 const setScoreActor = `-- name: SetScoreActor :exec
