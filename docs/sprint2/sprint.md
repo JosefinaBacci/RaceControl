@@ -157,6 +157,9 @@ Esquema `000002`–`000026` ya aplicado. Puntos de la revisión del modelo:
       daba `500` o se redondeaba en silencio). La edición se calcula con la carrera bloqueada, así el
       log registra los puntos que de verdad reemplazó, y el número del piloto es el de la temporada
       de la carrera
+- [x] Historial de cambios de cada carrera para la FIA (`GET /events/{id}/scores/history`): fecha,
+      autor, publicación o corrección y los puntos de antes y después de cada piloto, debajo del
+      formulario de carga
 
 **Criterios de éxito**
 
