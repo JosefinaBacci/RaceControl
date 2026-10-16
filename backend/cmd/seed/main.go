@@ -50,4 +50,9 @@ func main() {
 		log.Fatalf("seed: %v", err)
 	}
 	log.Println("demo accounts seeded")
+
+	if err := runner.DemoScoreHistory(ctx); err != nil {
+		log.Fatalf("seed: %v", err)
+	}
+	log.Println("demo score history seeded")
 }

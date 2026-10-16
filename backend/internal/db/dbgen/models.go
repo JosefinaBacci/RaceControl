@@ -109,6 +109,25 @@ type Race struct {
 	EventKind string
 }
 
+type RaceScore struct {
+	EventID      int64
+	StartsAt     pgtype.Timestamptz
+	SeasonID     int64
+	SeasonYear   int32
+	CategoryID   int64
+	CategoryCode string
+	DriverID     int64
+	FirstName    string
+	LastName     string
+	CountryCode  string
+	DriverNumber pgtype.Int4
+	TeamID       int64
+	TeamCode     string
+	TeamName     string
+	Points       float64
+	Position     int32
+}
+
 type Round struct {
 	ID            int64
 	SeasonID      int64
@@ -154,6 +173,17 @@ type ScoreEntry struct {
 	Points    float64
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
+}
+
+type ScoreNotice struct {
+	ChangeLogID    int64
+	EventID        int64
+	ChangedAt      pgtype.Timestamptz
+	ActorUserID    int64
+	TeamID         int64
+	IsPublication  bool
+	AcknowledgedAt pgtype.Timestamptz
+	AcknowledgedBy pgtype.Int8
 }
 
 type Season struct {

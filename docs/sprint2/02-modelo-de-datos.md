@@ -110,8 +110,8 @@ producción; requiere `make db-reset`).
 - **Puntajes solo sobre carreras (B.1).** `score_entries` y `score_change_log` apuntan a
   `races (event_id)` en lugar de `events`: una prueba de neumáticos o un control técnico no pueden
   recibir puntos. Los acuses cuelgan del log, así que también quedan cubiertos. `notifications` sigue
-  apuntando a `events`: cualquier tipo de evento se puede notificar. B.2 (quién puede acusar) sigue
-  pendiente.
+  apuntando a `events`: cualquier tipo de evento se puede notificar. B.2 (quién puede acusar) se
+  resolvió en `000023` (§9).
 - **Ronda cancelada — la cierra el servicio (§8).** Nada en la base impide una carrera activa **sin
   resultados** sobre una ronda dada de baja; el servicio cancela la ronda y da de baja su carrera en
   la misma transacción, y no se agrega un trigger para esto (ver §8). Con resultados, la base lo
@@ -194,7 +194,7 @@ del servicio o una validación de entrada no lo justifican.
 - **Retroactividad de la asignación (US11, `000022`).** Un trigger nuevo y barato: una asignación
   solo puede extender el historial, porque el dato que protege (el equipo derivado de una carrera ya
   puntuada) ya existe. Ver §2.
-- **Auditoría de puntajes (US9, `000023`) — el guardia, no el armado.** La versión
+- **Auditoría de puntajes (US9, `000026`) — el guardia, no el armado.** La versión
   (`score_change_log` + sus ítems) la escribe el **servicio** en la misma transacción que toca
   `score_entries`; lo que la base garantiza es que ninguna escritura pasa sin declarar un autor
   (`SET LOCAL racecontrol.actor_id`, o falla con `RC005`). El trigger **no** arma la versión: agrupar
@@ -203,9 +203,48 @@ del servicio o una validación de entrada no lo justifican.
   escritor único (el servicio). La brecha queda documentada: un escritor por SQL crudo que declare un
   actor podría saltarse el log, el mismo caso de "SQL crudo" que §8 ya acepta en otras partes.
 
-Quedan para su user story (detalle en `docs/sprint2/sprint.md`): el tipo de notificación y la
-validación del acuse (US24). Se descartaron: guardar posición y estado
-(DNF, DSQ), porque la consigna solo pide puntajes y `000006` deriva la posición de los puntos;
+Los puntos pendientes de la revisión del modelo se resolvieron en su user story (detalle en
+`docs/sprint2/sprint.md`): el guardia de auditoría de puntajes (US9, `000026`), el cierre y la
+retroactividad de las asignaciones (US11, `000022`) y el tipo de notificación y la validación del
+acuse (US24, `000023`, resuelto en §9 sin tocar `notifications`). Se descartaron: guardar posición y
+estado (DNF, DSQ), porque la consigna solo pide puntajes y `000006` deriva la posición de los puntos;
 índices sin una query que los use; quitar las columnas `is_active`, que son convención del proyecto;
 y la zona horaria del circuito, que ninguna historia pide.
 
+## 9. Puntajes: clasificación, avisos y acuse (000023–000025)
+
+Migraciones aditivas sobre `000022` (no requieren `make db-reset`). Cubren US23 y US24.
+
+- **Posición y clasificación se calculan al leer.** La vista `race_scores` (`000024`) es cada
+  resultado de una carrera activa con su campeonato, el piloto, el equipo acreditado y la posición:
+  `RANK()` por puntos dentro de la carrera, así que dos pilotos con los mismos puntos comparten
+  posición (el apellido solo ordena la visualización). Los resultados por carrera, el campeonato de
+  pilotos y el de escuderías leen esa única definición. El de escuderías suma
+  `score_entries.team_id`, el equipo con el que el piloto corrió esa carrera (§4): si cambia de equipo,
+  sus puntos anteriores quedan en el equipo anterior. Los puntos se suman como `numeric` y se
+  convierten a número una sola vez, así el total coincide con lo que cargó el administrador.
+- **El aviso de puntajes se deriva, no se guarda.** La vista `score_notices` (`000025`) tiene una fila
+  por cambio de `score_change_log` y por escudería que figura en sus ítems: eso es lo que esa escudería
+  tiene que confirmar. El tipo es *publicación* si es el primer cambio de la carrera (orden
+  `(changed_at, id)`, así hay exactamente uno) y *corrección* si no. El estado es *confirmado* si
+  existe el acuse de (cambio, escudería) y *pendiente* si no. Se descartó lo que proponía el sprint
+  —agregar a `notifications` el tipo y el vínculo al cambio con unicidad (usuario, cambio)—: obligaba
+  a escribir una fila por usuario en cada cambio y mantenerla sincronizada, cuando el acuse es por
+  escudería y no por usuario. Derivado, US24 queda desacoplada de la carga de puntajes (US9):
+  cualquier cambio que se registre en el log aparece como aviso por sí solo. `notifications` queda
+  para avisos de otros eventos.
+- **Quién puede acusar (B.2, `000023`).** Un trigger `BEFORE INSERT` en `score_acknowledgements`
+  toma `team_id` del usuario que acusa e ignora el que mande quien escribe, así nadie confirma en
+  nombre de otra escudería; un administrador FIA no tiene escudería y nunca puede acusar. Además exige
+  que esa escudería figure en los ítems del cambio: una escudería solo confirma lo que la tocó. Un
+  cambio inexistente, uno de otra escudería y un usuario sin escudería fallan en el mismo chequeo con
+  `RC005`.
+- **`RC005` se responde con 404, no con 409 ni 400.** Para quien acusa, un cambio que no lo afecta no
+  existe, igual que un piloto de otra escudería en US11: distinguir "no existe" de "es de otra
+  escudería" revelaría los cambios ajenos.
+- **Acusar dos veces es idempotente.** `ON CONFLICT (change_log_id, team_id) DO NOTHING` conserva la
+  primera confirmación con su fecha, hora y usuario, y la respuesta es la misma. Un 409 no le sirve a
+  quien tocó dos veces el botón.
+- **Una corrección pide una confirmación nueva.** El acuse es por versión (`000009`): la confirmación
+  de la publicación queda en la publicación y la corrección aparece pendiente. La FIA ve, por cada
+  cambio, qué escuderías afectó y cuál confirmó, cuándo y quién.

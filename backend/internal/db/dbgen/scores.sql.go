@@ -66,6 +66,73 @@ func (q *Queries) DeleteScoreEntry(ctx context.Context, arg DeleteScoreEntryPara
 	return err
 }
 
+const driverStandings = `-- name: DriverStandings :many
+SELECT driver_id, first_name, last_name, country_code, driver_number,
+       (array_agg(team_id ORDER BY starts_at DESC))[1]::bigint AS team_id,
+       (array_agg(team_code ORDER BY starts_at DESC))[1]::text AS team_code,
+       (array_agg(team_name ORDER BY starts_at DESC))[1]::text AS team_name,
+       sum(points)::float8 AS points,
+       count(*)::integer AS races,
+       RANK() OVER (ORDER BY sum(points) DESC)::integer AS position
+FROM race_scores
+WHERE season_year = $1 AND category_code = $2
+GROUP BY driver_id, first_name, last_name, country_code, driver_number
+ORDER BY position, last_name, first_name, driver_id
+`
+
+type DriverStandingsParams struct {
+	SeasonYear   int32
+	CategoryCode string
+}
+
+type DriverStandingsRow struct {
+	DriverID     int64
+	FirstName    string
+	LastName     string
+	CountryCode  string
+	DriverNumber pgtype.Int4
+	TeamID       int64
+	TeamCode     string
+	TeamName     string
+	Points       float64
+	Races        int32
+	Position     int32
+}
+
+// A driver is listed under the team credited in their latest race of the
+// championship, the one they currently score for.
+func (q *Queries) DriverStandings(ctx context.Context, arg DriverStandingsParams) ([]DriverStandingsRow, error) {
+	rows, err := q.db.Query(ctx, driverStandings, arg.SeasonYear, arg.CategoryCode)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []DriverStandingsRow{}
+	for rows.Next() {
+		var i DriverStandingsRow
+		if err := rows.Scan(
+			&i.DriverID,
+			&i.FirstName,
+			&i.LastName,
+			&i.CountryCode,
+			&i.DriverNumber,
+			&i.TeamID,
+			&i.TeamCode,
+			&i.TeamName,
+			&i.Points,
+			&i.Races,
+			&i.Position,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getRaceChampionship = `-- name: GetRaceChampionship :one
 
 SELECT c.id AS category_id, c.code AS category_code, c.name AS category_name,
@@ -86,7 +153,7 @@ type GetRaceChampionshipRow struct {
 // Scores belong to a race (score_entries_race_fkey, 000016): an event without a
 // race has no grid. The audit trail (one score_change_log version plus its items)
 // is written by the service in the same transaction; the schema only demands an
-// actor through the guard of 000023.
+// actor through the guard of 000026.
 func (q *Queries) GetRaceChampionship(ctx context.Context, eventID int64) (GetRaceChampionshipRow, error) {
 	row := q.db.QueryRow(ctx, getRaceChampionship, eventID)
 	var i GetRaceChampionshipRow
@@ -97,67 +164,6 @@ func (q *Queries) GetRaceChampionship(ctx context.Context, eventID int64) (GetRa
 		&i.SeasonID,
 	)
 	return i, err
-}
-
-const listDriverStandings = `-- name: ListDriverStandings :many
-SELECT d.id AS driver_id, d.first_name, d.last_name, d.country_code,
-       t.id AS team_id, t.name AS team_name,
-       SUM(se.points)::float8 AS points
-FROM score_entries se
-JOIN races r ON r.event_id = se.event_id
-JOIN rounds ro ON ro.id = r.round_id
-JOIN seasons s ON s.id = ro.season_id
-JOIN categories c ON c.id = ro.category_id
-JOIN drivers d ON d.id = se.driver_id
-JOIN teams t ON t.id = se.team_id
-WHERE c.code = $1 AND s.year = $2
-GROUP BY d.id, d.first_name, d.last_name, d.country_code, t.id, t.name
-ORDER BY points DESC, d.last_name, d.first_name
-`
-
-type ListDriverStandingsParams struct {
-	CategoryCode string
-	SeasonYear   int32
-}
-
-type ListDriverStandingsRow struct {
-	DriverID    int64
-	FirstName   string
-	LastName    string
-	CountryCode string
-	TeamID      int64
-	TeamName    string
-	Points      float64
-}
-
-// Driver standings of a championship: the general classification is derived from
-// the entries, so it reflects every change with no recalculation to run.
-func (q *Queries) ListDriverStandings(ctx context.Context, arg ListDriverStandingsParams) ([]ListDriverStandingsRow, error) {
-	rows, err := q.db.Query(ctx, listDriverStandings, arg.CategoryCode, arg.SeasonYear)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []ListDriverStandingsRow{}
-	for rows.Next() {
-		var i ListDriverStandingsRow
-		if err := rows.Scan(
-			&i.DriverID,
-			&i.FirstName,
-			&i.LastName,
-			&i.CountryCode,
-			&i.TeamID,
-			&i.TeamName,
-			&i.Points,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }
 
 const listRaceEligibleDrivers = `-- name: ListRaceEligibleDrivers :many
@@ -229,15 +235,152 @@ func (q *Queries) ListRaceEligibleDrivers(ctx context.Context, eventID int64) ([
 	return items, nil
 }
 
+const listRaceResults = `-- name: ListRaceResults :many
+
+SELECT ce.id, ce.kind, ce.starts_at, ce.ends_at, ce.is_active, ce.deactivated_at, ce.round_id, ce.round_number, ce.gp_name, ce.control_type, ce.season_id, ce.season_year, ce.category_id, ce.category_code, ce.category_name, ce.circuit_id, ce.circuit_name, ce.country_code,
+       rs.driver_id, rs.first_name, rs.last_name, rs.country_code AS driver_country_code,
+       rs.driver_number, rs.team_id, rs.team_code, rs.team_name,
+       rs.points::float8 AS points, rs.position
+FROM race_scores rs
+JOIN calendar_events ce ON ce.id = rs.event_id
+WHERE ($1::integer IS NULL OR rs.season_year = $1::integer)
+  AND ($2::text IS NULL OR rs.category_code = $2::text)
+  AND ($3::bigint IS NULL OR rs.event_id = $3::bigint)
+ORDER BY ce.starts_at, ce.id, rs.position, rs.last_name, rs.first_name, rs.driver_id
+`
+
+type ListRaceResultsParams struct {
+	SeasonYear   pgtype.Int4
+	CategoryCode pgtype.Text
+	EventID      pgtype.Int8
+}
+
+type ListRaceResultsRow struct {
+	CalendarEvent     CalendarEvent
+	DriverID          int64
+	FirstName         string
+	LastName          string
+	DriverCountryCode string
+	DriverNumber      pgtype.Int4
+	TeamID            int64
+	TeamCode          string
+	TeamName          string
+	Points            float64
+	Position          int32
+}
+
+// Results and standings read the race_scores view (000024), so the position and
+// the championship of a result have a single definition. The race each row
+// belongs to is embedded from calendar_events (000021), which already composes
+// what identifies a race. Points leave the database as float8 only after they
+// were summed as numeric, so the totals are exact before the one conversion.
+func (q *Queries) ListRaceResults(ctx context.Context, arg ListRaceResultsParams) ([]ListRaceResultsRow, error) {
+	rows, err := q.db.Query(ctx, listRaceResults, arg.SeasonYear, arg.CategoryCode, arg.EventID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListRaceResultsRow{}
+	for rows.Next() {
+		var i ListRaceResultsRow
+		if err := rows.Scan(
+			&i.CalendarEvent.ID,
+			&i.CalendarEvent.Kind,
+			&i.CalendarEvent.StartsAt,
+			&i.CalendarEvent.EndsAt,
+			&i.CalendarEvent.IsActive,
+			&i.CalendarEvent.DeactivatedAt,
+			&i.CalendarEvent.RoundID,
+			&i.CalendarEvent.RoundNumber,
+			&i.CalendarEvent.GpName,
+			&i.CalendarEvent.ControlType,
+			&i.CalendarEvent.SeasonID,
+			&i.CalendarEvent.SeasonYear,
+			&i.CalendarEvent.CategoryID,
+			&i.CalendarEvent.CategoryCode,
+			&i.CalendarEvent.CategoryName,
+			&i.CalendarEvent.CircuitID,
+			&i.CalendarEvent.CircuitName,
+			&i.CalendarEvent.CountryCode,
+			&i.DriverID,
+			&i.FirstName,
+			&i.LastName,
+			&i.DriverCountryCode,
+			&i.DriverNumber,
+			&i.TeamID,
+			&i.TeamCode,
+			&i.TeamName,
+			&i.Points,
+			&i.Position,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const setScoreActor = `-- name: SetScoreActor :exec
 SELECT set_config('racecontrol.actor_id', $1::text, true)
 `
 
 // The actor travels as a transaction-local setting so the audit guard lets the
-// rows through (000023). set_config(..., true) reverts at COMMIT/ROLLBACK.
+// rows through (000026). set_config(..., true) reverts at COMMIT/ROLLBACK.
 func (q *Queries) SetScoreActor(ctx context.Context, actorID string) error {
 	_, err := q.db.Exec(ctx, setScoreActor, actorID)
 	return err
+}
+
+const teamStandings = `-- name: TeamStandings :many
+SELECT team_id, team_code, team_name,
+       sum(points)::float8 AS points,
+       RANK() OVER (ORDER BY sum(points) DESC)::integer AS position
+FROM race_scores
+WHERE season_year = $1 AND category_code = $2
+GROUP BY team_id, team_code, team_name
+ORDER BY position, team_name, team_id
+`
+
+type TeamStandingsParams struct {
+	SeasonYear   int32
+	CategoryCode string
+}
+
+type TeamStandingsRow struct {
+	TeamID   int64
+	TeamCode string
+	TeamName string
+	Points   float64
+	Position int32
+}
+
+func (q *Queries) TeamStandings(ctx context.Context, arg TeamStandingsParams) ([]TeamStandingsRow, error) {
+	rows, err := q.db.Query(ctx, teamStandings, arg.SeasonYear, arg.CategoryCode)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []TeamStandingsRow{}
+	for rows.Next() {
+		var i TeamStandingsRow
+		if err := rows.Scan(
+			&i.TeamID,
+			&i.TeamCode,
+			&i.TeamName,
+			&i.Points,
+			&i.Position,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const upsertScoreEntry = `-- name: UpsertScoreEntry :exec

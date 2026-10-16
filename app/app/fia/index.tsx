@@ -5,7 +5,8 @@ import { useSession } from '@/auth/SessionProvider';
 import { Button, Card, CardLink, Screen, StatRow, StatTile } from '@/components';
 import { useActiveAccountCount } from '@/data/accounts';
 import { useUpcomingEvents } from '@/data/calendar';
-import { usePendingAcknowledgements } from '@/data/hooks';
+import { usePendingSanctions } from '@/data/hooks';
+import { usePendingScoreConfirmations } from '@/data/scores';
 import { EventList } from '@/features/EventList';
 import { RemoteContent } from '@/features/RemoteContent';
 import { MockNotice } from '@/features/MockNotice';
@@ -14,7 +15,8 @@ import { spacing } from '@/theme';
 export default function FiaDashboardScreen() {
   const session = useSession();
   const { state: upcomingState, reload: reloadUpcoming } = useUpcomingEvents(4);
-  const pending = usePendingAcknowledgements();
+  const pendingSanctions = usePendingSanctions();
+  const pendingScores = usePendingScoreConfirmations();
   const activeAccounts = useActiveAccountCount();
 
   return (
@@ -22,8 +24,8 @@ export default function FiaDashboardScreen() {
       <MockNotice />
       <StatRow>
         <StatTile label="Próximos eventos" value={upcomingState.status === 'ready' ? upcomingState.data.length : 0} />
-        <StatTile label="Sanciones sin acuse" value={pending.sanctions} highlight={pending.sanctions > 0} />
-        <StatTile label="Puntajes sin acuse" value={pending.scores} highlight={pending.scores > 0} />
+        <StatTile label="Sanciones sin acuse" value={pendingSanctions} highlight={pendingSanctions > 0} />
+        <StatTile label="Puntajes sin acuse" value={pendingScores} highlight={pendingScores > 0} />
         <StatTile label="Cuentas activas" value={activeAccounts ?? '—'} />
       </StatRow>
       <Card title="Acciones rápidas">
@@ -31,7 +33,7 @@ export default function FiaDashboardScreen() {
           <Button label="Nuevo usuario" icon="person-add-outline" compact onPress={() => router.push('/fia/users/new', { withAnchor: true })} />
           <Button label="Cargar evento" icon="calendar-outline" variant="secondary" compact onPress={() => router.push('/fia/calendar')} />
           <Button label="Publicar puntajes" icon="trophy-outline" variant="secondary" compact onPress={() => router.push('/fia/results')} />
-          <Button label="Enviar comunicado" icon="megaphone-outline" variant="secondary" compact onPress={() => router.push('/fia/notifications')} />
+          <Button label="Acuses de puntajes" icon="checkmark-done-outline" variant="secondary" compact onPress={() => router.push('/fia/notifications')} />
         </View>
       </Card>
       <RemoteContent state={upcomingState} onRetry={reloadUpcoming}>

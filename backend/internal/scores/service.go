@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/racecontrol/backend/internal/db"
 	"github.com/racecontrol/backend/internal/db/dbgen"
@@ -19,6 +20,10 @@ type Transactor interface {
 	InTx(ctx context.Context, work func(queries dbgen.Querier) error) error
 }
 
+// Service reads the results, the standings and the score notices, and rewrites a
+// race's scores. None of the reads is stored: every position, total and notice
+// status is derived from the score entries, the change log and the
+// acknowledgements when it is read.
 type Service struct {
 	queries    dbgen.Querier
 	transactor Transactor
@@ -53,16 +58,6 @@ type Grid struct {
 type Entry struct {
 	DriverID int64
 	Points   *float64
-}
-
-type Standing struct {
-	DriverID    int64
-	FirstName   string
-	LastName    string
-	CountryCode string
-	TeamID      int64
-	TeamName    string
-	Points      float64
 }
 
 // Grid is the race's score sheet: its championship and every driver that can be
@@ -133,29 +128,45 @@ func (s *Service) Replace(ctx context.Context, eventID, actorUserID int64, entri
 	return s.Grid(ctx, eventID)
 }
 
-// DriverStandings is the general classification: points summed per driver. It is
-// derived from the entries, so a change reflects here with nothing to recompute.
-func (s *Service) DriverStandings(ctx context.Context, category string, seasonYear int32) ([]Standing, error) {
-	rows, err := s.queries.ListDriverStandings(ctx, dbgen.ListDriverStandingsParams{
-		CategoryCode: strings.ToLower(strings.TrimSpace(category)),
-		SeasonYear:   seasonYear,
-	})
+// Filter picks a championship. The season is a year and defaults to the latest
+// one; the category is a code such as f1.
+type Filter struct {
+	Season   string
+	Category string
+}
+
+// seasonYear resolves the requested year, or the latest season when none is
+// given. Without any season loaded it answers zero, which matches no result.
+func (s *Service) seasonYear(ctx context.Context, raw string) (int32, error) {
+	raw = strings.TrimSpace(raw)
+	if raw != "" {
+		return parseSeason(raw)
+	}
+	season, err := s.queries.LatestSeason(ctx)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return 0, nil
+	}
 	if err != nil {
-		return nil, fmt.Errorf("list driver standings: %w", err)
+		return 0, fmt.Errorf("load latest season: %w", err)
 	}
-	standings := make([]Standing, 0, len(rows))
-	for _, row := range rows {
-		standings = append(standings, Standing{
-			DriverID:    row.DriverID,
-			FirstName:   row.FirstName,
-			LastName:    row.LastName,
-			CountryCode: row.CountryCode,
-			TeamID:      row.TeamID,
-			TeamName:    row.TeamName,
-			Points:      row.Points,
-		})
+	return season.Year, nil
+}
+
+func parseSeason(raw string) (int32, error) {
+	year, err := strconv.ParseInt(raw, 10, 32)
+	if err != nil {
+		return 0, domain.NewValidationError("season", "la temporada es un año, por ejemplo 2026")
 	}
-	return standings, nil
+	return int32(year), nil
+}
+
+func normalizedCategory(raw string) string {
+	return strings.ToLower(strings.TrimSpace(raw))
+}
+
+func optionalCategory(raw string) pgtype.Text {
+	category := normalizedCategory(raw)
+	return pgtype.Text{String: category, Valid: category != ""}
 }
 
 func (s *Service) championship(ctx context.Context, eventID int64) (dbgen.GetRaceChampionshipRow, error) {

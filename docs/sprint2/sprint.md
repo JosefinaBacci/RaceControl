@@ -15,8 +15,8 @@ en verde y un commit por cambio lógico.
 | US11 | Gestión de pilotos | 5 | 13 | 5h | | ☑ |
 | US12 | Visualización de pilotos | 3 | 13 | 4h | | ☑ |
 | US9 | Gestión de puntajes | 3 | 8 | 3.5h | | ☑ |
-| US23 | Visualización de puntajes | 5 | 13 | 5h | | ☐ |
-| US24 | Visualización y confirmación de recibo de puntajes | 5 | 13 | 6h | | ☐ |
+| US23 | Visualización de puntajes | 5 | 13 | 5h | | ☑ |
+| US24 | Visualización y confirmación de recibo de puntajes | 5 | 13 | 6h | | ☑ |
 | US17 | Mensajería interna segura | 8 | 21 | 10h | | ☐ |
 
 **Total estimado:** 42h
@@ -28,13 +28,13 @@ pilotos tienen que existir antes de cargar un resultado.
 
 ---
 
-## Modelo de datos (transversal) ◐
+## Modelo de datos (transversal) ☑
 
-Esquema `000002`–`000023` ya aplicado. Pendiente de la revisión del modelo:
+Esquema `000002`–`000026` ya aplicado. Puntos de la revisión del modelo:
 
 - [x] §A.6: catálogo `circuits` y eliminación de `events.name` (se edita `000016`, requiere `make db-reset`)
 - [x] F6 / B.1: puntaje solo sobre carreras (`score_entries` y `score_change_log` → `races`)
-- [ ] F6 / B.2: acuse solo de un admin de esa escudería (se hace con US24)
+- [x] F6 / B.2: acuse solo de un admin de esa escudería (`000023`, con US24; `02-modelo-de-datos.md` §9)
 - [x] `000018`: categoría del equipo = categoría de la carrera, un ítem por piloto en cada cambio,
       evento con duración positiva, nombres de `season_drivers` (F8)
 - [x] F8: renombrar los triggers de `season_drivers` (hecho por `000018`/`000019`; quedan
@@ -54,7 +54,7 @@ Esquema `000002`–`000023` ya aplicado. Pendiente de la revisión del modelo:
 - [x] Servicio: alta, modificación y baja de eventos (evento + hija en una transacción). La baja de
       una carrera da de baja también su ronda, para no dejar una carrera activa sobre una ronda
       cancelada (`02-modelo-de-datos.md` §8)
-- [x] Validaciones: campos obligatorios, `ends_at >= starts_at`, ronda única por campeonato,
+- [x] Validaciones: campos obligatorios, `ends_at > starts_at` (`000018`), ronda única por campeonato,
       fecha congelada si la carrera ya tiene resultados (`409`)
 - [x] Endpoints restringidos a `fia_admin`; lectura pública
 - [x] Pantalla de gestión del calendario (crear, editar, eliminar con confirmación)
@@ -118,8 +118,8 @@ Esquema `000002`–`000023` ya aplicado. Pendiente de la revisión del modelo:
 
 *Est. 4h · SP 3 · Valor 13*
 
-- [x] Listado público de pilotos agrupado por escudería (alineación vigente)
-      (depende de poder terminar una asignación, ver US11)
+- [x] Listado público de pilotos agrupado por escudería (alineación vigente; una asignación ya se
+      puede terminar con la fila de baja de `000022`, ver US11)
 - [x] Vista de detalle de cada piloto
 - [x] Búsqueda y filtros
 - [x] Acceso de solo lectura para todos los usuarios
@@ -141,11 +141,14 @@ Esquema `000002`–`000023` ya aplicado. Pendiente de la revisión del modelo:
 - [x] Recalcular la clasificación general al modificar un puntaje
 - [x] Restringir a `fia_admin` y registrar fecha y autor de cada modificación (`score_change_log`)
 - [x] Modelo: nada impide cambiar `score_entries` sin declarar quién lo hizo. Guardia de auditoría
-      (`000023`, `RC005`): ninguna escritura pasa sin `SET LOCAL racecontrol.actor_id`. La versión
+      (`000026`, `RC005`): ninguna escritura pasa sin `SET LOCAL racecontrol.actor_id`. La versión
       (`score_change_log` + sus ítems) la arma el **servicio** en la misma transacción, no el trigger:
       agrupar las filas de una edición exigía estado entre filas (un `change_log_id` local o tablas de
       transición), más maquinaria de la que la auditoría vale (`02-modelo-de-datos.md` §8)
 - [x] Traducir `RC002` (piloto de otra categoría que la carrera) a un 4xx
+- [ ] Decidir si se guarda el orden de llegada: hoy la posición se deriva de los puntos (`RANK()` en
+      la vista `race_scores`, `000024`), así que todos los pilotos que terminan fuera de los puntos
+      comparten la misma posición. Si se carga el orden, `race_scores` debe ordenar por él
 
 **Criterios de éxito**
 
@@ -159,39 +162,45 @@ Esquema `000002`–`000023` ya aplicado. Pendiente de la revisión del modelo:
 
 *Est. 5h · SP 5 · Valor 13*
 
-- [ ] Vista pública de resultados por carrera
-- [ ] Clasificación del campeonato de pilotos y de escuderías
-- [ ] Filtro de carrera
-- [ ] Acceso público sin iniciar sesión
+- [x] Vista pública de resultados por carrera (`GET /results`, `GET /results/{id}`)
+- [x] Clasificación del campeonato de pilotos y de escuderías (`GET /standings`, calculada sobre la
+      vista `race_scores` de `000024`; los empates comparten posición)
+- [x] Filtro de carrera
+- [x] Acceso público sin iniciar sesión
 
 **Criterios de éxito**
 
-- [ ] Cualquier persona puede ver los puntajes de cada carrera sin iniciar sesión
-- [ ] Se muestra la clasificación acumulada de pilotos y escuderías
-- [ ] Los puntajes mostrados coinciden con los cargados por el administrador
+- [x] Cualquier persona puede ver los puntajes de cada carrera sin iniciar sesión
+- [x] Se muestra la clasificación acumulada de pilotos y escuderías
+- [x] Los puntajes mostrados coinciden con los cargados por el administrador
 
 ## US24 — Visualización y confirmación de recibo de puntajes
 
 *Est. 6h · SP 5 · Valor 13*
 
-- [ ] Vista de puntajes para el responsable de escudería
-- [ ] Notificación al publicar o modificar puntajes
-- [ ] Modelo: una notificación solo apunta al evento, así que no distingue "publicado" de
+- [x] Vista de puntajes para el responsable de escudería (pestaña Puntajes)
+- [x] Notificación al publicar o modificar puntajes (`GET /team/score-notices`)
+- [x] ~~Modelo: una notificación solo apunta al evento, así que no distingue "publicado" de
       "corregido". Agregar el tipo y el vínculo al cambio de puntajes que anuncia (como el acuse), con
-      la unicidad por (usuario, cambio). **No** `UNIQUE (user_id, event_id)`: bloquearía avisar una
-      corrección
-- [ ] Modelo (F6 / B.2): el acuse toma la escudería del usuario que acusa (trigger que la deriva, un
-      admin FIA no tiene) y exige que esa escudería figure en los ítems del cambio acusado
-- [ ] Botón de confirmación de recibo y su estado (pendiente / confirmada)
-- [ ] Vista de seguimiento de confirmaciones para el administrador
+      la unicidad por (usuario, cambio).~~ Resuelto por derivación, sin columnas nuevas en
+      `notifications`: la vista `score_notices` (`000025`) arma un aviso por cambio de
+      `score_change_log` y por escudería afectada, *publicación* si es el primer cambio de la carrera y
+      *corrección* si no (`02-modelo-de-datos.md` §9)
+- [x] Modelo (F6 / B.2): el acuse toma la escudería del usuario que acusa (trigger que la deriva, un
+      admin FIA no tiene) y exige que esa escudería figure en los ítems del cambio acusado (`000023`,
+      `RC005`)
+- [x] Botón de confirmación de recibo y su estado (pendiente / confirmada)
+      (`POST /team/score-notices/{id}/acknowledgement`, idempotente)
+- [x] Vista de seguimiento de confirmaciones para el administrador (`GET /score-changes`, pestaña
+      Acuses)
 
 **Criterios de éxito**
 
-- [ ] El responsable de escudería ve los puntajes de cada carrera
-- [ ] Recibe una notificación cuando se publican o modifican los resultados
-- [ ] Puede confirmar la recepción, y la confirmación queda registrada con fecha y hora
-- [ ] El estado de la notificación (pendiente o confirmada) es visible
-- [ ] El administrador puede ver qué escuderías confirmaron
+- [x] El responsable de escudería ve los puntajes de cada carrera
+- [x] Recibe una notificación cuando se publican o modifican los resultados
+- [x] Puede confirmar la recepción, y la confirmación queda registrada con fecha y hora
+- [x] El estado de la notificación (pendiente o confirmada) es visible
+- [x] El administrador puede ver qué escuderías confirmaron
 
 ## US17 — Mensajería interna segura
 

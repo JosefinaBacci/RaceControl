@@ -8,13 +8,13 @@ export default function TeamInboxScreen() {
   const { items, acknowledge } = useTeamInbox(useSession().user?.teamId ?? null);
 
   return (
-    <Screen title="Acuses de recibo" subtitle="Confirmá a la FIA que tomaste conocimiento de sanciones y puntajes.">
+    <Screen title="Acuses de recibo" subtitle="Confirmá a la FIA que tomaste conocimiento de las sanciones. Los puntajes se confirman en Notificaciones.">
       <MockNotice />
-      <Card title="Sanciones y puntajes">
+      <Card title="Sanciones">
         {items.map((item, index) => (
           <ListItem
             key={item.key}
-            leading={<Badge label={item.kind} tone={item.kind === 'Sanción' ? 'danger' : 'info'} />}
+            leading={<Badge label="Sanción" tone="danger" />}
             title={item.title}
             subtitle={item.detail}
             trailing={

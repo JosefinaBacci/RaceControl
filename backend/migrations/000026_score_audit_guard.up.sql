@@ -1,4 +1,4 @@
--- 000023_score_audit_guard: a score change has to declare who made it. The audit
+-- 000026_score_audit_guard: a score change has to declare who made it. The audit
 -- trail (one score_change_log version plus its per-driver items) is written by the
 -- service in the same transaction as the entries; what the schema guarantees is
 -- the weaker, cheap invariant: nothing writes score_entries without stating an

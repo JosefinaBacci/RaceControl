@@ -23,6 +23,16 @@ func Timestamptz(value time.Time) pgtype.Timestamptz {
 	return pgtype.Timestamptz{Time: value, Valid: true}
 }
 
+// Int8 wraps an int64 as a non-null bigint parameter.
+func Int8(value int64) pgtype.Int8 {
+	return pgtype.Int8{Int64: value, Valid: true}
+}
+
+// Int4 wraps an int32 as a non-null integer parameter.
+func Int4(value int32) pgtype.Int4 {
+	return pgtype.Int4{Int32: value, Valid: true}
+}
+
 // TextPointer converts a nullable text into nil or a pointer to its value.
 func TextPointer(value pgtype.Text) *string {
 	if !value.Valid {

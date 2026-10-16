@@ -11,6 +11,10 @@ import (
 )
 
 type Querier interface {
+	// The team is derived from the user by a trigger that also refuses a change the
+	// team is not part of (000023, RC005). Acknowledging again keeps the first
+	// confirmation, so the call is idempotent.
+	AcknowledgeScoreChange(ctx context.Context, arg AcknowledgeScoreChangeParams) error
 	CategoryIDByCode(ctx context.Context, code string) (int64, error)
 	CircuitExists(ctx context.Context, id int64) (bool, error)
 	CountFailuresSinceLastSuccess(ctx context.Context, arg CountFailuresSinceLastSuccessParams) (int64, error)
@@ -30,6 +34,9 @@ type Querier interface {
 	DeactivateRound(ctx context.Context, id int64) error
 	DeactivateUser(ctx context.Context, id int64) error
 	DeleteScoreEntry(ctx context.Context, arg DeleteScoreEntryParams) error
+	// A driver is listed under the team credited in their latest race of the
+	// championship, the one they currently score for.
+	DriverStandings(ctx context.Context, arg DriverStandingsParams) ([]DriverStandingsRow, error)
 	GetAccount(ctx context.Context, id int64) (GetAccountRow, error)
 	GetActiveDriver(ctx context.Context, driverID int64) (GetActiveDriverRow, error)
 	GetActiveSessionByTokenHash(ctx context.Context, arg GetActiveSessionByTokenHashParams) (GetActiveSessionByTokenHashRow, error)
@@ -37,7 +44,7 @@ type Querier interface {
 	// Scores belong to a race (score_entries_race_fkey, 000016): an event without a
 	// race has no grid. The audit trail (one score_change_log version plus its items)
 	// is written by the service in the same transaction; the schema only demands an
-	// actor through the guard of 000023.
+	// actor through the guard of 000026.
 	GetRaceChampionship(ctx context.Context, eventID int64) (GetRaceChampionshipRow, error)
 	GetTeamDriver(ctx context.Context, arg GetTeamDriverParams) (GetTeamDriverRow, error)
 	GetUserByUsername(ctx context.Context, lower string) (User, error)
@@ -53,13 +60,17 @@ type Querier interface {
 	// (000021), so the list and the detail share a single definition.
 	ListCalendarEvents(ctx context.Context, arg ListCalendarEventsParams) ([]CalendarEvent, error)
 	ListCircuits(ctx context.Context) ([]ListCircuitsRow, error)
-	// Driver standings of a championship: the general classification is derived from
-	// the entries, so it reflects every change with no recalculation to run.
-	ListDriverStandings(ctx context.Context, arg ListDriverStandingsParams) ([]ListDriverStandingsRow, error)
 	// The grid of a race: every driver whose team on the race date runs in its
 	// championship, with the number they hold there and the points already loaded
 	// (NULL when the driver has no entry yet). The service diffs against this.
 	ListRaceEligibleDrivers(ctx context.Context, eventID int64) ([]ListRaceEligibleDriversRow, error)
+	// Results and standings read the race_scores view (000024), so the position and
+	// the championship of a result have a single definition. The race each row
+	// belongs to is embedded from calendar_events (000021), which already composes
+	// what identifies a race. Points leave the database as float8 only after they
+	// were summed as numeric, so the totals are exact before the one conversion.
+	ListRaceResults(ctx context.Context, arg ListRaceResultsParams) ([]ListRaceResultsRow, error)
+	ListScoreChangeAcknowledgements(ctx context.Context) ([]ListScoreChangeAcknowledgementsRow, error)
 	ListSeasons(ctx context.Context) ([]ListSeasonsRow, error)
 	// The lineup of a team: the drivers whose latest assignment points at that team
 	// (000007, 000022). A release makes the latest assignment teamless, so the driver
@@ -67,6 +78,11 @@ type Querier interface {
 	// category for the latest season (000011, 000019); a scalar subquery keeps it
 	// nullable for a driver without a number yet.
 	ListTeamDrivers(ctx context.Context, teamID pgtype.Int8) ([]ListTeamDriversRow, error)
+	ListTeamScoreChangeItems(ctx context.Context, arg ListTeamScoreChangeItemsParams) ([]ListTeamScoreChangeItemsRow, error)
+	// Score notices are derived from the change log by the score_notices view
+	// (000025): a team is notified of every change whose items touched it, newest
+	// first. The race is embedded from calendar_events, like in the results.
+	ListTeamScoreNotices(ctx context.Context, arg ListTeamScoreNoticesParams) ([]ListTeamScoreNoticesRow, error)
 	ListTeams(ctx context.Context) ([]ListTeamsRow, error)
 	ReactivateUser(ctx context.Context, id int64) error
 	ReleaseAssignment(ctx context.Context, driverID int64) error
@@ -74,10 +90,11 @@ type Querier interface {
 	RevokeUserSessions(ctx context.Context, arg RevokeUserSessionsParams) error
 	SeasonYear(ctx context.Context, id int64) (int32, error)
 	// The actor travels as a transaction-local setting so the audit guard lets the
-	// rows through (000023). set_config(..., true) reverts at COMMIT/ROLLBACK.
+	// rows through (000026). set_config(..., true) reverts at COMMIT/ROLLBACK.
 	SetScoreActor(ctx context.Context, actorID string) error
 	TeamCategory(ctx context.Context, id int64) (int64, error)
 	TeamExists(ctx context.Context, id int64) (bool, error)
+	TeamStandings(ctx context.Context, arg TeamStandingsParams) ([]TeamStandingsRow, error)
 	TouchSession(ctx context.Context, arg TouchSessionParams) error
 	UpdateAccount(ctx context.Context, arg UpdateAccountParams) error
 	UpdateDriver(ctx context.Context, arg UpdateDriverParams) error

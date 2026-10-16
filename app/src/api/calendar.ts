@@ -1,4 +1,4 @@
-import { apiBaseUrl, apiRequest } from './client';
+import { apiRequest, queryString } from './client';
 
 export type EventKind = 'race' | 'tyre_test' | 'technical_control';
 
@@ -101,12 +101,4 @@ export function updateEvent(id: number, changes: EventChanges): Promise<Calendar
 
 export function cancelEvent(id: number): Promise<CalendarEvent> {
   return apiRequest<CalendarEvent>('DELETE', `/events/${id}`);
-}
-
-function queryString(filter: EventFilter): string {
-  const params = { category: filter.category, kind: filter.kind, period: filter.period };
-  const pairs = Object.entries(params)
-    .filter((entry): entry is [string, string] => Boolean(entry[1]))
-    .map(([key, value]) => `${key}=${encodeURIComponent(value)}`);
-  return pairs.length > 0 ? `?${pairs.join('&')}` : '';
 }

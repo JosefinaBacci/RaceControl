@@ -34,7 +34,7 @@ func Pool(t *testing.T) *pgxpool.Pool {
 }
 
 // RunAsScoreActor runs work in a transaction that declares a score actor, so the
-// audit guard (000023) lets writes to score_entries through.
+// audit guard (000026) lets writes to score_entries through.
 func RunAsScoreActor(ctx context.Context, pool *pgxpool.Pool, work func(tx pgx.Tx) error) error {
 	return pgx.BeginFunc(ctx, pool, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, `SELECT set_config('racecontrol.actor_id', 'test', true)`); err != nil {

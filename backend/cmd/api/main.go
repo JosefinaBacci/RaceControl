@@ -75,15 +75,18 @@ func buildRouter(cfg config.Config, pool *pgxpool.Pool) (http.Handler, error) {
 		AbsoluteTTL: cfg.Sessions.Absolute,
 	})
 
+	scoreService := scores.NewService(queries, db.NewTransactor(pool))
 	return transport.NewRouter(transport.Dependencies{
-		Pool:              pool,
-		Authenticator:     auth.NewAuthenticator(queries, hasher, sessionService),
-		Sessions:          sessionService,
-		Users:             users.NewService(queries, db.NewTransactor(pool), hasher),
-		Teams:             teams.NewService(queries),
-		Calendar:          calendar.NewService(queries, db.NewTransactor(pool)),
-		Drivers:           drivers.NewService(queries, db.NewTransactor(pool)),
-		Scores:            scores.NewService(queries, db.NewTransactor(pool)),
+		Pool:          pool,
+		Authenticator: auth.NewAuthenticator(queries, hasher, sessionService),
+		Sessions:      sessionService,
+		Users:         users.NewService(queries, db.NewTransactor(pool), hasher),
+		Teams:         teams.NewService(queries),
+		Calendar:      calendar.NewService(queries, db.NewTransactor(pool)),
+		Drivers:       drivers.NewService(queries, db.NewTransactor(pool)),
+		Scores:        scoreService,
+		ScoreNotices:  scoreService,
+
 		Cookie:            transport.CookieConfig{Secure: cfg.IsProduction(), MaxAge: cfg.Sessions.Absolute},
 		AllowedOrigins:    cfg.CORSAllowedOrigins,
 		TrustProxyHeaders: cfg.TrustProxyHeaders,

@@ -1,4 +1,4 @@
-import { apiBaseUrl } from '@/api/client';
+import { apiBaseUrl, queryString } from '@/api/client';
 import { getEvent, listCircuits, listEvents, listSeasons, type EventFilter } from '@/api/calendar';
 import { useReloadOnFocus } from '@/data/useReloadOnFocus';
 import { useRemote } from '@/data/useRemote';
@@ -37,11 +37,6 @@ export function useEventForm(id?: number) {
 }
 
 export function calendarDownloadUrl(format: 'ics' | 'pdf', filter: EventFilter = {}): string {
-  const params = new URLSearchParams();
-  if (filter.category) params.set('category', filter.category);
-  if (filter.kind) params.set('kind', filter.kind);
-  if (filter.period) params.set('period', filter.period);
-  const query = params.toString();
   const path = format === 'ics' ? '/calendar.ics' : '/calendar.pdf';
-  return `${apiBaseUrl}${path}${query ? `?${query}` : ''}`;
+  return `${apiBaseUrl}${path}${queryString(filter)}`;
 }
