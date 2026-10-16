@@ -249,3 +249,49 @@ Migraciones aditivas sobre `000022` (no requieren `make db-reset`). Cubren US23 
 - **Una corrección pide una confirmación nueva.** El acuse es por versión (`000009`): la confirmación
   de la publicación queda en la publicación y la corrección aparece pendiente. La FIA ve, por cada
   cambio, qué escuderías afectó y cuál confirmó, cuándo y quién.
+
+## 10. Mensajería (000028)
+
+Migración aditiva sobre `000027` (no requiere `make db-reset`). Cubre US17.
+
+- **Una conversación es un hilo entre una escudería y la FIA.** `conversations` guarda la escudería,
+  el asunto y quién la abrió; `messages`, cada mensaje con su autor. Los participantes no se guardan:
+  son los administradores activos de esa escudería más todos los administradores FIA activos. Es el
+  canal institucional entre las dos partes ("entre ambas partes"), así que si un responsable de
+  escudería deja el cargo el hilo no queda huérfano y quien lo reemplaza lo ve entero. Cualquiera de
+  los dos lados puede abrirla: un administrador de escudería siempre con su propia escudería (el
+  `teamId` que mande se ignora, igual que el equipo del acuse en §9) y un administrador FIA eligiendo
+  la escudería, que tiene que existir.
+- **Solo los participantes acceden (defensa en profundidad).** El servicio acota toda lectura y toda
+  escritura por la escudería de quien llama (un administrador FIA no tiene escudería y ve todas). La
+  función `is_conversation_participant` define lo mismo en la base, y dos triggers `BEFORE INSERT`
+  rechazan con `RC007` a quien abra una conversación o escriba en ella sin participar: un
+  administrador de otra escudería o una cuenta desactivada.
+- **`RC007` y una conversación ajena se responden con 404.** Como en §9, distinguir "no existe" de
+  "es de otra escudería" revelaría las conversaciones ajenas: tampoco aparecen en sus bandejas.
+- **Los mensajes son de solo agregado.** Lo dicho no se edita ni se borra: `messages` reusa el guardia
+  `reject_mutation` de las tablas de auditoría (`000017`), y las claves foráneas son `ON DELETE
+  RESTRICT`, sin cascadas sobre el historial.
+- **No leído se deriva, no se guarda.** `conversation_reads` es un cursor por usuario y conversación:
+  el último mensaje que vio. Un mensaje está sin leer para un participante si es posterior a su cursor
+  y no lo escribió él. Abrir la conversación mueve el cursor al último mensaje que se le mostró; es
+  idempotente y nunca retrocede. No se escribe en `notifications`, por lo mismo que en §9: una fila por
+  usuario y mensaje habría que mantenerla sincronizada, y un administrador nuevo de la escudería no
+  tendría las suyas. La clave foránea compuesta `(conversation_id, last_read_message_id)` impide un
+  cursor sobre un mensaje de otra conversación.
+- **El orden es el id, y el id sigue al commit.** El cursor compara ids, así que agregar un mensaje
+  bloquea primero la fila de su conversación y recién después toma el id: dentro de un hilo, un id
+  menor siempre se confirma antes y el cursor nunca saltea un mensaje que se confirma tarde.
+- **Bandejas.** *Entrada* es toda conversación en la que participa, con la actividad más reciente
+  primero, la cantidad de no leídos de cada una y el total para la insignia de la pestaña. *Enviados*
+  son las conversaciones en las que escribió al menos un mensaje. El total de no leídos cubre siempre
+  todas las conversaciones, se muestre la bandeja que se muestre.
+- **Entradas validadas.** El servicio recorta los espacios y exige asunto (hasta 120 caracteres) y
+  mensaje (hasta 4000) no vacíos, y rechaza el carácter NUL; los `CHECK` de la tabla repiten los mismos
+  límites. El cuerpo es texto plano y la app lo muestra como texto, nunca como HTML. Todo el SQL es
+  parametrizado (`sqlc`).
+- **Conexión cifrada (criterio 3).** El TLS termina en el proxy del despliegue; la API responde con
+  HSTS (`Strict-Transport-Security`, también en los endpoints de mensajería, cubierto por un test) y en
+  producción la cookie de sesión es `Secure` y `HttpOnly`, así que el navegador nunca la manda por
+  HTTP plano. Junto con la autenticación obligatoria (sin sesión, `401` en todos los endpoints), la
+  autorización por participante y la validación, eso es lo que hace segura la transmisión.

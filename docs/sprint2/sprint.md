@@ -217,12 +217,12 @@ Esquema `000002`–`000026` ya aplicado. Puntos de la revisión del modelo:
 
 *Est. 10h · SP 8 · Valor 21*
 
-- [ ] Modelo de conversaciones y mensajes (migración nueva)
-- [ ] Envío de mensajes entre responsables de escudería y administradores
-- [ ] Bandeja de entrada, enviados y lectura de mensajes
-- [ ] Seguridad: autorización por participante, validación de entradas, conexión cifrada
-- [ ] Indicador de no leídos y marcado como leído
-- [ ] Pruebas de envío, recepción y acceso no autorizado
+- [x] Modelo de conversaciones y mensajes (migración nueva: `000028`; `02-modelo-de-datos.md` §10)
+- [x] Envío de mensajes entre responsables de escudería y administradores
+- [x] Bandeja de entrada, enviados y lectura de mensajes
+- [x] Seguridad: autorización por participante, validación de entradas, conexión cifrada
+- [x] Indicador de no leídos y marcado como leído
+- [x] Pruebas de envío, recepción y acceso no autorizado
 
 **Criterios de éxito**
 

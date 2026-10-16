@@ -1332,3 +1332,35 @@ número del piloto en la grilla es el de la temporada de la carrera, no el últi
 `docs/sprint2/{sprint,02-modelo-de-datos}.md`. `make check` en verde.
 
 ---
+
+### 2026-10-16 — Mensajería interna segura (US17)
+
+**Contexto:** US17 pide que los responsables de escudería y los administradores de la FIA se envíen
+mensajes dentro de la plataforma, con acceso solo para los participantes, entradas validadas,
+transmisión segura e indicador de no leídos.
+
+**Prompt:**
+
+> Implementar US17: una conversación es un hilo entre una escudería y la FIA con asunto; participan
+> los administradores activos de la escudería y todos los de la FIA. Migración `000028` solo DDL con
+> mensajes de solo agregado, cursor de lectura por usuario y un guardia `RC007` que rechace a quien no
+> participa; el servicio también lo verifica y responde 404. No leídos derivados, sin escribir en
+> `notifications`. Bandejas de entrada y enviados, validación en español, seed de demo, pestaña
+> "Mensajes" con insignia para escudería y FIA, tests de envío, recepción y acceso no autorizado.
+
+**Respuesta de la IA:** tablas `conversations`, `messages` y `conversation_reads` con la función
+`is_conversation_participant` compartida por los dos guardias; agregar un mensaje bloquea la
+conversación antes de tomar el id para que el cursor nunca saltee uno que se confirma tarde. Paquete
+`internal/messaging` y endpoints `/conversations` (lista con `box`, alta, lectura que marca leído y
+respuesta). Seed `demo_messages.sql` con el mismo resguardo que la de puntajes. En la app, pestaña
+"Mensajes" con pila (lista, conversación, nueva) y un proveedor de no leídos que actualiza la
+insignia; el selector de escudería del formulario de cuentas se extrajo para reusarlo.
+
+**Resultado:** `backend/migrations/000028_*`, `backend/sql/messages.sql`, `backend/internal/messaging/`,
+`backend/internal/transport/messaging_handlers.go`, `backend/seeds/demo_messages.sql`,
+`backend/tests/db/{messaging_guard,demo_messages_seed}_test.go`,
+`backend/tests/transport/messaging_integration_test.go`, `app/app/{team,fia}/messages/`,
+`app/src/{api/messages.ts,data/messages.ts,data/UnreadMessagesProvider.tsx,features/messages/,features/TeamPicker.tsx}`,
+`docs/sprint2/{sprint,02-modelo-de-datos}.md`. `make check` en verde.
+
+---
