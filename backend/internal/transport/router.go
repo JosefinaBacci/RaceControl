@@ -30,6 +30,7 @@ type Dependencies struct {
 	Drivers           DriverManager
 	Scores            ScoreBoard
 	ScoreNotices      ScoreNoticeManager
+	Messenger         Messenger
 	Cookie            CookieConfig
 	AllowedOrigins    []string
 	TrustProxyHeaders bool
@@ -110,6 +111,15 @@ func NewRouter(deps Dependencies) http.Handler {
 	})
 	router.With(sessionGuard.RequireSession, sessionGuard.RequireRole(domain.RoleFIAAdmin)).
 		Get("/score-changes", noticeRoutes.changes)
+
+	messagingRoutes := &messagingHandlers{messenger: deps.Messenger}
+	router.Route("/conversations", func(r chi.Router) {
+		r.Use(sessionGuard.RequireSession, sessionGuard.RequireRole(domain.RoleFIAAdmin, domain.RoleTeamAdmin))
+		r.Get("/", messagingRoutes.list)
+		r.Post("/", messagingRoutes.start)
+		r.Get("/{id}", messagingRoutes.open)
+		r.Post("/{id}/messages", messagingRoutes.reply)
+	})
 
 	router.Route("/auth", func(r chi.Router) {
 		r.Post("/login", authRoutes.login)

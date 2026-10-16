@@ -52,6 +52,23 @@ type Circuit struct {
 	UpdatedAt     pgtype.Timestamptz
 }
 
+type Conversation struct {
+	ID        int64
+	TeamID    int64
+	Subject   string
+	CreatedBy int64
+	CreatedAt pgtype.Timestamptz
+	UpdatedAt pgtype.Timestamptz
+}
+
+type ConversationRead struct {
+	ConversationID    int64
+	UserID            int64
+	LastReadMessageID int64
+	CreatedAt         pgtype.Timestamptz
+	UpdatedAt         pgtype.Timestamptz
+}
+
 type Driver struct {
 	ID            int64
 	FirstName     string
@@ -90,6 +107,14 @@ type LoginAttempt struct {
 	Succeeded   bool
 	Ip          *netip.Addr
 	AttemptedAt pgtype.Timestamptz
+}
+
+type Message struct {
+	ID             int64
+	ConversationID int64
+	AuthorID       int64
+	Body           string
+	CreatedAt      pgtype.Timestamptz
 }
 
 type Notification struct {
