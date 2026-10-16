@@ -1138,3 +1138,71 @@ cambió `DriverCard` al tipo de la API. Al sumarse un tercer `FieldGroup` duplic
 maqueta. `make check` en verde.
 
 ---
+
+### 2026-10-15 — Puntajes: modelo y backend (US23, US24)
+
+**Contexto:** las tablas de puntajes, del log de cambios y de los acuses existían desde el Sprint 1,
+pero ningún endpoint las leía: la clasificación y los acuses de la app eran maqueta. Quedaba abierto
+B.2 (quién puede acusar) y la tarea de US24 que pedía agregar tipo y vínculo al cambio en
+`notifications`.
+
+**Prompt:**
+
+> Implementar US23 y US24 en el backend. La clasificación y los resultados se calculan con consultas,
+> nunca se guardan: la posición es un `RANK()` por puntos (los empates comparten), solo cuentan las
+> carreras activas del campeonato y la de escuderías suma el equipo acreditado en cada resultado.
+> Endpoints públicos de resultados por carrera y de clasificación. Los avisos de puntajes no se
+> guardan: un aviso es una fila de `score_change_log` cuyos ítems incluyen a la escudería, publicado si
+> es el primer cambio de la carrera y corregido si no, confirmado si existe su acuse. Migración nueva
+> con un trigger que derive la escudería del acuse desde el usuario y rechace con `RC005` un cambio
+> que no la afecta. Endpoints de escudería (listar avisos con el contador de pendientes y confirmar,
+> con alcance a la propia escudería) y de FIA (quién confirmó cada cambio). Datos de demo con una
+> publicación, una corrección y un acuse. Tests de integración de cada endpoint y de base del trigger.
+
+**Respuesta de la IA:** separó la lectura en dos vistas, `race_scores` (`000024`) y `score_notices`
+(`000025`), para que resultados, clasificación de pilotos y de escuderías, avisos y seguimiento de la
+FIA compartan una sola definición, y embebió `calendar_events` con `sqlc.embed` para reutilizar la
+etiqueta de la carrera del calendario. Propuso responder `RC005` con 404 en lugar de 409, porque
+distinguir "no existe" de "es de otra escudería" revelaría cambios ajenos, y hacer idempotente el
+segundo acuse con `ON CONFLICT DO NOTHING`. Como el log es append-only y no se puede limpiar, los
+tests arman un campeonato propio por test (`tests/testdb/championship.go`) y los de base corren en
+una transacción que se descarta. La historia de demo va en `seeds/demo_scores.sql`, aplicada después
+de crear las cuentas porque las nombra.
+
+**Resultado:** migraciones `000023`–`000025`, `backend/sql/{scores,score_notices}.sql`,
+`backend/internal/scores/`, `backend/internal/transport/{scores,score_notices}_handlers.go` y rutas,
+`backend/seeds/demo_scores.sql`, tests en `backend/tests/db/acknowledgement_guard_test.go` y
+`backend/tests/transport/{scores,score_notices}_integration_test.go`. Decisiones en
+`02-modelo-de-datos.md` §9. `make check` en verde.
+
+---
+
+### 2026-10-15 — Puntajes: pantallas de la app (US23, US24)
+
+**Contexto:** con la API de puntajes lista, la pantalla pública de puntajes, el dashboard de escudería
+y los comunicados de escudería y de FIA seguían leyendo la maqueta de US4.
+
+**Prompt:**
+
+> Conectar la app a la API de puntajes. Pantalla pública con selector de categoría, clasificación de
+> pilotos y de escuderías y resultados por carrera con filtro de carrera. Vista de puntajes para el
+> administrador de escudería. En notificaciones de escudería, los avisos de publicación y corrección
+> con su estado pendiente o confirmado y un botón "Confirmar recepción", con un indicador de
+> pendientes. En la FIA, qué escuderías confirmaron cada cambio. Lógica en hooks o en `src/api`,
+> reutilizar los componentes existentes y quitar los mocks reemplazados.
+
+**Respuesta de la IA:** generalizó `StandingsTable` a filas ordenadas genéricas para usarla en
+pilotos, escuderías y resultados de una carrera, y armó `ScoreBoard` como bloque compartido entre la
+pantalla pública y la de escudería. Para que la insignia de la pestaña, el dashboard y la pantalla de
+notificaciones muestren el mismo estado, puso los avisos en un proveedor del layout de escudería que
+recarga después de confirmar. Antes de escribir un tercer armado de query string lo extrajo a
+`api/client.ts` en un commit de refactor aparte. Dejó el mock de avisos que usa la pantalla de
+resultados de la FIA, que es de US9.
+
+**Resultado:** `app/src/api/scores.ts`, `app/src/data/{scores.ts,TeamScoreNoticesProvider.tsx}`,
+`app/src/features/scores/`, `app/src/features/StandingsTable.tsx`, las pantallas
+`app/app/(public)/{index,standings}.tsx`, `app/app/team/{_layout,index,scores,inbox,notifications}.tsx`
+y `app/app/fia/{_layout,index,notifications}.tsx`; se borraron `NotificationList` y los mocks de
+clasificación y comunicados. `make check` en verde.
+
+---

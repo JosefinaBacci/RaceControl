@@ -30,11 +30,11 @@ pilotos tienen que existir antes de cargar un resultado.
 
 ## Modelo de datos (transversal) ◐
 
-Esquema `000002`–`000022` ya aplicado. Pendiente de la revisión del modelo:
+Esquema `000002`–`000025` ya aplicado. Pendiente de la revisión del modelo:
 
 - [x] §A.6: catálogo `circuits` y eliminación de `events.name` (se edita `000016`, requiere `make db-reset`)
 - [x] F6 / B.1: puntaje solo sobre carreras (`score_entries` y `score_change_log` → `races`)
-- [ ] F6 / B.2: acuse solo de un admin de esa escudería (se hace con US24)
+- [x] F6 / B.2: acuse solo de un admin de esa escudería (`000023`, con US24; `02-modelo-de-datos.md` §9)
 - [x] `000018`: categoría del equipo = categoría de la carrera, un ítem por piloto en cada cambio,
       evento con duración positiva, nombres de `season_drivers` (F8)
 - [x] F8: renombrar los triggers de `season_drivers` (hecho por `000018`/`000019`; quedan
@@ -157,10 +157,11 @@ Esquema `000002`–`000022` ya aplicado. Pendiente de la revisión del modelo:
 
 *Est. 5h · SP 5 · Valor 13*
 
-- [ ] Vista pública de resultados por carrera
-- [ ] Clasificación del campeonato de pilotos y de escuderías
-- [ ] Filtro de carrera
-- [ ] Acceso público sin iniciar sesión
+- [x] Vista pública de resultados por carrera (`GET /results`, `GET /results/{id}`)
+- [x] Clasificación del campeonato de pilotos y de escuderías (`GET /standings`, calculada sobre la
+      vista `race_scores` de `000024`; los empates comparten posición)
+- [x] Filtro de carrera
+- [x] Acceso público sin iniciar sesión
 
 **Criterios de éxito**
 
@@ -172,16 +173,21 @@ Esquema `000002`–`000022` ya aplicado. Pendiente de la revisión del modelo:
 
 *Est. 6h · SP 5 · Valor 13*
 
-- [ ] Vista de puntajes para el responsable de escudería
-- [ ] Notificación al publicar o modificar puntajes
-- [ ] Modelo: una notificación solo apunta al evento, así que no distingue "publicado" de
+- [x] Vista de puntajes para el responsable de escudería (pestaña Puntajes)
+- [x] Notificación al publicar o modificar puntajes (`GET /team/score-notices`)
+- [x] ~~Modelo: una notificación solo apunta al evento, así que no distingue "publicado" de
       "corregido". Agregar el tipo y el vínculo al cambio de puntajes que anuncia (como el acuse), con
-      la unicidad por (usuario, cambio). **No** `UNIQUE (user_id, event_id)`: bloquearía avisar una
-      corrección
-- [ ] Modelo (F6 / B.2): el acuse toma la escudería del usuario que acusa (trigger que la deriva, un
-      admin FIA no tiene) y exige que esa escudería figure en los ítems del cambio acusado
-- [ ] Botón de confirmación de recibo y su estado (pendiente / confirmada)
-- [ ] Vista de seguimiento de confirmaciones para el administrador
+      la unicidad por (usuario, cambio).~~ Resuelto por derivación, sin columnas nuevas en
+      `notifications`: la vista `score_notices` (`000025`) arma un aviso por cambio de
+      `score_change_log` y por escudería afectada, *publicación* si es el primer cambio de la carrera y
+      *corrección* si no (`02-modelo-de-datos.md` §9)
+- [x] Modelo (F6 / B.2): el acuse toma la escudería del usuario que acusa (trigger que la deriva, un
+      admin FIA no tiene) y exige que esa escudería figure en los ítems del cambio acusado (`000023`,
+      `RC005`)
+- [x] Botón de confirmación de recibo y su estado (pendiente / confirmada)
+      (`POST /team/score-notices/{id}/acknowledgement`, idempotente)
+- [x] Vista de seguimiento de confirmaciones para el administrador (`GET /score-changes`, pestaña
+      Acuses)
 
 **Criterios de éxito**
 
