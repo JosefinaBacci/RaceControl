@@ -187,3 +187,72 @@ func TestResultsOfSomethingOtherThanARaceAreNotFound(t *testing.T) {
 	expectStatus(t, h.do(h.browser(), http.MethodGet, "/results/999999999", nil, nil), http.StatusNotFound)
 	expectStatus(t, h.do(h.browser(), http.MethodGet, "/results/not-a-number", nil, nil), http.StatusNotFound)
 }
+
+// TestStandingsCreditTheTeamAtRaceTime covers a mid-season transfer: the team
+// table keeps each result with the team the driver raced for, while the driver
+// row shows the team of their latest race.
+func TestStandingsCreditTheTeamAtRaceTime(t *testing.T) {
+	h := newHarness(t)
+	championship := testdb.NewChampionship(t, h.pool)
+	teamA := championship.AddTeam("Equipo A")
+	teamB := championship.AddTeam("Equipo B")
+	driver := championship.AddDriver(teamA, "Alonso")
+
+	firstRace := championship.AddRace(firstRaceStart)
+	secondRace := championship.AddRace(secondRaceStart)
+	championship.Score(firstRace, driver, 25)
+	championship.Transfer(driver, teamB, firstRaceStart.AddDate(0, 0, 14))
+	championship.Score(secondRace, driver, 10)
+
+	got := h.do(h.browser(), http.MethodGet, "/standings?category="+championship.CategoryCode, nil, nil)
+	expectStatus(t, got, http.StatusOK)
+
+	expectRanking(t, listOf(t, got.body, "teams"), "teamName", []rankedLine{
+		{1, "Equipo A", 25},
+		{2, "Equipo B", 10},
+	})
+	drivers := listOf(t, got.body, "drivers")
+	expectRanking(t, drivers, "lastName", []rankedLine{{1, "Alonso", 35}})
+	if drivers[0]["teamId"] != float64(teamB) {
+		t.Fatalf("driver row team = %v, want the team of the latest race %d", drivers[0]["teamId"], teamB)
+	}
+}
+
+// TestScoresStayInsideTheirChampionship: another category and another season
+// never leak into the results or the standings asked for.
+func TestScoresStayInsideTheirChampionship(t *testing.T) {
+	h := newHarness(t)
+	const previousYear = 2025
+	previousSeason := testdb.Season(t, h.pool, previousYear)
+
+	asked := testdb.NewChampionship(t, h.pool)
+	askedDriver := asked.AddDriver(asked.AddTeam("Equipo A"), "Alonso")
+	askedRace := asked.AddRace(firstRaceStart)
+	asked.Score(askedRace, askedDriver, 25)
+
+	other := testdb.NewChampionship(t, h.pool)
+	otherDriver := other.AddDriver(other.AddTeam("Equipo B"), "Castro")
+	otherRace := other.AddRace(firstRaceStart)
+	other.Score(otherRace, otherDriver, 18)
+
+	previousSeasonStart := time.Date(previousYear, 1, 1, 0, 0, 0, 0, time.UTC)
+	pastDriver := asked.AddDriverSince(asked.AddTeam("Equipo C"), "Bianchi", previousSeasonStart)
+	pastRace := asked.AddRaceIn(previousSeason, previousSeasonStart.AddDate(0, 2, 0))
+	asked.Score(pastRace, pastDriver, 12)
+
+	standings := h.do(h.browser(), http.MethodGet, "/standings?season=2026&category="+asked.CategoryCode, nil, nil)
+	expectStatus(t, standings, http.StatusOK)
+	expectRanking(t, listOf(t, standings.body, "drivers"), "lastName", []rankedLine{{1, "Alonso", 25}})
+	expectRanking(t, listOf(t, standings.body, "teams"), "teamName", []rankedLine{{1, "Equipo A", 25}})
+
+	past := h.do(h.browser(), http.MethodGet, fmt.Sprintf("/standings?season=%d&category=%s", previousYear, asked.CategoryCode), nil, nil)
+	expectStatus(t, past, http.StatusOK)
+	expectRanking(t, listOf(t, past.body, "drivers"), "lastName", []rankedLine{{1, "Bianchi", 12}})
+
+	results := h.do(h.browser(), http.MethodGet, "/results?season=2026&category="+asked.CategoryCode, nil, nil)
+	expectStatus(t, results, http.StatusOK)
+	races := listOf(t, results.body, "races")
+	if len(races) != 1 || objectOf(t, races[0], "race")["id"] != float64(askedRace) {
+		t.Fatalf("races = %s, want only race %d of the asked championship and season", results.raw, askedRace)
+	}
+}

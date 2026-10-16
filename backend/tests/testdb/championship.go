@@ -54,8 +54,14 @@ func (c *Championship) AddTeam(name string) int64 {
 	return teamID
 }
 
-// AddDriver creates a driver assigned to the team for the whole season.
+// AddDriver creates a driver assigned to the team for the whole 2026 season.
 func (c *Championship) AddDriver(teamID int64, lastName string) int64 {
+	c.t.Helper()
+	return c.AddDriverSince(teamID, lastName, SeasonStart)
+}
+
+// AddDriverSince creates a driver assigned to the team from the given date.
+func (c *Championship) AddDriverSince(teamID int64, lastName string, from time.Time) int64 {
 	c.t.Helper()
 
 	var driverID int64
@@ -64,12 +70,27 @@ func (c *Championship) AddDriver(teamID int64, lastName string) int64 {
 		 VALUES ('Test', $1, $2, 'ar') RETURNING id`,
 		lastName, UniqueCode(c.t))
 	c.exec(`INSERT INTO driver_team_assignments (driver_id, team_id, effective_from, is_starter)
-	        VALUES ($1, $2, $3, true)`, driverID, teamID, SeasonStart)
+	        VALUES ($1, $2, $3, true)`, driverID, teamID, from)
 	return driverID
 }
 
-// AddRace creates a race of the championship on its own round.
+// Transfer moves the driver to another team from the given date. The history
+// only grows forward (000022), so the date must follow the driver's last race.
+func (c *Championship) Transfer(driverID, teamID int64, from time.Time) {
+	c.t.Helper()
+
+	c.exec(`INSERT INTO driver_team_assignments (driver_id, team_id, effective_from, is_starter)
+	        VALUES ($1, $2, $3, true)`, driverID, teamID, from)
+}
+
+// AddRace creates a race of the championship in the seeded 2026 season.
 func (c *Championship) AddRace(startsAt time.Time) int64 {
+	c.t.Helper()
+	return c.AddRaceIn(seededSeasonID, startsAt)
+}
+
+// AddRaceIn creates a race of the championship on its own round of the season.
+func (c *Championship) AddRaceIn(seasonID int64, startsAt time.Time) int64 {
 	c.t.Helper()
 
 	var roundID int64
@@ -78,7 +99,7 @@ func (c *Championship) AddRace(startsAt time.Time) int64 {
 		 SELECT $1, $2, COALESCE(max(number), 0) + 1, $3, 'Gran Premio de Prueba'
 		 FROM rounds WHERE season_id = $1 AND category_id = $2
 		 RETURNING id`,
-		seededSeasonID, c.CategoryID, seededCircuitID)
+		seasonID, c.CategoryID, seededCircuitID)
 
 	var eventID int64
 	err := pgx.BeginFunc(context.Background(), c.pool, func(tx pgx.Tx) error {
@@ -134,6 +155,27 @@ func (c *Championship) RecordChange(change ScoreChange) int64 {
 		        VALUES ($1, $2, $3, $4)`, changeLogID, line.DriverID, line.Old, line.New)
 	}
 	return changeLogID
+}
+
+// Season answers the id of the season of that year, creating it when missing.
+// Only a year before the seeded 2026 is safe: a later one would become the
+// latest season the API defaults to.
+func Season(t *testing.T, pool *pgxpool.Pool, year int32) int64 {
+	t.Helper()
+
+	var seasonID int64
+	err := pool.QueryRow(context.Background(),
+		`WITH created AS (
+		     INSERT INTO seasons (year) VALUES ($1) ON CONFLICT (year) DO NOTHING RETURNING id
+		 )
+		 SELECT id FROM created
+		 UNION ALL
+		 SELECT id FROM seasons WHERE year = $1`,
+		year).Scan(&seasonID)
+	if err != nil {
+		t.Fatalf("season %d: %v", year, err)
+	}
+	return seasonID
 }
 
 // UserID resolves a username to its id.
