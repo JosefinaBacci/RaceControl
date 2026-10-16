@@ -144,6 +144,9 @@ Esquema `000002`–`000025` ya aplicado. Pendiente de la revisión del modelo:
       auditoría que escribe el log él mismo, con el autor tomado de un setting de la transacción
       (`SET LOCAL racecontrol.actor_id`) y que falla si no está
 - [ ] Traducir `RC002` (piloto de otra categoría que la carrera) a un 4xx
+- [ ] Decidir si se guarda el orden de llegada: hoy la posición se deriva de los puntos (`RANK()` en
+      la vista `race_scores`, `000024`), así que todos los pilotos que terminan fuera de los puntos
+      comparten la misma posición. Si se carga el orden, `race_scores` debe ordenar por él
 
 **Criterios de éxito**
 

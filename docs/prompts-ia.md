@@ -1206,3 +1206,32 @@ y `app/app/fia/{_layout,index,notifications}.tsx`; se borraron `NotificationList
 clasificación y comunicados. `make check` en verde.
 
 ---
+
+### 2026-10-15 — Puntajes: correcciones tras la revisión (US23, US24)
+
+**Contexto:** la revisión del manager y un tester independiente no encontraron bloqueantes en US23 y
+US24, pero sí una serie de puntos a corregir antes de cerrar.
+
+**Prompt:**
+
+> Corregir: la seed de demo podía colgar sus ítems y su acuse de un cambio ajeno con el mismo id; la
+> pantalla de resultados de la FIA mostraba acuses de maqueta; la insignia de pendientes de la
+> escudería solo se actualizaba al entrar a Notificaciones; la categoría de la escudería salía de los
+> mocks; extraer los envoltorios repetidos de `pgtype`; agregar tests de un pase de escudería a mitad
+> de temporada y del aislamiento por categoría y temporada; y anotar en US9 que la posición se deriva
+> de los puntos.
+
+**Respuesta de la IA:** la seed ahora solo escribe sobre sus propios cambios (id, carrera de demo y
+`fia.admin`) mediante una vista temporal, y la corrección exige la publicación propia; un test de base
+aplica la seed sobre un cambio ajeno dentro de una transacción descartada y verifica que no lo toca.
+Los avisos se recargan desde el layout de escudería con `screenListeners` en cada foco de pestaña, sin
+sondeo. La categoría se toma de `GET /teams`. `db.Int8`/`db.Int4` reemplazan los literales de
+`pgtype` en un commit de refactor aparte.
+
+**Resultado:** `backend/seeds/demo_scores.sql`, `backend/tests/db/demo_scores_seed_test.go`,
+`backend/internal/db/pgconv.go`, `backend/tests/testdb/championship.go`,
+`backend/tests/transport/scores_integration_test.go`, `app/app/fia/results.tsx`,
+`app/app/team/{_layout,index,scores,notifications}.tsx`, `app/src/data/{scores,teams}.ts`, y la tarea
+nueva de US9 en `sprint.md`. `make check` en verde.
+
+---
