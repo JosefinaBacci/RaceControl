@@ -43,6 +43,8 @@ export function useScoreChanges() {
   return remote;
 }
 
+// The FIA follows every affected team of every change, so a team that has yet to
+// confirm two corrections counts twice.
 export function usePendingScoreConfirmations(): number {
   const { state } = useScoreChanges();
   return state.status === 'ready' ? countPendingConfirmations(state.data) : 0;
@@ -52,6 +54,8 @@ function countPendingConfirmations(changes: readonly ScoreChange[]): number {
   return changes.flatMap((change) => change.teams).filter((team) => team.status === 'pending').length;
 }
 
+// The race filter starts on the latest raced race and falls back to it whenever
+// the chosen one leaves the list, as when the category changes.
 export function useSelectedRace(races: readonly RaceResults[]) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = races.find((entry) => String(entry.race.id) === selectedId) ?? races[races.length - 1] ?? null;
