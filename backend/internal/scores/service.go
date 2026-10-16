@@ -65,11 +65,3 @@ func optionalCategory(raw string) pgtype.Text {
 	category := normalizedCategory(raw)
 	return pgtype.Text{String: category, Valid: category != ""}
 }
-
-func presentYear(year int32) pgtype.Int4 {
-	return pgtype.Int4{Int32: year, Valid: true}
-}
-
-func presentID(id int64) pgtype.Int8 {
-	return pgtype.Int8{Int64: id, Valid: true}
-}

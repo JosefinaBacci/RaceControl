@@ -82,5 +82,5 @@ func optionalInt8(value *int64) pgtype.Int8 {
 	if value == nil {
 		return pgtype.Int8{}
 	}
-	return pgtype.Int8{Int64: *value, Valid: true}
+	return db.Int8(*value)
 }

@@ -34,7 +34,7 @@ func NewService(queries dbgen.Querier, transactor Transactor) *Service {
 
 // Lineup lists the drivers a team holds right now, starters first.
 func (s *Service) Lineup(ctx context.Context, teamID int64) ([]Driver, error) {
-	rows, err := s.queries.ListTeamDrivers(ctx, presentTeam(teamID))
+	rows, err := s.queries.ListTeamDrivers(ctx, db.Int8(teamID))
 	if err != nil {
 		return nil, fmt.Errorf("list lineup of team %d: %w", teamID, err)
 	}
@@ -48,7 +48,7 @@ func (s *Service) Lineup(ctx context.Context, teamID int64) ([]Driver, error) {
 // Get answers a driver only when it belongs to the team: a stranger and an unknown
 // id are both not found, so the team never learns about another team's driver.
 func (s *Service) Get(ctx context.Context, teamID, id int64) (Driver, error) {
-	row, err := s.queries.GetTeamDriver(ctx, dbgen.GetTeamDriverParams{TeamID: presentTeam(teamID), DriverID: id})
+	row, err := s.queries.GetTeamDriver(ctx, dbgen.GetTeamDriverParams{TeamID: db.Int8(teamID), DriverID: id})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Driver{}, domain.ErrNotFound
 	}
@@ -80,7 +80,7 @@ func (s *Service) Create(ctx context.Context, teamID int64, input NewDriver) (Dr
 		id = created
 		if err := queries.CreateAssignment(ctx, dbgen.CreateAssignmentParams{
 			DriverID:  id,
-			TeamID:    presentTeam(teamID),
+			TeamID:    db.Int8(teamID),
 			IsStarter: state.isStarter,
 		}); err != nil {
 			return translateWriteError(err)
@@ -129,7 +129,7 @@ func (s *Service) Update(ctx context.Context, teamID, id int64, changes DriverCh
 		if changes.IsStarter != nil && *changes.IsStarter != current.IsStarter {
 			if err := queries.CreateAssignment(ctx, dbgen.CreateAssignmentParams{
 				DriverID:  id,
-				TeamID:    presentTeam(teamID),
+				TeamID:    db.Int8(teamID),
 				IsStarter: *changes.IsStarter,
 			}); err != nil {
 				return translateWriteError(err)

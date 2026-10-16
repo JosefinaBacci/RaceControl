@@ -41,7 +41,7 @@ func (s *Service) Results(ctx context.Context, filter Filter) ([]RaceResults, er
 		return nil, err
 	}
 	rows, err := s.queries.ListRaceResults(ctx, dbgen.ListRaceResultsParams{
-		SeasonYear:   presentYear(year),
+		SeasonYear:   db.Int4(year),
 		CategoryCode: optionalCategory(filter.Category),
 	})
 	if err != nil {
@@ -64,7 +64,7 @@ func (s *Service) RaceResults(ctx context.Context, eventID int64) (RaceResults, 
 		return RaceResults{}, domain.ErrNotFound
 	}
 
-	rows, err := s.queries.ListRaceResults(ctx, dbgen.ListRaceResultsParams{EventID: presentID(eventID)})
+	rows, err := s.queries.ListRaceResults(ctx, dbgen.ListRaceResultsParams{EventID: db.Int8(eventID)})
 	if err != nil {
 		return RaceResults{}, fmt.Errorf("list results of race %d: %w", eventID, err)
 	}

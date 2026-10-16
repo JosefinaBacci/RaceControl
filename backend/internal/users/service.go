@@ -177,7 +177,7 @@ func (s *Service) ChangeOwnPassword(ctx context.Context, actor domain.Identity, 
 		}
 		return revokeSessions(ctx, queries, dbgen.RevokeUserSessionsParams{
 			UserID:        user.ID,
-			KeptSessionID: pgtype.Int8{Int64: actor.SessionID, Valid: true},
+			KeptSessionID: db.Int8(actor.SessionID),
 		})
 	})
 }

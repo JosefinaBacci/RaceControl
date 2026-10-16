@@ -51,7 +51,3 @@ func driverFromRow(id int64, firstName, lastName, licenseNumber, countryCode str
 		Number:        db.Int32Pointer(number),
 	}
 }
-
-func presentTeam(teamID int64) pgtype.Int8 {
-	return pgtype.Int8{Int64: teamID, Valid: true}
-}

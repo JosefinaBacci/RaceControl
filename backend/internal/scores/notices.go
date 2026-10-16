@@ -120,7 +120,7 @@ func translateAcknowledgeError(err error, changeLogID int64) error {
 }
 
 func (s *Service) teamNotice(ctx context.Context, teamID, changeLogID int64) (Notice, error) {
-	notices, err := s.teamNotices(ctx, teamID, presentID(changeLogID))
+	notices, err := s.teamNotices(ctx, teamID, db.Int8(changeLogID))
 	if err != nil {
 		return Notice{}, err
 	}
