@@ -1,17 +1,13 @@
 import { useMemo, useState } from 'react';
 
 import type { CategoryCode, CategoryFilter } from '@/mocks/catalog';
-import { sanctions, scoreNotices } from '@/mocks/data';
+import { sanctions } from '@/mocks/data';
 
 const matchesCategory = (category: CategoryFilter) => (item: { category: CategoryCode }) =>
   category === 'all' || item.category === category;
 
 export function useSanctions(category: CategoryFilter) {
   return useMemo(() => sanctions.filter(matchesCategory(category)), [category]);
-}
-
-export function useScoreNotices() {
-  return scoreNotices;
 }
 
 export type InboxItem = {
