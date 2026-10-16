@@ -55,4 +55,9 @@ func main() {
 		log.Fatalf("seed: %v", err)
 	}
 	log.Println("demo score history seeded")
+
+	if err := runner.DemoMessages(ctx); err != nil {
+		log.Fatalf("seed: %v", err)
+	}
+	log.Println("demo messages seeded")
 }

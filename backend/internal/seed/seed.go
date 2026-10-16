@@ -47,6 +47,15 @@ func (r *Runner) DemoScoreHistory(ctx context.Context) error {
 	return nil
 }
 
+// DemoMessages applies the demo conversations. They name the demo accounts, so it
+// runs after DemoAccounts.
+func (r *Runner) DemoMessages(ctx context.Context) error {
+	if err := applyFile(ctx, r.pool, "demo_messages.sql"); err != nil {
+		return fmt.Errorf("apply demo messages seed: %w", err)
+	}
+	return nil
+}
+
 func applyFile(ctx context.Context, pool *pgxpool.Pool, name string) error {
 	contents, err := fs.ReadFile(seeds.Files, name)
 	if err != nil {

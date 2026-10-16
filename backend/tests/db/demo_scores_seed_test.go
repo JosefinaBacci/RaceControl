@@ -39,7 +39,7 @@ func TestDemoScoreSeedSkipsAForeignChange(t *testing.T) {
 			demoCorrectionID:  footprintOf(t, tx, demoCorrectionID),
 		}
 
-		if _, err := tx.Exec(context.Background(), demoScoreInserts(t)); err != nil {
+		if _, err := tx.Exec(context.Background(), seedInserts(t, "demo_scores.sql", "-- 4. setval")); err != nil {
 			t.Fatalf("apply the demo score seed: %v", err)
 		}
 
@@ -51,18 +51,18 @@ func TestDemoScoreSeedSkipsAForeignChange(t *testing.T) {
 	})
 }
 
-// demoScoreInserts is the seed without its trailing setval: setval is not
+// seedInserts is a seed without its trailing setval section: setval is not
 // transactional, so running it here would move the shared test sequences.
-func demoScoreInserts(t *testing.T) string {
+func seedInserts(t *testing.T, name, setvalSection string) string {
 	t.Helper()
 
-	contents, err := fs.ReadFile(seeds.Files, "demo_scores.sql")
+	contents, err := fs.ReadFile(seeds.Files, name)
 	if err != nil {
-		t.Fatalf("read demo score seed: %v", err)
+		t.Fatalf("read seed %s: %v", name, err)
 	}
-	inserts, _, found := strings.Cut(string(contents), "-- 4. setval")
+	inserts, _, found := strings.Cut(string(contents), setvalSection)
 	if !found {
-		t.Fatal("the demo score seed no longer ends with its setval section")
+		t.Fatalf("the seed %s no longer ends with its setval section", name)
 	}
 	return inserts
 }
