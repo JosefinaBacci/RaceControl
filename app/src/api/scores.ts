@@ -164,3 +164,7 @@ export async function getScoreHistory(eventId: number): Promise<ScoreRevision[]>
   const response = await apiRequest<{ changes: ScoreRevision[] }>('GET', `/events/${eventId}/scores/history`);
   return response.changes;
 }
+
+export function getRaceResults(eventId: number): Promise<RaceResults> {
+  return apiRequest<RaceResults>('GET', `/results/${eventId}`);
+}

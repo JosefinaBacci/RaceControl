@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 
@@ -48,6 +49,7 @@ export function EventList({ title, events, action, emptyMessage = 'No hay evento
               </View>
             }
             title={event.name}
+            onPress={() => router.push({ pathname: '/events/[id]', params: { id: String(event.id) } })}
             subtitle={`${event.circuitName ?? kindLabel(event.kind)} · ${event.categoryName}`}
             trailing={
               <View style={styles.trailing}>

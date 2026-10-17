@@ -1387,3 +1387,13 @@ HTTPS real permanece pendiente; localhost usa HTTP.
 **Validación:** `make check` con base PostgreSQL de pruebas aprobado.
 
 ---
+
+### 2026-10-17 — feat(app): mostrar detalle público de carreras y facilitar la consulta de resultados (US8, US23)
+
+**Pedido:** revisar los faltantes de RaceControl y corregirlos con commits por US.
+
+**Resultado:** Detalle de evento de solo lectura con resultados; acceso al sitio público desde los menús de ambos roles y búsqueda en el selector de carreras. Verificado en navegador sin sesión.
+
+**Validación:** `make check` con base PostgreSQL de pruebas aprobado.
+
+---

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { RaceResults, Standings } from '@/api/scores';
-import { AppText, ChipGroup, HeroCard } from '@/components';
+import { AppText, ChipGroup, HeroCard, SelectField } from '@/components';
 import { useRaceResults, useSelectedRace, useStandings } from '@/data/scores';
 import { formatEventDate, formatPoints } from '@/format';
 import { RemoteContent } from '@/features/RemoteContent';
@@ -67,7 +67,7 @@ function RaceResultsSection({ races }: { races: RaceResults[] }) {
   return (
     <View style={styles.section}>
       <AppText variant="heading">Resultados por carrera</AppText>
-      <ChipGroup options={options} selected={String(selected.race.id)} onSelect={select} accessibilityLabel="Elegir carrera" />
+      <SelectField options={options} selected={String(selected.race.id)} onSelect={select} accessibilityLabel="Elegir carrera" />
       <StandingsTable
         title={selected.race.name}
         action={

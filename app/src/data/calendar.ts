@@ -1,3 +1,4 @@
+import { getRaceResults } from '@/api/scores';
 import { apiBaseUrl, queryString } from '@/api/client';
 import { getEvent, listCircuits, listEvents, listSeasons, type EventFilter } from '@/api/calendar';
 import { useReloadOnFocus } from '@/data/useReloadOnFocus';
@@ -39,4 +40,14 @@ export function useEventForm(id?: number) {
 export function calendarDownloadUrl(format: 'ics' | 'pdf', filter: EventFilter = {}): string {
   const path = format === 'ics' ? '/calendar.ics' : '/calendar.pdf';
   return `${apiBaseUrl}${path}${queryString(filter)}`;
+}
+
+export function useEventDetail(id: number) {
+  const remote = useRemote(async () => {
+    const event = await getEvent(id);
+    const results = event.kind === 'race' ? await getRaceResults(id) : null;
+    return { event, results };
+  }, [id]);
+  useReloadOnFocus(remote.reload);
+  return remote;
 }
