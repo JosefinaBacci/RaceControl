@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { useSession } from '@/auth/SessionProvider';
 import type { Conversation, Message } from '@/api/messages';
 import { AppText, Badge, Button, Card, Notice, Screen, TextField } from '@/components';
 import { useConversation } from '@/data/messages';
@@ -16,9 +17,16 @@ const fields = ['body'] as const;
 
 export function ConversationScreen({ id }: { id: number }) {
   const { state, reload, reply } = useConversation(id);
+  const { user } = useSession();
+  const mailbox = user?.role === 'fia_admin' ? '/fia/messages' : '/team/messages';
 
   return (
-    <Screen headerAction={<Button label="Volver" icon="arrow-back" variant="ghost" compact onPress={() => router.back()} />}>
+    <Screen title="Conversación" headerAction={
+      <View style={styles.actions}>
+        <Button label="Bandeja" icon="arrow-back" variant="ghost" compact onPress={() => router.replace(mailbox)} />
+        <Button label="Actualizar" icon="refresh" variant="ghost" compact onPress={() => void reload()} />
+      </View>
+    }>
       <RemoteContent state={state} onRetry={reload}>
         {(conversation) => <Thread conversation={conversation} onReply={reply} />}
       </RemoteContent>

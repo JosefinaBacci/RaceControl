@@ -16,12 +16,12 @@ export function Screen({ title, subtitle, headerAction, children }: ScreenProps)
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <View style={styles.column}>
-        {title ? (
+        {title || subtitle || headerAction ? (
           <View style={styles.header}>
             <View style={styles.headerText}>
-              <AppText variant="title" accessibilityRole="header">
-                {title}
-              </AppText>
+              {title ? (
+                <AppText variant="title" accessibilityRole="header">{title}</AppText>
+              ) : null}
               {subtitle ? <AppText color="textMuted">{subtitle}</AppText> : null}
             </View>
             {headerAction}

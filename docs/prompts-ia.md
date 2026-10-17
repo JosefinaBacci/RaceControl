@@ -1364,3 +1364,16 @@ insignia; el selector de escudería del formulario de cuentas se extrajo para re
 `docs/sprint2/{sprint,02-modelo-de-datos}.md`. `make check` en verde.
 
 ---
+
+### 2026-10-17 — Navegación de conversaciones (US17)
+
+**Pedido:** revisar el sprint y las notas, aplicar correcciones y crear commits por US en español.
+
+**Cambios:** corregir `Screen` para mostrar acciones aun sin título; agregar regreso explícito a
+la bandeja según el rol (incluye enlaces directos), recarga manual del hilo y recarga al recuperar
+el foco. El problema del botón oculto afectaba también otras pantallas de detalle.
+
+**Validación:** `make check` aprobado con integración en PostgreSQL. La verificación del proxy
+HTTPS real permanece pendiente; localhost usa HTTP.
+
+---

@@ -17,6 +17,7 @@ export function useConversation(id: number) {
   const { reload: reloadUnread } = useUnreadMessages();
   const remote = useRemote(() => openConversation(id), [id]);
   const { state, reload } = remote;
+  useReloadOnFocus(reload);
 
   useEffect(() => {
     if (state.status === 'ready') {
