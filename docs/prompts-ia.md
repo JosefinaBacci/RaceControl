@@ -1417,3 +1417,13 @@ HTTPS real permanece pendiente; localhost usa HTTP.
 **Validación:** `make check` con base PostgreSQL de pruebas aprobado.
 
 ---
+
+### 2026-10-17 — test(app): cubrir validaciones de calendario, puntajes y pilotos en make check (US7, US9, US11)
+
+**Pedido:** revisar los faltantes de RaceControl y corregirlos con commits por US.
+
+**Resultado:** Cinco regresiones de fechas reales, horas límite, puntajes iniciales, rangos decimales y números de piloto. Se ejecutan con npm test y como parte de make check.
+
+**Validación:** `make check` con base PostgreSQL de pruebas aprobado.
+
+---

@@ -16,7 +16,7 @@ CONTAINER ?= $(shell command -v podman >/dev/null 2>&1 && echo podman || echo do
 -include .env
 export
 
-.PHONY: help db-up db-down db-logs db-ps migrate migrate-down db-reset seed create-admin sqlc backend-run test-db backend-test backend-lint tidy app-install app-start app-web app-lint check
+.PHONY: help db-up db-down db-logs db-ps migrate migrate-down db-reset seed create-admin sqlc backend-run test-db backend-test backend-lint tidy app-install app-start app-web app-lint app-test check
 
 help: ## Show available targets
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | sed 's/:.*## /\t/' | expand -t16
@@ -104,6 +104,9 @@ app-lint: ## Type-check the app
 	@test -d app/node_modules || { echo "app dependencies not installed; run 'make app-install'"; exit 0; }; \
 	cd app && npx tsc --noEmit
 
+app-test: ## Run the app form regression tests
+	cd app && npm test
+
 # --- everything -------------------------------------------------------------
 
-check: backend-lint backend-test app-lint ## Lint and test everything
+check: backend-lint backend-test app-lint app-test ## Lint and test everything
