@@ -1467,3 +1467,13 @@ HTTPS real permanece pendiente; localhost usa HTTP.
 **Validación:** `make sqlc` y `make check` aprobados con PostgreSQL de pruebas en migración 000029.
 
 ---
+
+### 2026-10-17 — feat(puntajes): avisar en el panel sobre carreras sin resultados (US9)
+
+**Pedido:** completar todas las US asignadas e incluir las ampliaciones de las notas.
+
+**Resultado:** Aviso de carreras terminadas sin puntajes y acceso directo a su carga en el panel FIA.
+
+**Validación:** `make sqlc` y `make check` aprobados con PostgreSQL de pruebas en migración 000029.
+
+---
