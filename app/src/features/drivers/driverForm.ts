@@ -63,3 +63,11 @@ function parseNumber(value: string): number | null {
   const parsed = Number(trimmed);
   return Number.isFinite(parsed) ? parsed : null;
 }
+
+export function driverNumberError(value: string, previousNumber: number | null = null): string | null {
+  const trimmed = value.trim();
+  if (trimmed === '') {
+    return previousNumber === null ? null : 'El número asignado no se puede quitar; ingresá otro número válido.';
+  }
+  return /^\d{1,3}$/.test(trimmed) ? null : 'El número debe ser un entero entre 0 y 999.';
+}

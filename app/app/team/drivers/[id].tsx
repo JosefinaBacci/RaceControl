@@ -7,7 +7,7 @@ import { AppText, Badge, Button, Card, Notice, Screen } from '@/components';
 import { useTeamDriver } from '@/data/drivers';
 import { useFormSubmission } from '@/data/useFormSubmission';
 import { DriverFields } from '@/features/drivers/DriverFields';
-import { driverChanges, driverFields, hasDriverChanges, initialDriverForm } from '@/features/drivers/driverForm';
+import { driverChanges, driverFields, driverNumberError, hasDriverChanges, initialDriverForm } from '@/features/drivers/driverForm';
 import { RemoteContent } from '@/features/RemoteContent';
 import { spacing } from '@/theme';
 
@@ -39,6 +39,11 @@ function DriverForm({ driver, onSaved }: { driver: TeamDriver; onSaved: (driver:
 
   const save = async () => {
     setSavedMessage(null);
+    const numberError = driverNumberError(values.number, driver.number);
+    if (numberError) {
+      setFormError(numberError);
+      return;
+    }
     const changes = driverChanges(driver, values);
     if (!hasDriverChanges(changes)) {
       setFormError('No hay cambios para guardar.');

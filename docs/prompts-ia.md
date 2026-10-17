@@ -1407,3 +1407,13 @@ HTTPS real permanece pendiente; localhost usa HTTP.
 **Validación:** `make check` con base PostgreSQL de pruebas aprobado.
 
 ---
+
+### 2026-10-17 — fix(pilotos): validar el número y agregar acceso a la búsqueda general (US11, US12)
+
+**Pedido:** revisar los faltantes de RaceControl y corregirlos con commits por US.
+
+**Resultado:** La app informa números inválidos y evita eliminar silenciosamente números ya asignados. Acceso al directorio público desde la gestión de pilotos; obligatoriedad del número sin modificar.
+
+**Validación:** `make check` con base PostgreSQL de pruebas aprobado.
+
+---

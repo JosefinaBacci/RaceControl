@@ -18,6 +18,8 @@ export default function TeamDriversScreen() {
       subtitle={`Titulares y suplentes de ${team.name}.`}
       headerAction={<Button label="Agregar piloto" icon="add" compact onPress={() => router.push('/team/drivers/new')} />}
     >
+      <Button label="Buscar pilotos de todas las escuderías" icon="search" variant="secondary"
+        onPress={() => router.push('/drivers')} />
       <RemoteContent state={state} onRetry={reload}>
         {(drivers) =>
           drivers.length === 0 ? (

@@ -6,14 +6,19 @@ import { createDriver } from '@/api/drivers';
 import { Button, Card, Notice, Screen } from '@/components';
 import { useFormSubmission } from '@/data/useFormSubmission';
 import { DriverFields } from '@/features/drivers/DriverFields';
-import { driverFields, emptyDriverForm, newDriverInput } from '@/features/drivers/driverForm';
+import { driverFields, driverNumberError, emptyDriverForm, newDriverInput } from '@/features/drivers/driverForm';
 import { spacing } from '@/theme';
 
 export default function NewDriverScreen() {
   const [values, setValues] = useState(emptyDriverForm());
-  const { fieldErrors, formError, isSubmitting, submit } = useFormSubmission(driverFields);
+  const { fieldErrors, formError, isSubmitting, submit, setFormError } = useFormSubmission(driverFields);
 
   const save = async () => {
+    const numberError = driverNumberError(values.number);
+    if (numberError) {
+      setFormError(numberError);
+      return;
+    }
     const created = await submit(() => createDriver(newDriverInput(values)));
     if (created) {
       router.back();
