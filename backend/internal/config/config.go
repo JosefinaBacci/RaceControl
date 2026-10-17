@@ -29,6 +29,8 @@ type Config struct {
 	SeedDemoPassword   string
 	CORSAllowedOrigins []string
 	TrustProxyHeaders  bool
+	TLSCertFile        string
+	TLSKeyFile         string
 }
 
 type SessionTTLs struct {
@@ -69,6 +71,7 @@ func Load() (Config, error) {
 		SeedDemoPassword:   os.Getenv("SEED_DEMO_PASSWORD"),
 		CORSAllowedOrigins: listFromEnv("CORS_ALLOWED_ORIGINS", defaultDevelopmentOrigins),
 		TrustProxyHeaders:  trustProxyHeaders,
+		TLSCertFile:        os.Getenv("TLS_CERT_FILE"), TLSKeyFile: os.Getenv("TLS_KEY_FILE"),
 	}
 	if err := cfg.validate(); err != nil {
 		return Config{}, err
@@ -112,6 +115,13 @@ func sessionTTLsFromEnv() (SessionTTLs, error) {
 }
 
 func (c Config) validate() error {
+	if (c.TLSCertFile == "") != (c.TLSKeyFile == "") {
+		return errors.New("TLS_CERT_FILE and TLS_KEY_FILE must be configured together")
+	}
+	if c.IsProduction() && c.TLSCertFile == "" && !c.TrustProxyHeaders {
+		return errors.New("production requires TLS certificates or a trusted HTTPS reverse proxy")
+	}
+
 	if c.DatabaseURL == "" {
 		return errors.New("DATABASE_URL is required")
 	}

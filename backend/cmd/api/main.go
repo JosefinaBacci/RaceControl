@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"log"
 	"net/http"
@@ -54,12 +55,18 @@ func main() {
 		Addr:              cfg.HTTPAddr,
 		Handler:           router,
 		ReadHeaderTimeout: readHeaderTimeout,
+		TLSConfig:         &tls.Config{MinVersion: tls.VersionTLS12},
 	}
 
 	go shutdownOnSignal(ctx, server, log.Printf)
 
 	log.Printf("api listening on %s", cfg.HTTPAddr)
-	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+	if cfg.TLSCertFile != "" {
+		err = server.ListenAndServeTLS(cfg.TLSCertFile, cfg.TLSKeyFile)
+	} else {
+		err = server.ListenAndServe()
+	}
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatalf("api: %v", err)
 	}
 }

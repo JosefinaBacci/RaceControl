@@ -45,6 +45,9 @@ func NewRouter(deps Dependencies) http.Handler {
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.Timeout(requestTimeout))
 	router.Use(securityHeaders)
+	if deps.Cookie.Secure {
+		router.Use(requireHTTPS(deps.TrustProxyHeaders))
+	}
 	router.Use(corsFor(deps.AllowedOrigins))
 
 	sessionGuard := auth.NewMiddleware(deps.Sessions, writeError)
@@ -163,4 +166,16 @@ func corsFor(allowedOrigins []string) func(http.Handler) http.Handler {
 		AllowCredentials: true,
 		MaxAge:           int((10 * time.Minute).Seconds()),
 	})
+}
+
+func requireHTTPS(trustProxy bool) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.TLS == nil && !(trustProxy && r.Header.Get("X-Forwarded-Proto") == "https") {
+				writeJSON(w, http.StatusUpgradeRequired, map[string]string{"code": "https_required", "message": "Se requiere una conexión HTTPS."})
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }

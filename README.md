@@ -66,3 +66,35 @@ Los tests de integración del backend corren contra una base propia, `racecontro
 mismo contenedor: `make check` la crea y la actualiza sola si `TEST_DATABASE_URL` está definida
 en `.env` (viene en `.env.example`). Así los tests nunca dejan usuarios en la base de desarrollo.
 Sin esa variable, los tests de integración se omiten.
+
+## HTTPS en producción (US17)
+
+Los mensajes viajan cifrados mediante HTTPS. Hay dos configuraciones admitidas:
+
+- **TLS directo:** definir `TLS_CERT_FILE` y `TLS_KEY_FILE` con rutas al certificado y a su clave
+  privada. La API sirve HTTPS (TLS 1.2 o posterior); no versionar esos archivos.
+- **Proxy HTTPS:** terminar TLS en el proxy, configurar `TRUST_PROXY_HEADERS=true` y sobrescribir
+  `X-Forwarded-Proto` con `https`. La API debe quedar accesible únicamente desde ese proxy mediante
+  la red privada o firewall; nunca confiar en encabezados de clientes directos.
+
+Usar `APP_ENV=production`, `SEED_DEMO_PASSWORD=` y `CORS_ALLOWED_ORIGINS` con el origen HTTPS de la
+app. La configuración rechaza producción sin TLS ni proxy confiable y certificados incompletos.
+Las solicitudes HTTP planas se rechazan con 426; las cookies de producción son Secure y HttpOnly.
+Configurar `EXPO_PUBLIC_API_URL=https://...` antes de compilar la app: una compilación de producción
+rechaza URLs HTTP. El entorno de desarrollo conserva HTTP local.
+
+El cifrado es **en tránsito**. No es cifrado de extremo a extremo ni cifrado de la base de datos.
+No se reutilizan contraseñas como claves: la sesión y los permisos determinan quién puede acceder.
+La suite verifica una conexión TLS real con certificado confiado por el cliente de prueba.
+
+## Historial y conversaciones entre escuderías
+
+Aplicar `make migrate` antes de iniciar la API actualizada (migración 000029).
+La pestaña Asignaciones muestra el historial global y filtrado a la FIA, y solo los movimientos
+propios a cada escudería, incluidas sus bajas y transferencias. No se reescribe el historial.
+
+En Mensajes se puede elegir FIA u otra escudería. Un hilo entre dos escuderías es privado para
+ambas: la FIA y las demás escuderías no pueden consultarlo ni escribir. Los participantes no se
+pueden modificar. «Leído» significa que al menos un administrador de la parte destinataria abrió
+el mensaje; leerlo desde otra cuenta de la propia escudería no cuenta. El chat activo se actualiza
+cada diez segundos y también permite actualización manual.

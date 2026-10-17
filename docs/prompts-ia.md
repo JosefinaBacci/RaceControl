@@ -1457,3 +1457,13 @@ HTTPS real permanece pendiente; localhost usa HTTP.
 **Validación:** `make sqlc` y `make check` aprobados con PostgreSQL de pruebas en migración 000029.
 
 ---
+
+### 2026-10-17 — feat(seguridad): exigir y verificar transporte HTTPS en producción (US17)
+
+**Pedido:** completar todas las US asignadas e incluir las ampliaciones de las notas.
+
+**Resultado:** TLS directo o proxy confiable; producción rechaza HTTP y encabezados falsificados. App de producción exige URL HTTPS. Cifrado en tránsito, sin usar contraseñas como claves ni afirmar cifrado de almacenamiento.
+
+**Validación:** `make sqlc` y `make check` aprobados con PostgreSQL de pruebas en migración 000029.
+
+---

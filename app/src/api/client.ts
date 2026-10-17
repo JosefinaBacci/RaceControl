@@ -44,6 +44,9 @@ export function queryString(params: QueryParams): string {
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 export async function apiRequest<T>(method: HttpMethod, path: string, body?: unknown): Promise<T> {
+  if (!__DEV__ && !apiBaseUrl.startsWith('https://')) {
+    throw new ApiError(0, 'network', 'La versión de producción requiere una API HTTPS.');
+  }
   let response: Response;
   try {
     response = await fetch(`${apiBaseUrl}${path}`, {
