@@ -7,7 +7,7 @@ export type ScoreLine = { didRace: true; points: string } | { didRace: false };
 export type ScoreSheet = Record<number, ScoreLine>;
 
 export const missingPointsMessage = 'Completá los puntos o marcá que no corrió.';
-export const invalidPointsMessage = 'Tiene que ser un número mayor o igual a cero.';
+export const invalidPointsMessage = 'Ingresá un número entre 0 y 9999.99, con hasta dos decimales.';
 
 // A race with results keeps its unscored drivers out; a fresh race asks for every
 // driver, so nobody is left out by omission.
@@ -24,7 +24,7 @@ function initialLine(points: number | null, raceHasResults: boolean): ScoreLine 
   if (points !== null) {
     return { didRace: true, points: String(points) };
   }
-  return raceHasResults ? { didRace: false } : { didRace: true, points: '' };
+  return raceHasResults ? { didRace: false } : { didRace: true, points: '0' };
 }
 
 export function lineError(line: ScoreLine | undefined): string | null {
@@ -36,7 +36,7 @@ export function lineError(line: ScoreLine | undefined): string | null {
     return missingPointsMessage;
   }
   const value = Number(raw);
-  return Number.isFinite(value) && value >= 0 ? null : invalidPointsMessage;
+  return /^\d+(?:\.\d{1,2})?$/.test(raw) && Number.isFinite(value) && value >= 0 && value <= 9999.99 ? null : invalidPointsMessage;
 }
 
 // The entries the API takes, or null while any line is blank or invalid.

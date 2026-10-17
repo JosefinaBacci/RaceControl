@@ -1397,3 +1397,13 @@ HTTPS real permanece pendiente; localhost usa HTTP.
 **Validación:** `make check` con base PostgreSQL de pruebas aprobado.
 
 ---
+
+### 2026-10-17 — fix(puntajes): iniciar en cero y señalar carreras sin resultados (US9)
+
+**Pedido:** revisar los faltantes de RaceControl y corregirlos con commits por US.
+
+**Resultado:** Cero inicial solo en grillas nuevas, conservación de ausencias existentes, validación decimal y distintivo Sin puntajes por carrera y temporada. No se infiere orden de llegada a partir de puntos.
+
+**Validación:** `make check` con base PostgreSQL de pruebas aprobado.
+
+---

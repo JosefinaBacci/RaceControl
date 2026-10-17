@@ -1,3 +1,4 @@
+import { listEvents } from '@/api/calendar';
 import { useState } from 'react';
 
 import { getScoreGrid, getScoreHistory, getStandings, listRaceResults, listScoreChanges, type RaceResults, type ScoreChange } from '@/api/scores';
@@ -66,4 +67,16 @@ export function useSelectedRace(races: readonly RaceResults[]) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = races.find((entry) => String(entry.race.id) === selectedId) ?? races[races.length - 1] ?? null;
   return { selected, select: setSelectedId };
+}
+
+export function useFinishedRaceScores() {
+  const remote = useRemote(async () => {
+    const races = await listEvents({ kind: 'race', period: 'past' });
+    const years = [...new Set(races.map((race) => race.seasonYear))];
+    const results = (await Promise.all(years.map((season) => listRaceResults({ season })))).flat();
+    const published = new Set(results.map(({ race }) => race.id));
+    return races.map((race) => ({ ...race, hasResults: published.has(race.id) }));
+  }, []);
+  useReloadOnFocus(remote.reload);
+  return remote;
 }
