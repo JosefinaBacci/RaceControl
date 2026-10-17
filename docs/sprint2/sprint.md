@@ -11,13 +11,13 @@ en verde y un commit por cambio lógico.
 | US | Nombre | SP | Valor | Est. | Tiempo real registrado | Estado |
 |----|--------|----|-------|------|------------------------|--------|
 | US7 | Gestión de calendario | 5 | 8 | 5h | 2.3h | ☑ |
-| US8 | Visualización y descarga de calendario | 3 | 8 | 3.5h | | ◐ |
+| US8 | Visualización y descarga de calendario | 3 | 8 | 3.5h | | ☑ |
 | US11 | Gestión de pilotos | 5 | 13 | 5h | | ☑ |
 | US12 | Visualización de pilotos | 3 | 13 | 4h | | ☑ |
 | US9 | Gestión de puntajes | 3 | 8 | 3.5h | | ☑ |
 | US23 | Visualización de puntajes | 5 | 13 | 5h | | ☑ |
 | US24 | Visualización y confirmación de recibo de puntajes | 5 | 13 | 6h | | ☑ |
-| US17 | Mensajería interna segura | 8 | 21 | 10h | | ☐ |
+| US17 | Mensajería interna segura | 8 | 21 | 10h | | ◐ |
 
 **Total estimado:** 42h
 
@@ -76,15 +76,16 @@ Esquema `000002`–`000026` ya aplicado. Puntos de la revisión del modelo:
 - [x] Vista del calendario sobre la API (reemplaza el mock)
 - [x] Filtro por categoría
 - [x] Descarga en formato estándar, incluido PDF
-- [ ] Verificar que el archivo descargado se abra sin conexión
+- [x] Verificar que el archivo descargado se abra sin conexión (2026-10-17: PDF descargado, abierto
+      y renderizado con herramientas locales; ICS leído localmente, 19 eventos en ambos formatos)
 
 **Criterios de éxito**
 
 - [x] Cualquier usuario puede ver el calendario actualizado
 - [x] El usuario puede filtrar los eventos por categoría
 - [x] El usuario puede descargar el calendario en un formato estándar
-- [ ] El archivo descargado se puede consultar sin conexión y contiene los datos correctos
-      (pendiente de la verificación manual)
+- [x] El archivo descargado se puede consultar sin conexión y contiene los datos correctos
+      (verificación local del 2026-10-17, filtro F1 y revisión visual del PDF)
 
 ## US11 — Gestión de pilotos
 
@@ -226,8 +227,26 @@ Esquema `000002`–`000026` ya aplicado. Puntos de la revisión del modelo:
 
 **Criterios de éxito**
 
-- [ ] Responsables de escudería y administradores pueden enviar y recibir mensajes
-- [ ] Solo los participantes de una conversación pueden acceder a sus mensajes
+- [x] Responsables de escudería y administradores pueden enviar y recibir mensajes
+- [x] Solo los participantes de una conversación pueden acceder a sus mensajes
 - [ ] Los mensajes se transmiten de forma segura y las entradas se validan
-- [ ] Los mensajes no leídos se identifican claramente
-- [ ] Un usuario no autenticado no puede acceder a ninguna conversación
+- [x] Los mensajes no leídos se identifican claramente
+- [x] Un usuario no autenticado no puede acceder a ninguna conversación
+
+## Revisión del 2026-10-17
+
+- US7: horas reales (00:00–23:59), límites de longitud, selector de circuitos con búsqueda y
+  desplazamiento; la API rechaza altas y reprogramaciones al pasado. Las fechas históricas siguen
+  consultables. Pruebas HTTP y de formularios agregadas.
+- US8/US23: detalle público de eventos con resultados por carrera, regreso al calendario y selector
+  de resultados con búsqueda. Acceso al sitio público desde los menús de FIA y escudería.
+- US9: cero inicial en grillas nuevas, validación decimal hasta 9999.99, conservación de ausencias
+  en resultados existentes y distintivo «Sin puntajes» en carreras terminadas.
+- US11/US12: validación del número para evitar descartar texto inválido; borrar uno ya asignado
+  muestra error. Acceso directo a la búsqueda pública desde la gestión de pilotos.
+- US17: acciones de pantalla visibles aunque no haya título, regreso explícito a la bandeja,
+  actualización manual y al recuperar foco. Pruebas de integración de mensajería aprobadas.
+- El criterio de transmisión segura de US17 queda abierto para validar el despliegue HTTPS real:
+  localhost usa HTTP y HSTS por sí solo no cifra la conexión. No se verificó un proxy TLS en esta revisión.
+
+El detalle de las notas y las ampliaciones está en `revision-notas.md`.

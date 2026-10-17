@@ -1427,3 +1427,13 @@ HTTPS real permanece pendiente; localhost usa HTTP.
 **Validación:** `make check` con base PostgreSQL de pruebas aprobado.
 
 ---
+
+### 2026-10-17 — docs(sprint2): registrar verificación offline y pendientes de la revisión (US8, US17)
+
+**Pedido:** revisar los faltantes de RaceControl y corregirlos con commits por US.
+
+**Resultado:** Calendario PDF e ICS descargados y leídos localmente; revisión visual del PDF. Estado de las 17 notas documentado. US17 mantiene pendiente verificar HTTPS real; historial global, ticks de leído y chats entre escuderías figuran como ampliaciones pendientes.
+
+**Validación:** `make check` con base PostgreSQL de pruebas aprobado.
+
+---
