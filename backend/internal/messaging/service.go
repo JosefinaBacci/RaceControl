@@ -19,8 +19,7 @@ type Transactor interface {
 	InTx(ctx context.Context, work func(queries dbgen.Querier) error) error
 }
 
-// Service carries the conversations between each team and the FIA. Who takes part
-// and what is unread are derived on every read, never stored (000028).
+// Participants and unread counts are derived for institutional conversations.
 type Service struct {
 	queries    dbgen.Querier
 	transactor Transactor
@@ -44,26 +43,31 @@ type Author struct {
 // Message is a message as one reader sees it: IsOwn when they wrote it, IsUnread
 // when someone else did and the reader had not opened it yet.
 type Message struct {
-	ID       int64
-	Body     string
-	SentAt   time.Time
-	Author   Author
-	IsOwn    bool
-	IsUnread bool
+	ID                int64
+	Body              string
+	SentAt            time.Time
+	Author            Author
+	IsOwn             bool
+	IsUnread          bool
+	IsReadByRecipient bool
 }
 
 type Conversation struct {
-	ID        int64
-	Subject   string
-	Team      Team
-	CreatedAt time.Time
-	Messages  []Message
+	ID            int64
+	Subject       string
+	Team          Team
+	OtherTeamID   *int64
+	OtherTeamName string
+	CreatedAt     time.Time
+	Messages      []Message
 }
 
 type ConversationSummary struct {
 	ID             int64
 	Subject        string
 	Team           Team
+	OtherTeamID    *int64
+	OtherTeamName  string
 	CreatedAt      time.Time
 	LastMessage    Message
 	UnreadCount    int
@@ -78,12 +82,13 @@ type Mailbox struct {
 	UnreadCount   int
 }
 
-// NewConversation is what an administrator sends to open a thread. TeamID is the
-// FIA's pick; a team administrator always writes to their own team.
+// TeamID is the FIA recipient. RecipientTeamID selects another team for a team
+// sender; omitting it keeps the existing team-to-FIA contract.
 type NewConversation struct {
-	TeamID  *int64
-	Subject string
-	Body    string
+	TeamID          *int64
+	RecipientTeamID *int64
+	Subject         string
+	Body            string
 }
 
 const participantGuard = "RC007"
@@ -94,11 +99,11 @@ func (s *Service) Conversations(ctx context.Context, reader domain.Identity, box
 	if err != nil {
 		return Mailbox{}, err
 	}
-	scope, err := teamScope(reader)
+	_, err = teamScope(reader)
 	if err != nil {
 		return Mailbox{}, err
 	}
-	rows, err := s.queries.ListConversations(ctx, dbgen.ListConversationsParams{ReaderID: reader.UserID, TeamID: scope})
+	rows, err := s.queries.ListConversations(ctx, reader.UserID)
 	if err != nil {
 		return Mailbox{}, fmt.Errorf("list conversations of user %d: %w", reader.UserID, err)
 	}
@@ -129,10 +134,14 @@ func (s *Service) Start(ctx context.Context, author domain.Identity, input NewCo
 		return Conversation{}, err
 	}
 
+	otherTeam, err := s.recipientTeam(ctx, author, input.RecipientTeamID)
+	if err != nil {
+		return Conversation{}, err
+	}
 	var conversationID int64
 	err = s.transactor.InTx(ctx, func(queries dbgen.Querier) error {
 		id, createErr := queries.CreateConversation(ctx, dbgen.CreateConversationParams{
-			TeamID: teamID, Subject: subject, CreatedBy: author.UserID,
+			TeamID: teamID, OtherTeamID: otherTeam, Subject: subject, CreatedBy: author.UserID,
 		})
 		if createErr != nil {
 			return createErr
@@ -190,9 +199,8 @@ func (s *Service) Reply(ctx context.Context, author domain.Identity, conversatio
 	}, nil
 }
 
-// teamScope is the team whose conversations the user takes part in, or none for
-// a FIA administrator, who takes part in all of them. It mirrors
-// is_conversation_participant (000028) on the reading side.
+// teamScope validates the role and derives the sender team. SQL independently
+// checks participation for every conversation read (000029).
 func teamScope(identity domain.Identity) (pgtype.Int8, error) {
 	switch {
 	case identity.Role == domain.RoleFIAAdmin:
@@ -239,20 +247,22 @@ func (s *Service) conversation(ctx context.Context, reader domain.Identity, conv
 	}
 
 	conversation := Conversation{
-		ID:        header.ID,
-		Subject:   header.Subject,
-		Team:      Team{ID: header.TeamID, Code: header.TeamCode, Name: header.TeamName},
+		ID:          header.ID,
+		Subject:     header.Subject,
+		Team:        Team{ID: header.TeamID, Code: header.TeamCode, Name: header.TeamName},
+		OtherTeamID: db.Int64Pointer(header.OtherTeamID), OtherTeamName: header.OtherTeamName,
 		CreatedAt: header.CreatedAt.Time,
 		Messages:  make([]Message, 0, len(rows)),
 	}
 	for _, row := range rows {
 		conversation.Messages = append(conversation.Messages, Message{
-			ID:       row.ID,
-			Body:     row.Body,
-			SentAt:   row.CreatedAt.Time,
-			Author:   Author{Username: row.AuthorUsername, Role: domain.Role(row.AuthorRole)},
-			IsOwn:    row.AuthorID == reader.UserID,
-			IsUnread: row.IsUnread,
+			ID:                row.ID,
+			Body:              row.Body,
+			SentAt:            row.CreatedAt.Time,
+			Author:            Author{Username: row.AuthorUsername, Role: domain.Role(row.AuthorRole)},
+			IsOwn:             row.AuthorID == reader.UserID,
+			IsUnread:          row.IsUnread,
+			IsReadByRecipient: row.IsReadByRecipient,
 		})
 	}
 	return conversation, nil
@@ -262,11 +272,11 @@ func (s *Service) conversation(ctx context.Context, reader domain.Identity, conv
 // is answered as not found, the same as a missing one, so its existence never
 // leaks.
 func (s *Service) header(ctx context.Context, reader domain.Identity, conversationID int64) (dbgen.GetConversationRow, error) {
-	scope, err := teamScope(reader)
+	_, err := teamScope(reader)
 	if err != nil {
 		return dbgen.GetConversationRow{}, err
 	}
-	header, err := s.queries.GetConversation(ctx, dbgen.GetConversationParams{ConversationID: conversationID, TeamID: scope})
+	header, err := s.queries.GetConversation(ctx, dbgen.GetConversationParams{ConversationID: conversationID, ReaderID: reader.UserID})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return dbgen.GetConversationRow{}, domain.ErrNotFound
 	}
@@ -279,9 +289,10 @@ func (s *Service) header(ctx context.Context, reader domain.Identity, conversati
 func summaryFromRow(row dbgen.ListConversationsRow, readerID int64) ConversationSummary {
 	isOwn := row.LastMessageAuthorID == readerID
 	return ConversationSummary{
-		ID:        row.ID,
-		Subject:   row.Subject,
-		Team:      Team{ID: row.TeamID, Code: row.TeamCode, Name: row.TeamName},
+		ID:          row.ID,
+		Subject:     row.Subject,
+		Team:        Team{ID: row.TeamID, Code: row.TeamCode, Name: row.TeamName},
+		OtherTeamID: db.Int64Pointer(row.OtherTeamID), OtherTeamName: row.OtherTeamName,
 		CreatedAt: row.CreatedAt.Time,
 		LastMessage: Message{
 			ID:     row.LastMessageID,
@@ -308,4 +319,21 @@ func translateWriteError(err error, action string) error {
 		return domain.ErrNotFound
 	}
 	return fmt.Errorf("%s: %w", action, err)
+}
+
+func (s *Service) recipientTeam(ctx context.Context, author domain.Identity, requested *int64) (pgtype.Int8, error) {
+	if requested == nil {
+		return pgtype.Int8{}, nil
+	}
+	if author.Role != domain.RoleTeamAdmin || author.TeamID == nil || *requested == *author.TeamID {
+		return pgtype.Int8{}, domain.NewValidationError("recipientTeamId", "elegí otra escudería o la FIA")
+	}
+	exists, err := s.queries.TeamExists(ctx, *requested)
+	if err != nil {
+		return pgtype.Int8{}, fmt.Errorf("check recipient team: %w", err)
+	}
+	if !exists {
+		return pgtype.Int8{}, domain.NewValidationError("recipientTeamId", "la escudería no existe")
+	}
+	return db.Int8(*requested), nil
 }

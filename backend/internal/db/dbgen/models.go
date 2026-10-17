@@ -53,12 +53,13 @@ type Circuit struct {
 }
 
 type Conversation struct {
-	ID        int64
-	TeamID    int64
-	Subject   string
-	CreatedBy int64
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
+	ID          int64
+	TeamID      int64
+	Subject     string
+	CreatedBy   int64
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+	OtherTeamID pgtype.Int8
 }
 
 type ConversationRead struct {

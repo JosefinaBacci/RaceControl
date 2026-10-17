@@ -5,7 +5,7 @@ import { ConversationListScreen } from '@/features/messages/ConversationListScre
 export default function TeamMessagesScreen() {
   return (
     <ConversationListScreen
-      subtitle="Tus conversaciones con la FIA. Solo las ven los administradores de tu escudería y de la FIA."
+      subtitle="Conversaciones privadas con la FIA y otras escuderías. Solo acceden las partes participantes."
       showsTeam={false}
       onOpen={(id) => router.push({ pathname: '/team/messages/[id]', params: { id: String(id) } })}
       onStart={() => router.push('/team/messages/new')}

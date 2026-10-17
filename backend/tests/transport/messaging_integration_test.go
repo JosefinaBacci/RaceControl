@@ -1,8 +1,11 @@
 package transporttest
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net/http"
+	"net/http/cookiejar"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -260,5 +263,62 @@ func TestMessagingIsServedWithStrictTransportSecurity(t *testing.T) {
 	defer result.Body.Close()
 	if hsts := result.Header.Get("Strict-Transport-Security"); !strings.HasPrefix(hsts, "max-age=") {
 		t.Fatalf("Strict-Transport-Security = %q, want HSTS on messaging", hsts)
+	}
+}
+
+func TestTeamConversationsArePrivateAndExposeRecipientReads(t *testing.T) {
+	h := newHarness(t)
+	fixture := h.newMessagingFixture()
+	recipient, _ := h.signedIn(domain.RoleTeamAdmin, fixture.otherTeam)
+	started := h.startConversation(fixture.teamAdmin, map[string]any{
+		"subject": "Coordinación", "body": "Nos vemos en boxes", "recipientTeamId": fixture.otherTeam,
+	})
+	id := started.body["id"].(float64)
+	first := h.openConversation(fixture.teamAdmin, id)[0]
+	if first["isReadByRecipient"] != false {
+		t.Fatal("own read must not count as recipient read")
+	}
+	expectStatus(t, h.do(fixture.fiaAdmin, http.MethodGet, conversationPath(id), nil, nil), http.StatusNotFound)
+	expectStatus(t, h.do(fixture.fiaAdmin, http.MethodPost, conversationPath(id)+"/messages", map[string]any{"body": "intrusión"}, nil), http.StatusNotFound)
+	if conversationWithID(listOf(t, h.mailbox(fixture.fiaAdmin, "inbox").body, "conversations"), id) != nil {
+		t.Fatal("FIA must not list a private team thread")
+	}
+	h.openConversation(recipient, id)
+	if h.openConversation(fixture.teamAdmin, id)[0]["isReadByRecipient"] != true {
+		t.Fatal("recipient read must be visible to sender")
+	}
+	reply := h.do(recipient, http.MethodPost, conversationPath(id)+"/messages", map[string]any{"body": "De acuerdo"}, nil)
+	expectStatus(t, reply, http.StatusCreated)
+	other := h.newMessagingFixture()
+	expectStatus(t, h.do(other.teamAdmin, http.MethodGet, conversationPath(id), nil, nil), http.StatusNotFound)
+}
+
+func TestTeamCannotSelectItselfAsRecipient(t *testing.T) {
+	h := newHarness(t)
+	f := h.newMessagingFixture()
+	got := h.do(f.teamAdmin, http.MethodPost, "/conversations", map[string]any{"subject": "Prueba", "body": "Mensaje", "recipientTeamId": f.team}, nil)
+	expectStatus(t, got, http.StatusBadRequest)
+}
+
+func TestMessagingWorksOverVerifiedTLS(t *testing.T) {
+	h := newHarness(t)
+	secure := httptest.NewTLSServer(h.server.Config.Handler)
+	t.Cleanup(secure.Close)
+	h.server = secure
+	client := secure.Client()
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	client.Jar = jar
+	username := h.createUser(domain.RoleFIAAdmin, 0)
+	expectStatus(t, h.do(client, http.MethodPost, "/auth/login", map[string]any{"username": username, "password": testPassword}, nil), http.StatusOK)
+	response, err := client.Get(secure.URL + "/conversations")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK || response.TLS == nil || response.TLS.Version < tls.VersionTLS12 {
+		t.Fatal("expected authenticated messaging over TLS")
 	}
 }

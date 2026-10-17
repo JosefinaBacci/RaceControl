@@ -32,29 +32,34 @@ type messageAuthorResponse struct {
 }
 
 type messageResponse struct {
-	ID       int64                 `json:"id"`
-	Body     string                `json:"body"`
-	SentAt   time.Time             `json:"sentAt"`
-	Author   messageAuthorResponse `json:"author"`
-	IsOwn    bool                  `json:"isOwn"`
-	IsUnread bool                  `json:"isUnread"`
+	ID                int64                 `json:"id"`
+	Body              string                `json:"body"`
+	SentAt            time.Time             `json:"sentAt"`
+	Author            messageAuthorResponse `json:"author"`
+	IsOwn             bool                  `json:"isOwn"`
+	IsUnread          bool                  `json:"isUnread"`
+	IsReadByRecipient bool                  `json:"isReadByRecipient"`
 }
 
 type conversationResponse struct {
-	ID        int64                    `json:"id"`
-	Subject   string                   `json:"subject"`
-	Team      conversationTeamResponse `json:"team"`
-	CreatedAt time.Time                `json:"createdAt"`
-	Messages  []messageResponse        `json:"messages"`
+	ID            int64                    `json:"id"`
+	Subject       string                   `json:"subject"`
+	Team          conversationTeamResponse `json:"team"`
+	OtherTeamID   *int64                   `json:"otherTeamId"`
+	OtherTeamName string                   `json:"otherTeamName"`
+	CreatedAt     time.Time                `json:"createdAt"`
+	Messages      []messageResponse        `json:"messages"`
 }
 
 type conversationSummaryResponse struct {
-	ID          int64                    `json:"id"`
-	Subject     string                   `json:"subject"`
-	Team        conversationTeamResponse `json:"team"`
-	CreatedAt   time.Time                `json:"createdAt"`
-	LastMessage messageResponse          `json:"lastMessage"`
-	UnreadCount int                      `json:"unreadCount"`
+	ID            int64                    `json:"id"`
+	Subject       string                   `json:"subject"`
+	Team          conversationTeamResponse `json:"team"`
+	OtherTeamID   *int64                   `json:"otherTeamId"`
+	OtherTeamName string                   `json:"otherTeamName"`
+	CreatedAt     time.Time                `json:"createdAt"`
+	LastMessage   messageResponse          `json:"lastMessage"`
+	UnreadCount   int                      `json:"unreadCount"`
 }
 
 type mailboxResponse struct {
@@ -63,9 +68,10 @@ type mailboxResponse struct {
 }
 
 type startConversationRequest struct {
-	TeamID  *int64 `json:"teamId"`
-	Subject string `json:"subject"`
-	Body    string `json:"body"`
+	TeamID          *int64 `json:"teamId"`
+	RecipientTeamID *int64 `json:"recipientTeamId"`
+	Subject         string `json:"subject"`
+	Body            string `json:"body"`
 }
 
 type replyRequest struct {
@@ -92,6 +98,7 @@ func (h *messagingHandlers) list(w http.ResponseWriter, r *http.Request) {
 			ID:          summary.ID,
 			Subject:     summary.Subject,
 			Team:        conversationTeamResponse(summary.Team),
+			OtherTeamID: summary.OtherTeamID, OtherTeamName: summary.OtherTeamName,
 			CreatedAt:   summary.CreatedAt,
 			LastMessage: toMessageResponse(summary.LastMessage),
 			UnreadCount: summary.UnreadCount,
@@ -172,9 +179,10 @@ func toConversationResponse(conversation messaging.Conversation) conversationRes
 		messages = append(messages, toMessageResponse(message))
 	}
 	return conversationResponse{
-		ID:        conversation.ID,
-		Subject:   conversation.Subject,
-		Team:      conversationTeamResponse(conversation.Team),
+		ID:          conversation.ID,
+		Subject:     conversation.Subject,
+		Team:        conversationTeamResponse(conversation.Team),
+		OtherTeamID: conversation.OtherTeamID, OtherTeamName: conversation.OtherTeamName,
 		CreatedAt: conversation.CreatedAt,
 		Messages:  messages,
 	}
@@ -182,11 +190,12 @@ func toConversationResponse(conversation messaging.Conversation) conversationRes
 
 func toMessageResponse(message messaging.Message) messageResponse {
 	return messageResponse{
-		ID:       message.ID,
-		Body:     message.Body,
-		SentAt:   message.SentAt,
-		Author:   messageAuthorResponse{Username: message.Author.Username, Role: string(message.Author.Role)},
-		IsOwn:    message.IsOwn,
-		IsUnread: message.IsUnread,
+		ID:                message.ID,
+		Body:              message.Body,
+		SentAt:            message.SentAt,
+		Author:            messageAuthorResponse{Username: message.Author.Username, Role: string(message.Author.Role)},
+		IsOwn:             message.IsOwn,
+		IsUnread:          message.IsUnread,
+		IsReadByRecipient: message.IsReadByRecipient,
 	}
 }

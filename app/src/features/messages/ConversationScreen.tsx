@@ -41,14 +41,14 @@ function Thread({ conversation, onReply }: { conversation: Conversation; onReply
         <AppText variant="title" accessibilityRole="header">
           {conversation.subject}
         </AppText>
-        <AppText color="textMuted">Conversación entre {conversation.team.name} y la FIA</AppText>
+        <AppText color="textMuted">{conversation.team.name} · {conversation.otherTeamName}</AppText>
       </View>
       <View style={styles.messages}>
         {conversation.messages.map((message) => (
           <MessageBubble key={message.id} message={message} />
         ))}
       </View>
-      <Composer onSend={onReply} />
+      <Composer key={conversation.id} onSend={onReply} />
     </>
   );
 }
@@ -61,11 +61,18 @@ function MessageBubble({ message }: { message: Message }) {
     <View style={[styles.bubble, message.isOwn ? styles.ownBubble : styles.theirBubble, message.isUnread && styles.unreadBubble]}>
       <View style={styles.bubbleHeader}>
         <AppText variant="caption" color="textMuted">
-          {message.isOwn ? 'Vos' : `${message.author.username} · ${side}`} · {formatDateTime(message.sentAt)}
+          {message.isOwn ? 'Vos' : `${message.author.username} · ${side}`}
         </AppText>
         {message.isUnread ? <Badge label="Nuevo" tone="accent" /> : null}
       </View>
       <AppText selectable>{message.body}</AppText>
+      <View style={styles.delivery}>
+        <AppText variant="caption" color="textMuted">{formatDateTime(message.sentAt)}</AppText>
+        {message.isOwn ? <AppText variant="caption" color={message.isReadByRecipient ? 'info' : 'textMuted'}
+          accessibilityLabel={message.isReadByRecipient ? 'Leído por un administrador destinatario' : 'Enviado'}>
+          {message.isReadByRecipient ? '✓✓ Leído' : '✓ Enviado'}
+        </AppText> : null}
+      </View>
     </View>
   );
 }
@@ -108,10 +115,11 @@ const styles = StyleSheet.create({
   header: { gap: spacing.xs },
   messages: { gap: spacing.md },
   bubble: { maxWidth: '85%', gap: spacing.xs, padding: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border },
-  ownBubble: { alignSelf: 'flex-end', backgroundColor: colors.surfaceRaised },
-  theirBubble: { alignSelf: 'flex-start', backgroundColor: colors.surface },
+  ownBubble: { alignSelf: 'flex-end', backgroundColor: colors.accentSoft, borderBottomRightRadius: 4 },
+  theirBubble: { alignSelf: 'flex-start', backgroundColor: colors.surfaceRaised, borderBottomLeftRadius: 4 },
   unreadBubble: { borderColor: colors.accent },
   bubbleHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' },
+  delivery: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, justifyContent: 'flex-end', marginTop: spacing.xs },
   composerInput: { minHeight: 80, paddingVertical: spacing.md, textAlignVertical: 'top' },
   actions: { flexDirection: 'row', justifyContent: 'flex-end' },
 });

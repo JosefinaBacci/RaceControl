@@ -16,12 +16,15 @@ export type Message = {
   author: { username: string; role: Role };
   isOwn: boolean;
   isUnread: boolean;
+  isReadByRecipient: boolean;
 };
 
 export type Conversation = {
   id: number;
   subject: string;
   team: ConversationTeam;
+  otherTeamId: number | null;
+  otherTeamName: string;
   createdAt: string;
   messages: Message[];
 };
@@ -30,6 +33,8 @@ export type ConversationSummary = {
   id: number;
   subject: string;
   team: ConversationTeam;
+  otherTeamId: number | null;
+  otherTeamName: string;
   createdAt: string;
   lastMessage: Message;
   unreadCount: number;
@@ -42,6 +47,7 @@ export type Mailbox = {
 
 export type NewConversationInput = {
   teamId?: number;
+  recipientTeamId?: number;
   subject: string;
   body: string;
 };

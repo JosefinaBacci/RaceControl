@@ -170,3 +170,25 @@ func inSavepointRow(tx pgx.Tx, destination *int64, statement string, args ...any
 		return savepoint.QueryRow(context.Background(), statement, args...).Scan(destination)
 	})
 }
+
+func TestPrivateTeamThreadRejectsFIAMessagesAndReadCursors(t *testing.T) {
+	inRolledBackTx(t, testdb.Pool(t), func(tx pgx.Tx) {
+		author := insertUser(t, tx, "team_admin", formulaOneTeamID)
+		recipient := insertUser(t, tx, "team_admin", redBullTeamID)
+		outsider := insertUser(t, tx, "fia_admin", 0)
+		var conversationID int64
+		err := tx.QueryRow(context.Background(), `INSERT INTO conversations (team_id, other_team_id, subject, created_by)
+   VALUES ($1, $2, 'Private', $3) RETURNING id`, formulaOneTeamID, redBullTeamID, author).Scan(&conversationID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		messageID := mustWriteMessage(t, tx, conversationID, recipient)
+		err = inSavepoint(tx, `INSERT INTO messages (conversation_id, author_id, body) VALUES ($1,$2,'intrusion')`, conversationID, outsider)
+		assertGuardCode(t, err, participantGuard)
+		err = inSavepoint(tx, `INSERT INTO conversation_reads (conversation_id,user_id,last_read_message_id) VALUES ($1,$2,$3)`, conversationID, outsider, messageID)
+		assertGuardCode(t, err, participantGuard)
+		if err := inSavepoint(tx, `UPDATE conversations SET other_team_id = NULL WHERE id=$1`, conversationID); err == nil {
+			t.Fatal("participants must be immutable")
+		}
+	})
+}

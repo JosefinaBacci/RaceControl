@@ -1,3 +1,5 @@
+import { useFocusEffect } from 'expo-router';
+import { AppState } from 'react-native';
 import { useCallback, useEffect } from 'react';
 
 import { listConversations, openConversation, replyToConversation, type MailboxBox } from '@/api/messages';
@@ -18,6 +20,15 @@ export function useConversation(id: number) {
   const remote = useRemote(() => openConversation(id), [id]);
   const { state, reload } = remote;
   useReloadOnFocus(reload);
+  useFocusEffect(useCallback(() => {
+    let isLoading = false;
+    const timer = setInterval(async () => {
+      if (AppState.currentState !== 'active' || isLoading) return;
+      isLoading = true;
+      try { await reload(); } finally { isLoading = false; }
+    }, 10000);
+    return () => clearInterval(timer);
+  }, [reload]));
 
   useEffect(() => {
     if (state.status === 'ready') {

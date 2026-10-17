@@ -22,10 +22,6 @@ type Querier interface {
 	CircuitExists(ctx context.Context, id int64) (bool, error)
 	CountFailuresSinceLastSuccess(ctx context.Context, arg CountFailuresSinceLastSuccessParams) (int64, error)
 	CreateAssignment(ctx context.Context, arg CreateAssignmentParams) error
-	// Messaging (000028). Every read is scoped by team: a FIA administrator passes no
-	// team and sees every conversation, a team administrator passes theirs, so a
-	// foreign conversation is indistinguishable from a missing one. A message is
-	// unread for the reader when it is past their cursor and someone else wrote it.
 	CreateConversation(ctx context.Context, arg CreateConversationParams) (int64, error)
 	CreateDriver(ctx context.Context, arg CreateDriverParams) (int64, error)
 	CreateEvent(ctx context.Context, arg CreateEventParams) (int64, error)
@@ -74,7 +70,7 @@ type Querier interface {
 	ListConversationMessages(ctx context.Context, arg ListConversationMessagesParams) ([]ListConversationMessagesRow, error)
 	// Every conversation the reader takes part in, the latest activity first, with
 	// its last message, how many are unread and whether the reader wrote in it.
-	ListConversations(ctx context.Context, arg ListConversationsParams) ([]ListConversationsRow, error)
+	ListConversations(ctx context.Context, readerID int64) ([]ListConversationsRow, error)
 	// The grid of a race: every driver whose team on the race date runs in its
 	// championship, with the number they hold in that season and the points already loaded
 	// (NULL when the driver has no entry yet). The service diffs against this.

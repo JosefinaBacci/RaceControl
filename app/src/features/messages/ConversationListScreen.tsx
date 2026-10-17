@@ -1,8 +1,9 @@
+import { useSession } from '@/auth/SessionProvider';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import type { ConversationSummary, MailboxBox } from '@/api/messages';
-import { AppText, Badge, Button, Card, ChipGroup, Screen } from '@/components';
+import { AppText, Badge, Button, Card, ChipGroup, Screen, TextField } from '@/components';
 import { useMailbox } from '@/data/messages';
 import { RemoteContent } from '@/features/RemoteContent';
 import { formatDateTime } from '@/format';
@@ -26,6 +27,7 @@ type ConversationListScreenProps = {
 };
 
 export function ConversationListScreen({ subtitle, showsTeam, onOpen, onStart }: ConversationListScreenProps) {
+  const [search, setSearch] = useState('');
   const [box, setBox] = useState<MailboxBox>('inbox');
   const { state, reload } = useMailbox(box);
 
@@ -36,6 +38,7 @@ export function ConversationListScreen({ subtitle, showsTeam, onOpen, onStart }:
       headerAction={<Button label="Nueva conversación" icon="create-outline" compact onPress={onStart} />}
     >
       <ChipGroup variant="underline" options={boxOptions} selected={box} onSelect={setBox} accessibilityLabel="Elegir bandeja" />
+      <TextField label="Buscar conversación" icon="search" value={search} onChangeText={setSearch} />
       <Card flush>
         <RemoteContent state={state} onRetry={reload}>
           {(mailbox) =>
@@ -44,7 +47,7 @@ export function ConversationListScreen({ subtitle, showsTeam, onOpen, onStart }:
                 {emptyBoxMessage[box]}
               </AppText>
             ) : (
-              mailbox.conversations.map((conversation) => (
+              mailbox.conversations.filter((conversation) => `${conversation.subject} ${conversation.team.name} ${conversation.otherTeamName}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())).map((conversation) => (
                 <ConversationRow key={conversation.id} conversation={conversation} showsTeam={showsTeam} onPress={() => onOpen(conversation.id)} />
               ))
             )
@@ -56,6 +59,8 @@ export function ConversationListScreen({ subtitle, showsTeam, onOpen, onStart }:
 }
 
 function ConversationRow({ conversation, showsTeam, onPress }: { conversation: ConversationSummary; showsTeam: boolean; onPress: () => void }) {
+  const ownTeamId = useSession().user?.teamId;
+  const counterpart = conversation.team.id === ownTeamId ? conversation.otherTeamName : conversation.team.name;
   const { lastMessage, unreadCount } = conversation;
   const hasUnread = unreadCount > 0;
   const author = lastMessage.isOwn ? 'Vos' : lastMessage.author.username;
@@ -73,7 +78,7 @@ function ConversationRow({ conversation, showsTeam, onPress }: { conversation: C
           {conversation.subject}
         </AppText>
         <AppText variant="caption" color="textMuted" numberOfLines={2}>
-          {showsTeam ? `${conversation.team.name} · ` : ''}
+          {counterpart} ·{' '}
           {author}: {lastMessage.body}
         </AppText>
       </View>

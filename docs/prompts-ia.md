@@ -1447,3 +1447,13 @@ HTTPS real permanece pendiente; localhost usa HTTP.
 **Validación:** `make sqlc` y `make check` aprobados con PostgreSQL de pruebas en migración 000029.
 
 ---
+
+### 2026-10-17 — feat(mensajes): habilitar chats privados entre escuderías y confirmaciones de lectura (US17)
+
+**Pedido:** completar todas las US asignadas e incluir las ampliaciones de las notas.
+
+**Resultado:** Participantes inmutables, guardias en base y servicio; FIA excluida de chats ajenos. Enviado/Leído por la contraparte, buscador, destinatarios y burbujas diferenciadas. Actualización del chat activo. Tests de privacidad, lectura y TLS; selector revisado en navegador con cuenta temporal.
+
+**Validación:** `make sqlc` y `make check` aprobados con PostgreSQL de pruebas en migración 000029.
+
+---
