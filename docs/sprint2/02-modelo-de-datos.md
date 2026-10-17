@@ -295,3 +295,21 @@ Migración aditiva sobre `000027` (no requiere `make db-reset`). Cubre US17.
   producción la cookie de sesión es `Secure` y `HttpOnly`, así que el navegador nunca la manda por
   HTTP plano. Junto con la autenticación obligatoria (sin sesión, `401` en todos los endpoints), la
   autorización por participante y la validación, eso es lo que hace segura la transmisión.
+
+### Ampliación de US17 — migración 000029
+
+`other_team_id` nulo conserva los hilos escudería–FIA. Cuando tiene valor, el hilo pertenece
+exclusivamente a ambas escuderías. Los participantes se derivan de administradores activos;
+`conversation_has_participant` se comparte entre consultas y guardias de mensajes y lecturas.
+No se permite cambiar participantes ni eliminar conversaciones históricas. El downgrade se rechaza
+si existen hilos entre escuderías, para no ampliar silenciosamente el acceso de la FIA.
+
+El recibo se deriva del cursor de al menos un administrador de la contraparte; una lectura propia
+no cuenta. El número del piloto pasa a ser obligatorio en las escrituras del servicio; los registros
+históricos sin número permanecen intactos y se completan al editar.
+
+El historial de asignaciones usa ventanas sobre toda la secuencia antes de filtrar por escudería:
+así una transferencia o baja sigue visible para el equipo saliente. Solo FIA accede al global.
+
+La transmisión segura se verifica con TLS real. Se admite TLS directo o proxy confiable con
+acceso de red restringido; producción rechaza HTTP. HSTS complementa TLS y no lo sustituye.

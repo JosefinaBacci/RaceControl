@@ -1477,3 +1477,13 @@ HTTPS real permanece pendiente; localhost usa HTTP.
 **Validación:** `make sqlc` y `make check` aprobados con PostgreSQL de pruebas en migración 000029.
 
 ---
+
+### 2026-10-17 — docs(sprint2): cerrar las ocho US y registrar las ampliaciones verificadas (US7, US8, US9, US11, US12, US17, US23, US24)
+
+**Pedido:** completar todas las US asignadas e incluir las ampliaciones de las notas.
+
+**Resultado:** Las ocho US cerradas en implementación y pruebas. Estado de notas, privacidad, lectura, historial y HTTPS documentados. No se publicó un despliegue externo ni se modificó la base local de desarrollo, todavía en versión 1.
+
+**Validación:** `make sqlc` y `make check` aprobados con PostgreSQL de pruebas en migración 000029.
+
+---

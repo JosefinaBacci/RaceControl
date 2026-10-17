@@ -17,7 +17,7 @@ en verde y un commit por cambio lógico.
 | US9 | Gestión de puntajes | 3 | 8 | 3.5h | | ☑ |
 | US23 | Visualización de puntajes | 5 | 13 | 5h | | ☑ |
 | US24 | Visualización y confirmación de recibo de puntajes | 5 | 13 | 6h | | ☑ |
-| US17 | Mensajería interna segura | 8 | 21 | 10h | | ◐ |
+| US17 | Mensajería interna segura | 8 | 21 | 10h | | ☑ |
 
 **Total estimado:** 42h
 
@@ -229,7 +229,8 @@ Esquema `000002`–`000026` ya aplicado. Puntos de la revisión del modelo:
 
 - [x] Responsables de escudería y administradores pueden enviar y recibir mensajes
 - [x] Solo los participantes de una conversación pueden acceder a sus mensajes
-- [ ] Los mensajes se transmiten de forma segura y las entradas se validan
+- [x] Los mensajes se transmiten de forma segura y las entradas se validan (TLS real probado,
+      HTTPS obligatorio en producción y entradas validadas)
 - [x] Los mensajes no leídos se identifican claramente
 - [x] Un usuario no autenticado no puede acceder a ninguna conversación
 
@@ -246,7 +247,24 @@ Esquema `000002`–`000026` ya aplicado. Puntos de la revisión del modelo:
   muestra error. Acceso directo a la búsqueda pública desde la gestión de pilotos.
 - US17: acciones de pantalla visibles aunque no haya título, regreso explícito a la bandeja,
   actualización manual y al recuperar foco. Pruebas de integración de mensajería aprobadas.
-- El criterio de transmisión segura de US17 queda abierto para validar el despliegue HTTPS real:
-  localhost usa HTTP y HSTS por sí solo no cifra la conexión. No se verificó un proxy TLS en esta revisión.
+- US17: soporte TLS directo y proxy HTTPS confiable implementado; prueba de conexión TLS real,
+  rechazo de HTTP en producción y de encabezados falsificados. La instalación pública requiere
+  configurar certificados o proxy, según README; no se desplegó a un servidor externo.
 
 El detalle de las notas y las ampliaciones está en `revision-notas.md`.
+
+## Cierre de las ampliaciones confirmadas — 2026-10-17
+
+- [x] US11/US12: historial global para FIA, filtro por escudería y consulta restringida de movimientos
+  propios; incluye altas, cambios de rol, transferencias y bajas. Número de temporada obligatorio.
+- [x] US17: conversaciones privadas entre escuderías con participantes inmutables y controles en
+  servicio y base; los administradores FIA no acceden a chats entre terceros.
+- [x] US17: estados Enviado/Leído, lectura por la parte destinataria, actualización cada diez segundos
+  solo en el chat activo, búsqueda en la bandeja, destinatario seleccionable y burbujas diferenciadas.
+- [x] US9: aviso de carreras terminadas sin resultados en el panel FIA con acceso a la carga.
+- [x] `make sqlc` y `make check` aprobados con PostgreSQL de pruebas en migración 000029.
+
+Las ocho US asignadas quedan cerradas en implementación y pruebas. El despliegue público y sus
+certificados son configuración operativa; el cifrado implementado es HTTPS, no cifrado de extremo
+a extremo ni de los datos almacenados. No se inventó una escala de puntos por categoría: se conserva
+la decisión de carga manual documentada en el modelo.
