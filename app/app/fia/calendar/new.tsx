@@ -50,6 +50,10 @@ function NewEventForm({ seasonId, seasons, circuits }: NewEventFormProps) {
       setFormError('Completá la fecha y las dos horas (por ejemplo 2026-11-15, 15:00 y 17:00).');
       return;
     }
+    if (new Date(timing.startsAt).getTime() <= Date.now()) {
+      setFormError('El inicio debe ser posterior a la fecha y hora actuales.');
+      return;
+    }
     const created = await submit(() => createEvent(toNewEvent(values, timing)));
     if (created) {
       router.back();

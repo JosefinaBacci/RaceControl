@@ -1377,3 +1377,13 @@ el foco. El problema del botón oculto afectaba también otras pantallas de deta
 HTTPS real permanece pendiente; localhost usa HTTP.
 
 ---
+
+### 2026-10-17 — fix(calendario): validar horarios y fechas futuras y facilitar la selección de circuitos (US7)
+
+**Pedido:** revisar los faltantes de RaceControl y corregirlos con commits por US.
+
+**Resultado:** Selector con búsqueda y desplazamiento, horas válidas y rechazo de altas/reprogramaciones pasadas. Los fixtures históricos simulan el paso del tiempo fuera de la API de altas.
+
+**Validación:** `make check` con base PostgreSQL de pruebas aprobado.
+
+---

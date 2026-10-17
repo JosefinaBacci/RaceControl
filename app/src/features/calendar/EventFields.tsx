@@ -2,7 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import type { Circuit, Season } from '@/api/calendar';
 import type { FieldErrors } from '@/api/formFailure';
-import { AppText, ChipGroup, FieldGroup, TextField } from '@/components';
+import { AppText, ChipGroup, FieldGroup, SelectField, TextField } from '@/components';
 import { categories } from '@/mocks/catalog';
 import { eventKindOptions, kindLabel } from '@/features/eventKind';
 import { spacing } from '@/theme';
@@ -58,7 +58,7 @@ export function EventFields({ values, onChange, errors, seasons, circuits, isKin
 
       {values.kind === 'technical_control' ? null : (
         <FieldGroup label="Circuito" error={errors.circuitId}>
-          <ChipGroup
+          <SelectField
             options={circuits.map((circuit) => ({ value: String(circuit.id), label: circuit.name }))}
             selected={values.circuitId === null ? '' : String(values.circuitId)}
             onSelect={(circuitId) => update({ circuitId: Number(circuitId) })}
@@ -74,6 +74,7 @@ export function EventFields({ values, onChange, errors, seasons, circuits, isKin
         onChangeText={(date) => update({ date })}
         error={errors.startsAt}
         placeholder="2026-11-15"
+        maxLength={10}
         autoCapitalize="none"
         autoCorrect={false}
       />
@@ -83,6 +84,7 @@ export function EventFields({ values, onChange, errors, seasons, circuits, isKin
         value={values.startTime}
         onChangeText={(startTime) => update({ startTime })}
         placeholder="15:00"
+        maxLength={5}
         autoCapitalize="none"
         autoCorrect={false}
       />
@@ -93,6 +95,7 @@ export function EventFields({ values, onChange, errors, seasons, circuits, isKin
         onChangeText={(endTime) => update({ endTime })}
         error={errors.endsAt}
         placeholder="17:00"
+        maxLength={5}
         autoCapitalize="none"
         autoCorrect={false}
       />

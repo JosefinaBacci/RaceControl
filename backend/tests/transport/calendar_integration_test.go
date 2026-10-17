@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/racecontrol/backend/internal/db"
+	"github.com/racecontrol/backend/internal/db/dbgen"
 	"github.com/racecontrol/backend/internal/domain"
 	"github.com/racecontrol/backend/tests/testdb"
 )
@@ -130,7 +132,7 @@ func TestFIAAdminCreatesARaceWithItsRound(t *testing.T) {
 	fiaAdmin, _ := h.signedIn(domain.RoleFIAAdmin, 0)
 
 	number := h.nextRoundNumber(formulaOneCategory)
-	created := h.createRace(fiaAdmin, time.Date(2026, 5, 3, 15, 0, 0, 0, time.UTC), number, "Gran Premio de Prueba")
+	created := h.createRace(fiaAdmin, time.Date(2026, 12, 20, 15, 0, 0, 0, time.UTC), number, "Gran Premio de Prueba")
 	expectStatus(t, created, http.StatusCreated)
 
 	wantName := fmt.Sprintf("Gran Premio de Prueba · Ronda %d", number)
@@ -154,14 +156,14 @@ func TestFIAAdminCreatesATyreTestAndATechnicalControl(t *testing.T) {
 
 	tyreTest := h.do(fiaAdmin, http.MethodPost, "/events", map[string]any{
 		"kind":         "tyre_test",
-		"startsAt":     "2026-06-10T09:00:00Z",
-		"endsAt":       "2026-06-10T17:00:00Z",
+		"startsAt":     "2026-12-20T09:00:00Z",
+		"endsAt":       "2026-12-20T17:00:00Z",
 		"seasonId":     seededSeasonID,
 		"categoryCode": formulaOneCategory,
 		"circuitId":    seededCircuitID,
 	}, nil)
 	expectStatus(t, tyreTest, http.StatusCreated)
-	if tyreTest.body["name"] != "Prueba de neumáticos · 10/06/2026" {
+	if tyreTest.body["name"] != "Prueba de neumáticos · 20/12/2026" {
 		t.Fatalf("tyre test name = %v", tyreTest.body["name"])
 	}
 	if tyreTest.body["roundNumber"] != nil {
@@ -170,8 +172,8 @@ func TestFIAAdminCreatesATyreTestAndATechnicalControl(t *testing.T) {
 
 	control := h.do(fiaAdmin, http.MethodPost, "/events", map[string]any{
 		"kind":         "technical_control",
-		"startsAt":     "2026-06-11T09:00:00Z",
-		"endsAt":       "2026-06-11T12:00:00Z",
+		"startsAt":     "2026-12-21T09:00:00Z",
+		"endsAt":       "2026-12-21T12:00:00Z",
 		"seasonId":     seededSeasonID,
 		"categoryCode": formulaOneCategory,
 		"controlType":  "Verificación de pesos",
@@ -191,8 +193,8 @@ func TestCreateEventRejectsBadInput(t *testing.T) {
 
 	valid := map[string]any{
 		"kind":         "race",
-		"startsAt":     "2026-05-03T15:00:00Z",
-		"endsAt":       "2026-05-03T17:00:00Z",
+		"startsAt":     "2026-12-20T15:00:00Z",
+		"endsAt":       "2026-12-20T17:00:00Z",
 		"seasonId":     seededSeasonID,
 		"categoryCode": formulaOneCategory,
 		"circuitId":    seededCircuitID,
@@ -201,8 +203,13 @@ func TestCreateEventRejectsBadInput(t *testing.T) {
 	}
 
 	cases := map[string]func(map[string]any){
+		"past start": func(p map[string]any) {
+			p["startsAt"] = time.Now().Add(-time.Hour).UTC().Format(time.RFC3339)
+			p["endsAt"] = time.Now().Add(time.Hour).UTC().Format(time.RFC3339)
+		},
+		"invalid hour":     func(p map[string]any) { p["startsAt"] = "2026-12-20T99:99:00Z" },
 		"unknown kind":     func(p map[string]any) { p["kind"] = "practice" },
-		"end before start": func(p map[string]any) { p["endsAt"] = "2026-05-03T14:00:00Z" },
+		"end before start": func(p map[string]any) { p["endsAt"] = "2026-12-20T14:00:00Z" },
 		"date outside season": func(p map[string]any) {
 			p["startsAt"] = "2027-05-03T15:00:00Z"
 			p["endsAt"] = "2027-05-03T17:00:00Z"
@@ -243,7 +250,7 @@ func TestCreateRejectsARoundNumberInUse(t *testing.T) {
 	h := newHarness(t)
 	fiaAdmin, _ := h.signedIn(domain.RoleFIAAdmin, 0)
 
-	got := h.createRace(fiaAdmin, time.Date(2026, 5, 3, 15, 0, 0, 0, time.UTC), seededRoundNumber, "Gran Premio Repetido")
+	got := h.createRace(fiaAdmin, time.Date(2026, 12, 20, 15, 0, 0, 0, time.UTC), seededRoundNumber, "Gran Premio Repetido")
 	expectStatus(t, got, http.StatusConflict)
 	if got.body["code"] != "conflict" {
 		t.Fatalf("code = %v, want conflict", got.body["code"])
@@ -306,7 +313,7 @@ func TestEditingARacedRaceIsRefused(t *testing.T) {
 	fiaAdmin, _ := h.signedIn(domain.RoleFIAAdmin, 0)
 
 	got := h.do(fiaAdmin, http.MethodPatch, fmt.Sprintf("/events/%d", seededRacedEventID),
-		map[string]any{"startsAt": "2026-10-04T16:00:00Z", "endsAt": "2026-10-04T18:00:00Z"}, nil)
+		map[string]any{"startsAt": "2026-12-20T16:00:00Z", "endsAt": "2026-12-20T18:00:00Z"}, nil)
 	expectStatus(t, got, http.StatusConflict)
 }
 
@@ -315,7 +322,7 @@ func TestUpdateEditsTheRoundOfARace(t *testing.T) {
 	fiaAdmin, _ := h.signedIn(domain.RoleFIAAdmin, 0)
 
 	number := h.nextRoundNumber(formulaOneCategory)
-	created := h.createRace(fiaAdmin, time.Date(2026, 5, 3, 15, 0, 0, 0, time.UTC), number, "Gran Premio Original")
+	created := h.createRace(fiaAdmin, time.Date(2026, 12, 20, 15, 0, 0, 0, time.UTC), number, "Gran Premio Original")
 	expectStatus(t, created, http.StatusCreated)
 	id := eventID(t, created)
 
@@ -364,8 +371,9 @@ func TestEventListFiltersByPeriod(t *testing.T) {
 	now := time.Now().UTC()
 	number := h.nextRoundNumber(formulaOneCategory)
 
-	past := h.createRace(fiaAdmin, now.Add(-48*time.Hour), number, "Gran Premio Pasado")
+	past := h.createRace(fiaAdmin, now.Add(24*time.Hour), number, "Gran Premio Pasado")
 	expectStatus(t, past, http.StatusCreated)
+	h.ageRace(eventID(t, past), now.Add(-48*time.Hour))
 	future := h.createRace(fiaAdmin, now.Add(48*time.Hour), number+1, "Gran Premio Futuro")
 	expectStatus(t, future, http.StatusCreated)
 
@@ -416,5 +424,29 @@ func TestCircuitsAndSeasonsAreCatalogued(t *testing.T) {
 	firstSeason, _ := years[0].(map[string]any)
 	if firstSeason["year"] != float64(2026) {
 		t.Fatalf("season = %v, want 2026", firstSeason["year"])
+	}
+}
+
+// Historical fixtures simulate elapsed time without allowing backdated API creates.
+func (h *harness) ageRace(id int64, startsAt time.Time) {
+	h.t.Helper()
+	if err := h.queries.UpdateEventTimes(context.Background(), dbgen.UpdateEventTimesParams{
+		ID: id, StartsAt: db.Timestamptz(startsAt), EndsAt: db.Timestamptz(startsAt.Add(2 * time.Hour)),
+	}); err != nil {
+		h.t.Fatalf("age race fixture: %v", err)
+	}
+}
+
+func TestUpdateRejectsMovingARaceIntoThePast(t *testing.T) {
+	h := newHarness(t)
+	fiaAdmin, _ := h.signedIn(domain.RoleFIAAdmin, 0)
+	championship := testdb.NewChampionship(t, h.pool)
+	id := championship.AddRace(time.Now().Add(24 * time.Hour))
+	got := h.do(fiaAdmin, http.MethodPatch, fmt.Sprintf("/events/%d", id), map[string]any{
+		"startsAt": time.Now().Add(-time.Hour).UTC().Format(time.RFC3339),
+	}, nil)
+	expectStatus(t, got, http.StatusBadRequest)
+	if got.body["field"] != "startsAt" {
+		t.Fatalf("field = %v, want startsAt", got.body["field"])
 	}
 }

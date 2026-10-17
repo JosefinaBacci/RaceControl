@@ -142,6 +142,9 @@ type NewEvent struct {
 }
 
 func (s *Service) Create(ctx context.Context, input NewEvent) (Event, error) {
+	if !input.StartsAt.IsZero() && !input.StartsAt.After(time.Now()) {
+		return Event{}, domain.NewValidationError("startsAt", "el inicio debe ser posterior a la fecha y hora actuales")
+	}
 	kind, err := parseKind(input.Kind)
 	if err != nil {
 		return Event{}, err
@@ -203,6 +206,9 @@ func (s *Service) Update(ctx context.Context, id int64, changes EventChanges) (E
 	current, err := s.Get(ctx, id)
 	if err != nil {
 		return Event{}, err
+	}
+	if changes.StartsAt != nil && !changes.StartsAt.Equal(current.StartsAt) && !changes.StartsAt.After(time.Now()) {
+		return Event{}, domain.NewValidationError("startsAt", "el nuevo inicio debe ser posterior a la fecha y hora actuales")
 	}
 	next, err := s.applyChanges(ctx, current, changes)
 	if err != nil {

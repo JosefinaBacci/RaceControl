@@ -263,9 +263,11 @@ func (h *harness) createScoreRace(fiaAdmin *http.Client, gpName string) int64 {
 	h.t.Helper()
 
 	number := h.nextRoundNumber(formulaOneCategory)
-	created := h.createRace(fiaAdmin, time.Date(2026, 6, 7, 15, 0, 0, 0, time.UTC), number, gpName)
+	created := h.createRace(fiaAdmin, time.Date(2026, 12, 20, 15, 0, 0, 0, time.UTC), number, gpName)
 	expectStatus(h.t, created, http.StatusCreated)
-	return eventID(h.t, created)
+	id := eventID(h.t, created)
+	h.ageRace(id, time.Date(2026, 6, 7, 15, 0, 0, 0, time.UTC))
+	return id
 }
 
 func (h *harness) scoreGrid(client *http.Client, eventID int64) response {
