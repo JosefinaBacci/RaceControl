@@ -254,6 +254,72 @@ func (q *Queries) ListActiveDrivers(ctx context.Context, arg ListActiveDriversPa
 	return items, nil
 }
 
+const listAssignmentHistory = `-- name: ListAssignmentHistory :many
+WITH history AS (
+    SELECT a.id, a.driver_id, a.team_id, a.effective_from, a.created_at, a.is_starter, lag(team_id) OVER (PARTITION BY driver_id ORDER BY effective_from, id) AS previous_team_id,
+           lead(effective_from) OVER (PARTITION BY driver_id ORDER BY effective_from, id) AS effective_until
+    FROM driver_team_assignments a
+)
+SELECT h.id, h.driver_id, d.first_name, d.last_name, h.team_id,
+       COALESCE(t.name, 'Sin escudería')::text AS team_name,
+       COALESCE(h.previous_team_id, 0)::bigint AS previous_team_id, COALESCE(previous.name, '')::text AS previous_team_name,
+       h.is_starter, h.effective_from, h.effective_until::timestamptz AS effective_until
+FROM history h
+JOIN drivers d ON d.id = h.driver_id
+LEFT JOIN teams t ON t.id = h.team_id
+LEFT JOIN teams previous ON previous.id = h.previous_team_id
+WHERE $1::bigint IS NULL
+   OR h.team_id = $1::bigint
+   OR h.previous_team_id = $1::bigint
+ORDER BY h.effective_from DESC, h.id DESC
+`
+
+type ListAssignmentHistoryRow struct {
+	ID               int64
+	DriverID         int64
+	FirstName        string
+	LastName         string
+	TeamID           pgtype.Int8
+	TeamName         string
+	PreviousTeamID   int64
+	PreviousTeamName string
+	IsStarter        bool
+	EffectiveFrom    pgtype.Timestamptz
+	EffectiveUntil   pgtype.Timestamptz
+}
+
+func (q *Queries) ListAssignmentHistory(ctx context.Context, teamID pgtype.Int8) ([]ListAssignmentHistoryRow, error) {
+	rows, err := q.db.Query(ctx, listAssignmentHistory, teamID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAssignmentHistoryRow{}
+	for rows.Next() {
+		var i ListAssignmentHistoryRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.DriverID,
+			&i.FirstName,
+			&i.LastName,
+			&i.TeamID,
+			&i.TeamName,
+			&i.PreviousTeamID,
+			&i.PreviousTeamName,
+			&i.IsStarter,
+			&i.EffectiveFrom,
+			&i.EffectiveUntil,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTeamDrivers = `-- name: ListTeamDrivers :many
 
 SELECT d.id, d.first_name, d.last_name, d.license_number, d.country_code,

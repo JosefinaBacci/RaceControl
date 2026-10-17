@@ -132,6 +132,7 @@ func TestCreateDriverRejectsBadInput(t *testing.T) {
 		"missing last name":   {func(p map[string]any) { delete(p, "lastName") }, "lastName"},
 		"short license":       {func(p map[string]any) { p["licenseNumber"] = "ab" }, "licenseNumber"},
 		"bad country":         {func(p map[string]any) { p["countryCode"] = "Argentina" }, "countryCode"},
+		"missing number":      {func(p map[string]any) { delete(p, "number") }, "number"},
 		"number out of range": {func(p map[string]any) { p["number"] = 1000 }, "number"},
 	}
 	for name, tc := range cases {

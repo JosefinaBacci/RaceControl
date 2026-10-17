@@ -1437,3 +1437,13 @@ HTTPS real permanece pendiente; localhost usa HTTP.
 **Validación:** `make check` con base PostgreSQL de pruebas aprobado.
 
 ---
+
+### 2026-10-17 — feat(pilotos): completar historial por escudería y exigir número de temporada (US11, US12)
+
+**Pedido:** completar todas las US asignadas e incluir las ampliaciones de las notas.
+
+**Resultado:** Historial global y filtrado para FIA; movimientos propios, transferencias y bajas para escuderías. Número obligatorio. Pruebas de aislamiento y validación.
+
+**Validación:** `make sqlc` y `make check` aprobados con PostgreSQL de pruebas en migración 000029.
+
+---

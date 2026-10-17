@@ -9,6 +9,7 @@ import (
 )
 
 type DriverManager interface {
+	History(ctx context.Context, reader domain.Identity, teamID *int64) ([]drivers.Assignment, error)
 	Lineup(ctx context.Context, teamID int64) ([]drivers.Driver, error)
 	Get(ctx context.Context, teamID, id int64) (drivers.Driver, error)
 	Create(ctx context.Context, teamID int64, input drivers.NewDriver) (drivers.Driver, error)

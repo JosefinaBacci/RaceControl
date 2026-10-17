@@ -129,3 +129,22 @@ VALUES (sqlc.arg(driver_id), NULL, now(), false);
 INSERT INTO season_drivers (driver_id, season_id, category_id, number)
 VALUES (sqlc.arg(driver_id), sqlc.arg(season_id), sqlc.arg(category_id), sqlc.arg(number))
 ON CONFLICT (driver_id, season_id, category_id) DO UPDATE SET number = EXCLUDED.number;
+
+-- name: ListAssignmentHistory :many
+WITH history AS (
+    SELECT a.*, lag(team_id) OVER (PARTITION BY driver_id ORDER BY effective_from, id) AS previous_team_id,
+           lead(effective_from) OVER (PARTITION BY driver_id ORDER BY effective_from, id) AS effective_until
+    FROM driver_team_assignments a
+)
+SELECT h.id, h.driver_id, d.first_name, d.last_name, h.team_id,
+       COALESCE(t.name, 'Sin escudería')::text AS team_name,
+       COALESCE(h.previous_team_id, 0)::bigint AS previous_team_id, COALESCE(previous.name, '')::text AS previous_team_name,
+       h.is_starter, h.effective_from, h.effective_until::timestamptz AS effective_until
+FROM history h
+JOIN drivers d ON d.id = h.driver_id
+LEFT JOIN teams t ON t.id = h.team_id
+LEFT JOIN teams previous ON previous.id = h.previous_team_id
+WHERE sqlc.narg(team_id)::bigint IS NULL
+   OR h.team_id = sqlc.narg(team_id)::bigint
+   OR h.previous_team_id = sqlc.narg(team_id)::bigint
+ORDER BY h.effective_from DESC, h.id DESC;

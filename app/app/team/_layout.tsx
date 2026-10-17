@@ -50,6 +50,7 @@ function TeamTabs() {
         options={{ title: 'Mensajes', tabBarIcon: tabIcon('chatbubbles-outline'), tabBarBadge: tabBadge(unreadCount) }}
       />
       <Tabs.Screen name="public" options={{ title: 'Sitio público', tabBarIcon: tabIcon('globe-outline') }} />
+      <Tabs.Screen name="assignments" options={{ title: 'Asignaciones', tabBarIcon: tabIcon('time-outline') }} />
     </Tabs>
   );
 }

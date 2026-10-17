@@ -55,7 +55,7 @@ export function DriverFields({ values, onChange, errors }: DriverFieldsProps) {
         maxLength={2}
       />
       <TextField
-        label="Número (opcional)"
+        label="Número de temporada"
         value={values.number}
         onChangeText={(number) => onChange({ ...values, number })}
         error={errors.number}

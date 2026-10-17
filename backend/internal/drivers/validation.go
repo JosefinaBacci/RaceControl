@@ -81,7 +81,10 @@ func validateState(state driverState) error {
 	if !countryCodePattern.MatchString(state.countryCode) {
 		return domain.NewValidationError("countryCode", "el país va como dos letras, por ejemplo ar")
 	}
-	if state.number != nil && (*state.number < 0 || *state.number > maxNumber) {
+	if state.number == nil {
+		return domain.NewValidationError("number", "el número de temporada es obligatorio")
+	}
+	if *state.number < 0 || *state.number > maxNumber {
 		return domain.NewValidationError("number", "el número debe estar entre 0 y 999")
 	}
 	return nil

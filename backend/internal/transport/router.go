@@ -89,6 +89,7 @@ func NewRouter(deps Dependencies) http.Handler {
 	router.With(sessionGuard.RequireSession).Post("/account/password", userRoutes.changeOwnPassword)
 
 	driverRoutes := &driverHandlers{drivers: deps.Drivers}
+	router.With(sessionGuard.RequireSession, sessionGuard.RequireRole(domain.RoleFIAAdmin, domain.RoleTeamAdmin)).Get("/assignments", driverRoutes.history)
 	router.Get("/drivers", driverRoutes.directory)
 	router.Get("/drivers/{id}", driverRoutes.show)
 	router.Route("/team/drivers", func(r chi.Router) {

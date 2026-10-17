@@ -47,7 +47,7 @@ test('scores reject blanks, non-decimal syntax, excess precision and overflow', 
 
 test('driver numbers reject invalid text instead of silently dropping it', () => {
   const { driverNumberError } = loadForm('drivers/driverForm.ts');
-  for (const value of ['abc', '1.5', '1e2', '-1', '1000']) assert.notEqual(driverNumberError(value), null);
-  for (const value of ['', '0', '99', '999']) assert.equal(driverNumberError(value), null);
+  for (const value of ['', 'abc', '1.5', '1e2', '-1', '1000']) assert.notEqual(driverNumberError(value), null);
+  for (const value of ['0', '99', '999']) assert.equal(driverNumberError(value), null);
   assert.notEqual(driverNumberError('', 44), null);
 });

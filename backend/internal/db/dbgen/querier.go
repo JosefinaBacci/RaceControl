@@ -66,6 +66,7 @@ type Querier interface {
 	// team in their latest assignment, so the join leaves them out. Search runs over
 	// the full name and the category filter runs over the team's championship.
 	ListActiveDrivers(ctx context.Context, arg ListActiveDriversParams) ([]ListActiveDriversRow, error)
+	ListAssignmentHistory(ctx context.Context, teamID pgtype.Int8) ([]ListAssignmentHistoryRow, error)
 	// The calendar is read through the view that joins each event with its child
 	// (000021), so the list and the detail share a single definition.
 	ListCalendarEvents(ctx context.Context, arg ListCalendarEventsParams) ([]CalendarEvent, error)
