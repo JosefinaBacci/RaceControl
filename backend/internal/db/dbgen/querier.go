@@ -115,6 +115,8 @@ type Querier interface {
 	TeamExists(ctx context.Context, id int64) (bool, error)
 	TeamStandings(ctx context.Context, arg TeamStandingsParams) ([]TeamStandingsRow, error)
 	TouchSession(ctx context.Context, arg TouchSessionParams) error
+	// The password is written by UpdateUserPasswordHash, and only when a new one is
+	// given: this edit never touches it.
 	UpdateAccount(ctx context.Context, arg UpdateAccountParams) error
 	UpdateDriver(ctx context.Context, arg UpdateDriverParams) error
 	UpdateEventTimes(ctx context.Context, arg UpdateEventTimesParams) error

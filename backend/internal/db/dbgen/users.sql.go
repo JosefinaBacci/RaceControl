@@ -224,24 +224,24 @@ func (q *Queries) ReactivateUser(ctx context.Context, id int64) error {
 
 const updateAccount = `-- name: UpdateAccount :exec
 UPDATE users
-SET email = lower($1), role = $2, team_id = $3, password_hash = $4
-WHERE id = $5
+SET email = lower($1), role = $2, team_id = $3
+WHERE id = $4
 `
 
 type UpdateAccountParams struct {
-	Email        pgtype.Text
-	Role         string
-	TeamID       pgtype.Int8
-	PasswordHash string
-	ID           int64
+	Email  pgtype.Text
+	Role   string
+	TeamID pgtype.Int8
+	ID     int64
 }
 
+// The password is written by UpdateUserPasswordHash, and only when a new one is
+// given: this edit never touches it.
 func (q *Queries) UpdateAccount(ctx context.Context, arg UpdateAccountParams) error {
 	_, err := q.db.Exec(ctx, updateAccount,
 		arg.Email,
 		arg.Role,
 		arg.TeamID,
-		arg.PasswordHash,
 		arg.ID,
 	)
 	return err

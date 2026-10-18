@@ -37,9 +37,11 @@ WHERE (sqlc.narg(search)::text IS NULL
   AND (sqlc.narg(is_active)::boolean IS NULL OR u.is_active = sqlc.narg(is_active))
 ORDER BY u.username;
 
+-- The password is written by UpdateUserPasswordHash, and only when a new one is
+-- given: this edit never touches it.
 -- name: UpdateAccount :exec
 UPDATE users
-SET email = lower(sqlc.narg(email)), role = sqlc.arg(role), team_id = sqlc.narg(team_id), password_hash = sqlc.arg(password_hash)
+SET email = lower(sqlc.narg(email)), role = sqlc.arg(role), team_id = sqlc.narg(team_id)
 WHERE id = sqlc.arg(id);
 
 -- name: DeactivateUser :exec

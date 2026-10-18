@@ -180,6 +180,24 @@ func TestEmailChangeKeepsSessions(t *testing.T) {
 	expectStatus(t, h.do(teamAdmin, http.MethodGet, "/auth/me", nil, nil), http.StatusOK)
 }
 
+// TestEditingAnAccountKeepsItsPassword: an edit that sends no password must leave
+// the stored one alone, or the user could never sign in again.
+func TestEditingAnAccountKeepsItsPassword(t *testing.T) {
+	h := newHarness(t)
+	admin, _ := h.signedIn(domain.RoleFIAAdmin, 0)
+	_, username := h.signedIn(domain.RoleTeamAdmin, ferrariTeamID)
+	target := h.findAccount(admin, username)
+
+	edits := []map[string]any{
+		{"email": username + "@example.com"},
+		{"role": "fia_admin"},
+	}
+	for _, edit := range edits {
+		expectStatus(t, h.do(admin, http.MethodPatch, accountPath(target, ""), edit, nil), http.StatusOK)
+		expectStatus(t, h.login(h.browser(), username, testPassword), http.StatusOK)
+	}
+}
+
 func TestPasswordChangeRevokesSessions(t *testing.T) {
 	h := newHarness(t)
 	admin, _ := h.signedIn(domain.RoleFIAAdmin, 0)
