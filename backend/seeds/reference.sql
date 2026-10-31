@@ -54,9 +54,23 @@ INSERT INTO circuits (id, name, locality, country_code) OVERRIDING SYSTEM VALUE 
     (24, 'Yas Marina',                     'Abu Dabi',         'ae')
 ON CONFLICT (name) DO NOTHING;
 
+-- The compounds Pirelli brings to a tyre test: the six slicks from hardest (C1)
+-- to softest (C6), plus the two treaded tyres for a wet track.
+INSERT INTO tyre_compounds (id, code, name, kind) OVERRIDING SYSTEM VALUE VALUES
+    (1, 'c1',           'C1 (duro)',   'slick'),
+    (2, 'c2',           'C2',          'slick'),
+    (3, 'c3',           'C3',          'slick'),
+    (4, 'c4',           'C4',          'slick'),
+    (5, 'c5',           'C5',          'slick'),
+    (6, 'c6',           'C6 (blando)', 'slick'),
+    (7, 'intermediate', 'Intermedio',  'intermediate'),
+    (8, 'wet',          'Lluvia',      'wet')
+ON CONFLICT (code) DO NOTHING;
+
 -- COALESCE keeps the empty-table case at 0 so the next insert starts at 1, and
 -- taking the live max means a team created through the app is never overwritten.
 SELECT setval(pg_get_serial_sequence('categories', 'id'), COALESCE((SELECT max(id) FROM categories), 0));
 SELECT setval(pg_get_serial_sequence('seasons',    'id'), COALESCE((SELECT max(id) FROM seasons),    0));
 SELECT setval(pg_get_serial_sequence('teams',      'id'), COALESCE((SELECT max(id) FROM teams),      0));
 SELECT setval(pg_get_serial_sequence('circuits',   'id'), COALESCE((SELECT max(id) FROM circuits),   0));
+SELECT setval(pg_get_serial_sequence('tyre_compounds', 'id'), COALESCE((SELECT max(id) FROM tyre_compounds), 0));

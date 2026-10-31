@@ -262,6 +262,15 @@ type TechnicalControl struct {
 	EventKind   string
 }
 
+type TyreCompound struct {
+	ID        int64
+	Code      string
+	Name      string
+	Kind      string
+	CreatedAt pgtype.Timestamptz
+	UpdatedAt pgtype.Timestamptz
+}
+
 type TyreTest struct {
 	EventID    int64
 	CreatedAt  pgtype.Timestamptz
@@ -270,6 +279,39 @@ type TyreTest struct {
 	CategoryID int64
 	CircuitID  int64
 	EventKind  string
+}
+
+type TyreTestResult struct {
+	ID             int64
+	EventID        int64
+	CompoundID     int64
+	ConductedOn    pgtype.Date
+	Passed         bool
+	Notes          string
+	SupersedesID   pgtype.Int8
+	CorrectionNote pgtype.Text
+	RecordedBy     int64
+	RecordedAt     pgtype.Timestamptz
+	CreatedAt      pgtype.Timestamptz
+	UpdatedAt      pgtype.Timestamptz
+}
+
+type TyreTestResultEntry struct {
+	ID                 int64
+	EventID            int64
+	ConductedOn        pgtype.Date
+	Passed             bool
+	Notes              string
+	SupersedesID       pgtype.Int8
+	CorrectionNote     pgtype.Text
+	IsCurrent          bool
+	RecordedAt         pgtype.Timestamptz
+	RecordedByUsername string
+	CompoundCode       string
+	CompoundName       string
+	CircuitName        string
+	SeasonYear         int32
+	CategoryCode       string
 }
 
 type User struct {
