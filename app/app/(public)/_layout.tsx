@@ -13,6 +13,7 @@ export default function PublicLayout() {
       <Tabs.Screen name="drivers" options={{ title: 'Pilotos', tabBarIcon: tabIcon('people-outline') }} />
       <Tabs.Screen name="standings" options={{ title: 'Puntajes', tabBarIcon: tabIcon('trophy-outline') }} />
       <Tabs.Screen name="sanctions" options={{ title: 'Sanciones', tabBarIcon: tabIcon('alert-circle-outline') }} />
+      <Tabs.Screen name="technical" options={{ title: 'Técnica', tabBarIcon: tabIcon('construct-outline') }} />
     </Tabs>
   );
 }

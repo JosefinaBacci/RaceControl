@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { AppText, Badge, Card, ListItem, Screen } from '@/components';
 import { useFinishedRaceScores } from '@/data/scores';
 import { formatEventDate } from '@/format';
+import { fiaResultSections } from '@/features/history/fiaResultSections';
 import { RemoteContent } from '@/features/RemoteContent';
 
 // Only finished races are listed: results freeze a race's date, so the API refuses
@@ -11,7 +12,7 @@ export default function FiaResultsScreen() {
   const { state, reload } = useFinishedRaceScores();
 
   return (
-    <Screen title="Puntajes" subtitle="Cargá y modificá los resultados de cada carrera terminada.">
+    <Screen title="Resultados" subtitle="Cargá y corregí los resultados oficiales de cada evento terminado.">
       <Card title="Carreras">
         <RemoteContent state={state} onRetry={reload}>
           {(races) =>
@@ -32,6 +33,9 @@ export default function FiaResultsScreen() {
           }
         </RemoteContent>
       </Card>
+      {fiaResultSections.map(({ key, Component }) => (
+        <Component key={key} />
+      ))}
     </Screen>
   );
 }
