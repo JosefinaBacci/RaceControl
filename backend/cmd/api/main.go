@@ -22,6 +22,7 @@ import (
 	"github.com/racecontrol/backend/internal/scores"
 	"github.com/racecontrol/backend/internal/sessions"
 	"github.com/racecontrol/backend/internal/teams"
+	"github.com/racecontrol/backend/internal/technicalcontrols"
 	"github.com/racecontrol/backend/internal/transport"
 	"github.com/racecontrol/backend/internal/users"
 )
@@ -96,6 +97,7 @@ func buildRouter(cfg config.Config, pool *pgxpool.Pool) (http.Handler, error) {
 		ScoreNotices:  scoreService,
 		Messenger:     messaging.NewService(queries, db.NewTransactor(pool)),
 
+		TechnicalControls: technicalcontrols.NewService(queries, db.NewTransactor(pool)),
 		Cookie:            transport.CookieConfig{Secure: cfg.IsProduction(), MaxAge: cfg.Sessions.Absolute},
 		AllowedOrigins:    cfg.CORSAllowedOrigins,
 		TrustProxyHeaders: cfg.TrustProxyHeaders,

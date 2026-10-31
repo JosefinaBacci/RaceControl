@@ -46,6 +46,7 @@ type Querier interface {
 	GetActiveSessionByTokenHash(ctx context.Context, arg GetActiveSessionByTokenHashParams) (GetActiveSessionByTokenHashRow, error)
 	GetCalendarEvent(ctx context.Context, id int64) (CalendarEvent, error)
 	GetConversation(ctx context.Context, arg GetConversationParams) (GetConversationRow, error)
+	GetGradedTeam(ctx context.Context, id int64) (GetGradedTeamRow, error)
 	// Scores belong to a race (score_entries_race_fkey, 000016): an event without a
 	// race has no grid. The audit trail (one score_change_log version plus its items)
 	// is written by the service in the same transaction; the schema only demands an
@@ -53,8 +54,12 @@ type Querier interface {
 	// A cancelled race has no grid: it never ran, so it takes no results.
 	GetRaceChampionship(ctx context.Context, eventID int64) (GetRaceChampionshipRow, error)
 	GetTeamDriver(ctx context.Context, arg GetTeamDriverParams) (GetTeamDriverRow, error)
+	GetTechnicalControl(ctx context.Context, id int64) (GetTechnicalControlRow, error)
+	GetTechnicalControlResultSubject(ctx context.Context, id int64) (GetTechnicalControlResultSubjectRow, error)
+	GetTechnicalControlRevision(ctx context.Context, id int64) (TechnicalControlRevision, error)
 	GetUserByUsername(ctx context.Context, lower string) (User, error)
 	InsertLoginAttempt(ctx context.Context, arg InsertLoginAttemptParams) error
+	InsertTechnicalControlResult(ctx context.Context, arg InsertTechnicalControlResultParams) (int64, error)
 	LatestSeason(ctx context.Context) (LatestSeasonRow, error)
 	ListAccounts(ctx context.Context, arg ListAccountsParams) ([]ListAccountsRow, error)
 	// The public lineup (US12): every driver whose latest assignment points at a team,
@@ -67,6 +72,9 @@ type Querier interface {
 	// (000021), so the list and the detail share a single definition.
 	ListCalendarEvents(ctx context.Context, arg ListCalendarEventsParams) ([]CalendarEvent, error)
 	ListCircuits(ctx context.Context) ([]ListCircuitsRow, error)
+	// The teams a control grades: the active ones of its championship, plus any
+	// team already graded there even if it was deactivated since.
+	ListControlledTeams(ctx context.Context, eventID int64) ([]ListControlledTeamsRow, error)
 	ListConversationMessages(ctx context.Context, arg ListConversationMessagesParams) ([]ListConversationMessagesRow, error)
 	// Every conversation the reader takes part in, the latest activity first, with
 	// its last message, how many are unread and whether the reader wrote in it.
@@ -98,9 +106,16 @@ type Querier interface {
 	// first. The race is embedded from calendar_events, like in the results.
 	ListTeamScoreNotices(ctx context.Context, arg ListTeamScoreNoticesParams) ([]ListTeamScoreNoticesRow, error)
 	ListTeams(ctx context.Context) ([]ListTeamsRow, error)
+	ListTechnicalControlHistory(ctx context.Context, arg ListTechnicalControlHistoryParams) ([]TechnicalControlCurrentResult, error)
+	ListTechnicalControlRevisions(ctx context.Context, eventID int64) ([]TechnicalControlRevision, error)
+	ListTechnicalControlTypes(ctx context.Context) ([]string, error)
 	// Two edits of the same race take turns, so each one diffs against the scores
 	// the previous one left and the audit records the real old points.
 	LockRaceScores(ctx context.Context, eventID int64) error
+	// FOR SHARE holds the control's days while a result is recorded: a concurrent
+	// move or cancellation waits for the result and is then refused by the guard
+	// (RC020) instead of leaving the result outside the event.
+	LockTechnicalControl(ctx context.Context, id int64) (LockTechnicalControlRow, error)
 	// The cursor only moves forward, so reading an older page again is a no-op.
 	MarkConversationRead(ctx context.Context, arg MarkConversationReadParams) error
 	ReactivateUser(ctx context.Context, id int64) error

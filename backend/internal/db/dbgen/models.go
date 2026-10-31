@@ -262,6 +262,56 @@ type TechnicalControl struct {
 	EventKind   string
 }
 
+type TechnicalControlCurrentResult struct {
+	ID             int64
+	EventID        int64
+	TeamID         int64
+	TeamName       string
+	ConductedOn    pgtype.Date
+	Passed         bool
+	Notes          string
+	SupersedesID   pgtype.Int8
+	CorrectionNote pgtype.Text
+	RecordedAt     pgtype.Timestamptz
+	RecordedBy     string
+	ControlType    string
+	SeasonYear     int32
+	CategoryCode   string
+}
+
+type TechnicalControlResult struct {
+	ID             int64
+	EventID        int64
+	CategoryID     int64
+	TeamID         int64
+	ConductedOn    pgtype.Date
+	Passed         bool
+	Notes          string
+	SupersedesID   pgtype.Int8
+	CorrectionNote pgtype.Text
+	RecordedBy     int64
+	RecordedAt     pgtype.Timestamptz
+	CreatedAt      pgtype.Timestamptz
+	UpdatedAt      pgtype.Timestamptz
+}
+
+type TechnicalControlRevision struct {
+	ID             int64
+	EventID        int64
+	TeamID         int64
+	TeamName       string
+	ConductedOn    pgtype.Date
+	Passed         bool
+	Notes          string
+	SupersedesID   pgtype.Int8
+	CorrectionNote pgtype.Text
+	RecordedAt     pgtype.Timestamptz
+	RecordedBy     string
+	ControlType    string
+	SeasonYear     int32
+	CategoryCode   string
+}
+
 type TyreTest struct {
 	EventID    int64
 	CreatedAt  pgtype.Timestamptz

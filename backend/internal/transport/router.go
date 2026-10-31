@@ -31,6 +31,7 @@ type Dependencies struct {
 	Scores            ScoreBoard
 	ScoreNotices      ScoreNoticeManager
 	Messenger         Messenger
+	TechnicalControls TechnicalControlBoard
 	Cookie            CookieConfig
 	AllowedOrigins    []string
 	TrustProxyHeaders bool
@@ -124,6 +125,18 @@ func NewRouter(deps Dependencies) http.Handler {
 		r.Post("/", messagingRoutes.start)
 		r.Get("/{id}", messagingRoutes.open)
 		r.Post("/{id}/messages", messagingRoutes.reply)
+	})
+
+	controlRoutes := &technicalControlHandlers{controls: deps.TechnicalControls}
+	router.Route("/technical-controls", func(r chi.Router) {
+		r.Get("/results", controlRoutes.history)
+		r.Get("/types", controlRoutes.types)
+		r.Group(func(r chi.Router) {
+			r.Use(sessionGuard.RequireSession, sessionGuard.RequireRole(domain.RoleFIAAdmin))
+			r.Get("/{id}/results", controlRoutes.sheet)
+			r.Post("/{id}/results", controlRoutes.record)
+			r.Post("/results/{id}/corrections", controlRoutes.correct)
+		})
 	})
 
 	router.Route("/auth", func(r chi.Router) {
