@@ -73,7 +73,7 @@ func toResultEntryResponse(entry results.Entry) resultEntryResponse {
 		CorrectionNote: entry.CorrectionNote,
 		SeasonYear:     entry.SeasonYear,
 		CategoryCode:   entry.CategoryCode,
-		RecordedAt:     entry.RecordedAt,
+		RecordedAt:     entry.RecordedAt.UTC(),
 	}
 }
 
