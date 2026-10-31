@@ -5,13 +5,12 @@ import { useSession } from '@/auth/SessionProvider';
 import { Button, CardLink, HeroCard, Screen, StatRow, StatTile } from '@/components';
 import { useUpcomingEvents } from '@/data/calendar';
 import { useTeamDrivers } from '@/data/drivers';
-import { useTeamInbox } from '@/data/hooks';
 import { useTeamPoints } from '@/data/scores';
+import { usePendingSanctionNotices } from '@/data/TeamSanctionNoticesProvider';
 import { usePendingScoreNotices } from '@/data/TeamScoreNoticesProvider';
 import { DriverCard, DriverGrid } from '@/features/DriverCard';
 import { EventList } from '@/features/EventList';
 import { RemoteContent } from '@/features/RemoteContent';
-import { MockNotice } from '@/features/MockNotice';
 import { formatPoints } from '@/format';
 import { categoryLabel, teamById } from '@/mocks/catalog';
 import { teamPhoto } from '@/photos';
@@ -23,7 +22,7 @@ export default function TeamDashboardScreen() {
   const drivers = useTeamDrivers();
   const points = useTeamPoints(teamId);
   const pendingScores = usePendingScoreNotices();
-  const { pendingCount: pendingSanctions } = useTeamInbox(teamId);
+  const pendingSanctions = usePendingSanctionNotices();
   const upcoming = useUpcomingEvents(3);
 
   return (
@@ -46,7 +45,6 @@ export default function TeamDashboardScreen() {
           </View>
         ) : null}
       </HeroCard>
-      <MockNotice />
       <StatRow>
         <StatTile label="Pilotos" value={drivers.state.status === 'ready' ? drivers.state.data.length : 0} />
         <StatTile label="Puntos" value={points === null ? '—' : formatPoints(points)} />
