@@ -53,6 +53,7 @@ func TestValidateConductedOnRejects(t *testing.T) {
 		{name: "after the event", conductedOn: day(2026, 3, 7), window: window, now: afterTheEvent},
 		{name: "in the future", conductedOn: day(2026, 3, 6), window: window, now: time.Date(2026, 3, 5, 12, 0, 0, 0, time.UTC)},
 		{name: "cancelled event", conductedOn: day(2026, 3, 5), window: cancelled, now: afterTheEvent},
+		{name: "event later today", conductedOn: day(2026, 3, 5), window: window, now: time.Date(2026, 3, 5, 8, 0, 0, 0, time.UTC)},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

@@ -25,12 +25,15 @@ type EventWindow struct {
 }
 
 // ValidateConductedOn accepts the day a result was obtained only if the event
-// still stands, the day falls inside the event's days and it is not in the future:
-// nothing can be graded before it happened.
+// still stands and has started, and the day falls inside the event's days and
+// is not in the future: nothing can be graded before it happened.
 func ValidateConductedOn(conductedOn time.Time, window EventWindow, now time.Time) error {
 	const field = "conductedOn"
 	if !window.IsActive {
 		return domain.NewValidationError(field, "el evento está cancelado")
+	}
+	if now.Before(window.StartsAt) {
+		return domain.NewValidationError(field, "el evento todavía no empezó")
 	}
 	if conductedOn.After(domain.DayOf(now)) {
 		return domain.NewValidationError(field, "la fecha todavía no ocurrió")
