@@ -313,3 +313,45 @@ así una transferencia o baja sigue visible para el equipo saliente. Solo FIA ac
 
 La transmisión segura se verifica con TLS real. Se admite TLS directo o proxy confiable con
 acceso de red restringido; producción rechaza HTTP. HSTS complementa TLS y no lo sustituye.
+
+## 11. Sanciones (000034–000037, Sprint 3: US15, US25, US26)
+
+- **Un solo sancionado.** `sanctions` tiene `driver_id` y `team_id` opcionales con
+  `CHECK (num_nonnulls(driver_id, team_id) = 1)`, como se decidió en Sprint 1 (§2 "Trampa evitada").
+- **Escudería responsable guardada.** `accountable_team_id` es la escudería sancionada o la del
+  piloto el día de la sanción (`assigned_team`), y la completa un trigger. Se guarda, igual que
+  `score_entries.team_id`, porque una asignación posterior puede empezar antes de una sanción ya
+  registrada y derivarla de nuevo cambiaría a quién afectó. Un piloto sin escudería ese día no se
+  puede sancionar (RC011): no habría a quién notificar.
+- **Penalización como dato.** `penalty_types` (seed) guarda el tipo del Código Deportivo y, si lleva
+  magnitud, su unidad y su tope: advertencia, reprimenda, tiempo (s), drive-through, stop and go (s),
+  puestos de grilla, puntos de superlicencia, multa (€), descalificación y suspensión (carreras). Un
+  tipo nuevo es un `INSERT`. Un trigger exige el valor cuando el tipo tiene unidad y lo prohíbe cuando
+  no la tiene (RC010).
+- **Sin descuento de puntos de campeonato.** Se dejó afuera a propósito: la sanción es un registro y
+  no recalcula la clasificación. Descontar puntos desde acá duplicaría la fuente de verdad de los
+  puntajes (`score_entries` y su historial de US23/US24); si una sanción cambia un resultado, la FIA
+  lo corrige con US23 y queda auditado ahí.
+- **Versiones append-only.** La fila de `sanctions` es solo la identidad (a quién y cuándo). Lo que
+  impone vive en `sanction_versions`: una fila por alta, modificación o revocación, con su autor y
+  su fecha. La vigente es la última (`current_sanctions`). Nada se sobrescribe ni se borra
+  (`reject_mutation`), y un trigger exige que la historia empiece con el alta y termine en la
+  revocación (RC012). La modificación y la revocación llevan una nota obligatoria. El destinatario no
+  se modifica: si estaba mal, se revoca y se registra otra.
+- **Revocar es la baja lógica.** La revocación conserva los términos que anula y queda visible en el
+  registro público con su nota y su fecha. Ocultarla haría que lo público no coincida con lo emitido.
+- **Destinatarios congelados.** El enunciado pide que las sanciones lleguen a todas las escuderías y
+  que las escuderías dejen asentado que se notificaron. Por eso cada versión se envía a todas las
+  escuderías activas del campeonato de la escudería responsable, y la lista queda fija en
+  `sanction_recipients` cuando se escribe la versión. Una escudería creada después no debe nada por
+  versiones viejas, y una dada de baja después sigue mostrando si confirmó lo que recibió.
+- **Acuse por versión.** `sanction_acknowledgements` sigue el modelo de US24 (000009, 000023): una fila
+  por versión y escudería, append-only, con la escudería tomada del usuario. Confirmar una versión que
+  no se recibió da RC013 (la API responde 404) y confirmar una ya reemplazada da RC014 (la API
+  responde 409). Así, una modificación vuelve a dejar pendiente a todas las escuderías.
+- **Lecturas derivadas.** `sanction_version_details` junta cada versión con la penalización, el
+  sancionado, el campeonato y el evento. `sanction_notices` da una fila por versión y destinatario con
+  su acuse, igual que `score_notices` (000025). No se escribe nada en `notifications`.
+- **Sin autores en lo público.** El listado y el detalle públicos no muestran usuarios: la sanción
+  habla por la FIA. El autor de cada versión y quién confirmó cada acuse aparecen solo en el
+  seguimiento de la FIA.

@@ -113,56 +113,56 @@ US18 va al final porque es la paridad de todo lo anterior en móvil.
 
 *Est. 4h · SP 5 · Valor 8*
 
-- [ ] Migración de `sanctions` (piloto **o** escudería, motivo, penalización, fecha, autor) según el
+- [x] Migración de `sanctions` (piloto **o** escudería, motivo, penalización, fecha, autor) según el
       diseño de `docs/sprint1/02-modelo-de-datos.md` §2
-- [ ] Queries `sqlc` y servicio con validaciones: motivo obligatorio, destinatario y penalización válidos
-- [ ] Endpoint restringido a `fia_admin`
-- [ ] Formulario de registro en el panel FIA
-- [ ] Tests de registro y de acceso no autorizado
+- [x] Queries `sqlc` y servicio con validaciones: motivo obligatorio, destinatario y penalización válidos
+- [x] Endpoint restringido a `fia_admin`
+- [x] Formulario de registro en el panel FIA
+- [x] Tests de registro y de acceso no autorizado
 
 **Criterios de éxito**
 
-- [ ] El administrador puede registrar una sanción a un piloto o a una escudería
-- [ ] Cada sanción incluye obligatoriamente el motivo y la penalización correspondiente
-- [ ] El sistema rechaza sanciones sin motivo, sin destinatario o con datos inválidos
-- [ ] Cada sanción queda registrada con fecha y autor
-- [ ] Solo el administrador de la FIA puede registrar sanciones
+- [x] El administrador puede registrar una sanción a un piloto o a una escudería
+- [x] Cada sanción incluye obligatoriamente el motivo y la penalización correspondiente
+- [x] El sistema rechaza sanciones sin motivo, sin destinatario o con datos inválidos
+- [x] Cada sanción queda registrada con fecha y autor
+- [x] Solo el administrador de la FIA puede registrar sanciones
 
 ## US25 — Visualización de sanciones (público)
 
 *Est. 2h · SP 5 · Valor 13*
 
-- [ ] Endpoint público de sanciones
-- [ ] Listado sobre la API (reemplaza el mock de `useSanctions`)
-- [ ] Vista de detalle con motivo, penalización y destinatario
-- [ ] Filtros por piloto, escudería y fecha
+- [x] Endpoint público de sanciones
+- [x] Listado sobre la API (reemplaza el mock de `useSanctions`)
+- [x] Vista de detalle con motivo, penalización y destinatario
+- [x] Filtros por piloto, escudería y fecha
 
 **Criterios de éxito**
 
-- [ ] Cualquier persona puede ver las sanciones aplicadas sin iniciar sesión
-- [ ] Cada sanción muestra el destinatario, el motivo, la penalización y la fecha
-- [ ] Se puede filtrar por piloto, escudería y fecha
-- [ ] Los datos mostrados coinciden con los registrados por el administrador
-- [ ] El público no puede modificar la información
+- [x] Cualquier persona puede ver las sanciones aplicadas sin iniciar sesión
+- [x] Cada sanción muestra el destinatario, el motivo, la penalización y la fecha
+- [x] Se puede filtrar por piloto, escudería y fecha
+- [x] Los datos mostrados coinciden con los registrados por el administrador
+- [x] El público no puede modificar la información
 
 ## US26 — Visualización y confirmación de sanciones (escudería)
 
 *Est. 2.5h · SP 5 · Valor 13*
 
-- [ ] Vista de sanciones para el rol escudería
-- [ ] `sanction_acknowledgements` siguiendo el modelo de acuse de US24 (usuario, sanción, fecha y hora),
+- [x] Vista de sanciones para el rol escudería
+- [x] `sanction_acknowledgements` siguiendo el modelo de acuse de US24 (usuario, sanción, fecha y hora),
       append-only
-- [ ] Notificación al registrar o modificar una sanción
-- [ ] Botón de confirmación de recibo y su estado (pendiente / confirmada)
-- [ ] Vista de seguimiento de confirmaciones para el administrador
+- [x] Notificación al registrar o modificar una sanción
+- [x] Botón de confirmación de recibo y su estado (pendiente / confirmada)
+- [x] Vista de seguimiento de confirmaciones para el administrador
 
 **Criterios de éxito**
 
-- [ ] El responsable de escudería puede ver las sanciones aplicadas
-- [ ] Recibe una notificación cuando se registra o modifica una sanción
-- [ ] Puede confirmar la recepción, y la confirmación queda registrada con fecha y hora
-- [ ] El estado de la notificación (pendiente o confirmada) es visible
-- [ ] El administrador puede ver qué escuderías confirmaron cada sanción
+- [x] El responsable de escudería puede ver las sanciones aplicadas
+- [x] Recibe una notificación cuando se registra o modifica una sanción
+- [x] Puede confirmar la recepción, y la confirmación queda registrada con fecha y hora
+- [x] El estado de la notificación (pendiente o confirmada) es visible
+- [x] El administrador puede ver qué escuderías confirmaron cada sanción
 
 ## US18 — Disponibilidad de funcionalidades en aplicación móvil
 
