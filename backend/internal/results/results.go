@@ -66,6 +66,67 @@ func NormalizeCorrectionNote(note string) (string, error) {
 	return trimmed, nil
 }
 
+// Type is what kind of check a result belongs to: a control type, a compound.
+type Type struct {
+	Code string
+	Name string
+}
+
+// Entry is a recorded result as every history reads it. SupersedesID and
+// CorrectionNote are set only on a correction.
+type Entry struct {
+	ID             int64
+	EventID        int64
+	ConductedOn    time.Time
+	Type           Type
+	Passed         bool
+	Notes          string
+	SupersedesID   *int64
+	CorrectionNote *string
+	SeasonYear     int32
+	CategoryCode   string
+	RecordedBy     string
+	RecordedAt     time.Time
+}
+
+func (e Entry) IsCorrection() bool {
+	return e.SupersedesID != nil
+}
+
+// Input is a result as the FIA types it. Passed is a pointer so a missing value
+// is told apart from "not passed".
+type Input struct {
+	ConductedOn string
+	Passed      *bool
+	Notes       string
+}
+
+// Outcome is a validated Input, ready to store.
+type Outcome struct {
+	ConductedOn time.Time
+	Passed      bool
+	Notes       string
+}
+
+// ParseInput validates a typed result against the event it grades.
+func ParseInput(input Input, window EventWindow, now time.Time) (Outcome, error) {
+	if input.Passed == nil {
+		return Outcome{}, domain.NewValidationError("passed", "indicá si aprobó o no")
+	}
+	conductedOn, err := domain.ParseDay("conductedOn", input.ConductedOn)
+	if err != nil {
+		return Outcome{}, err
+	}
+	if err := ValidateConductedOn(conductedOn, window, now); err != nil {
+		return Outcome{}, err
+	}
+	notes, err := NormalizeNotes(*input.Passed, input.Notes)
+	if err != nil {
+		return Outcome{}, err
+	}
+	return Outcome{ConductedOn: conductedOn, Passed: *input.Passed, Notes: notes}, nil
+}
+
 // Constraints names the two unique constraints that keep a results table to one
 // current row per graded subject: one original row, and each row superseded once.
 type Constraints struct {

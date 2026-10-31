@@ -84,6 +84,37 @@ func TestNormalizeCorrectionNote(t *testing.T) {
 	assertValidationField(t, err, "correctionNote")
 }
 
+func TestParseInput(t *testing.T) {
+	passed := false
+	outcome, err := results.ParseInput(results.Input{ConductedOn: "2026-03-05", Passed: &passed, Notes: " peso bajo el mínimo "}, window, afterTheEvent)
+	if err != nil {
+		t.Fatalf("ParseInput: %v", err)
+	}
+	if !outcome.ConductedOn.Equal(day(2026, 3, 5)) || outcome.Passed || outcome.Notes != "peso bajo el mínimo" {
+		t.Errorf("outcome = %+v, want the typed result normalised", outcome)
+	}
+}
+
+func TestParseInputRejects(t *testing.T) {
+	passed := true
+	cases := []struct {
+		name      string
+		input     results.Input
+		wantField string
+	}{
+		{name: "missing outcome", input: results.Input{ConductedOn: "2026-03-05"}, wantField: "passed"},
+		{name: "missing day", input: results.Input{Passed: &passed}, wantField: "conductedOn"},
+		{name: "impossible day", input: results.Input{ConductedOn: "2026-02-30", Passed: &passed}, wantField: "conductedOn"},
+		{name: "day outside the event", input: results.Input{ConductedOn: "2026-03-08", Passed: &passed}, wantField: "conductedOn"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := results.ParseInput(tc.input, window, afterTheEvent)
+			assertValidationField(t, err, tc.wantField)
+		})
+	}
+}
+
 func TestTranslateWriteError(t *testing.T) {
 	constraints := results.Constraints{OneOriginal: "one_original", SupersedesOnce: "supersedes_once"}
 	for _, constraint := range []string{"one_original", "supersedes_once"} {
