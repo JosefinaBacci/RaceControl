@@ -26,6 +26,7 @@ import (
 	"github.com/racecontrol/backend/internal/sessions"
 	"github.com/racecontrol/backend/internal/teams"
 	"github.com/racecontrol/backend/internal/transport"
+	"github.com/racecontrol/backend/internal/tyretests"
 	"github.com/racecontrol/backend/internal/users"
 	"github.com/racecontrol/backend/tests/testdb"
 )
@@ -66,6 +67,7 @@ func newHarness(t *testing.T) *harness {
 		Scores:         scoreService,
 		ScoreNotices:   scoreService,
 		Messenger:      messaging.NewService(queries, db.NewTransactor(pool)),
+		TyreTests:      tyretests.NewService(queries),
 		Cookie:         transport.CookieConfig{MaxAge: 24 * time.Hour},
 		AllowedOrigins: []string{"http://localhost:8081"},
 	})

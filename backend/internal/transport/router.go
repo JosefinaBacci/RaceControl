@@ -31,6 +31,7 @@ type Dependencies struct {
 	Scores            ScoreBoard
 	ScoreNotices      ScoreNoticeManager
 	Messenger         Messenger
+	TyreTests         TyreTestRecorder
 	Cookie            CookieConfig
 	AllowedOrigins    []string
 	TrustProxyHeaders bool
@@ -124,6 +125,18 @@ func NewRouter(deps Dependencies) http.Handler {
 		r.Post("/", messagingRoutes.start)
 		r.Get("/{id}", messagingRoutes.open)
 		r.Post("/{id}/messages", messagingRoutes.reply)
+	})
+
+	tyreTestRoutes := &tyreTestHandlers{tyreTests: deps.TyreTests}
+	router.Route("/tyre-tests", func(r chi.Router) {
+		r.Get("/types", tyreTestRoutes.types)
+		r.Get("/results", tyreTestRoutes.history)
+		r.Group(func(r chi.Router) {
+			r.Use(sessionGuard.RequireSession, sessionGuard.RequireRole(domain.RoleFIAAdmin))
+			r.Get("/{id}/results", tyreTestRoutes.chain)
+			r.Post("/{id}/results", tyreTestRoutes.record)
+			r.Post("/results/{id}/corrections", tyreTestRoutes.correct)
+		})
 	})
 
 	router.Route("/auth", func(r chi.Router) {
