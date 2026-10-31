@@ -210,8 +210,8 @@ func toControlSheetResponse(sheet technicalcontrols.Sheet) controlSheetResponse 
 		Control: controlResponse{
 			EventID:      control.EventID,
 			ControlType:  control.ControlType,
-			StartsAt:     control.StartsAt,
-			EndsAt:       control.EndsAt,
+			StartsAt:     control.StartsAt.UTC(),
+			EndsAt:       control.EndsAt.UTC(),
 			IsActive:     control.IsActive,
 			SeasonYear:   control.SeasonYear,
 			CategoryCode: control.CategoryCode,
