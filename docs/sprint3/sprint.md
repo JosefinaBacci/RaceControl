@@ -45,35 +45,37 @@ US18 va al final porque es la paridad de todo lo anterior en móvil.
 
 *Est. 2.5h · SP 3 · Valor 8*
 
-- [ ] Modelo del resultado del control (`technical_control_results`: escudería, aprobado, observaciones,
+- [x] Modelo del resultado del control (`technical_control_results`: escudería, aprobado, observaciones,
       autor, fecha) en una migración nueva
-- [ ] Queries `sqlc` y servicio con validaciones (resultado obligatorio, fecha válida, control existente)
-- [ ] Endpoint restringido a `fia_admin`
-- [ ] Formulario de registro en el panel FIA
-- [ ] Tests de integración (incluido acceso denegado a otros roles)
+- [x] Queries `sqlc` y servicio con validaciones (resultado obligatorio, fecha válida, control existente)
+- [x] Endpoint restringido a `fia_admin`
+- [ ] Formulario de registro en el panel FIA (hecho, compila y empaqueta para web; falta recorrerlo a mano
+      en el navegador)
+- [x] Tests de integración (incluido acceso denegado a otros roles)
 
 **Criterios de éxito**
 
-- [ ] El administrador puede registrar un control técnico con fecha, tipo y resultado
-- [ ] El sistema valida los campos obligatorios y rechaza fechas inválidas
-- [ ] El control registrado queda guardado y disponible para su consulta
-- [ ] Solo el administrador de la FIA puede registrar controles técnicos
+- [x] El administrador puede registrar un control técnico con fecha, tipo y resultado
+- [x] El sistema valida los campos obligatorios y rechaza fechas inválidas
+- [x] El control registrado queda guardado y disponible para su consulta
+- [x] Solo el administrador de la FIA puede registrar controles técnicos
 
 ## US22 — Visualización de controles técnicos
 
 *Est. 1.5h · SP 3 · Valor 8*
 
-- [ ] Endpoint público de lectura del historial
-- [ ] Listado del historial con filtros por fecha y tipo de control
-- [ ] Acceso de solo lectura para escudería y público; verificar que coincida con lo cargado
+- [x] Endpoint público de lectura del historial
+- [ ] Listado del historial con filtros por fecha y tipo de control (pestaña pública "Técnica"; filtros
+      verificados en la API, falta recorrer la pantalla a mano)
+- [x] Acceso de solo lectura para escudería y público; verificar que coincida con lo cargado
 
 **Criterios de éxito**
 
-- [ ] Los responsables de escudería y el público pueden consultar el historial de controles técnicos
-- [ ] Cada control muestra su fecha, tipo y resultado
-- [ ] Se puede filtrar el historial por fecha y tipo
-- [ ] Los datos mostrados coinciden con los cargados por el administrador
-- [ ] Los usuarios no pueden modificar ni eliminar los controles
+- [x] Los responsables de escudería y el público pueden consultar el historial de controles técnicos
+- [x] Cada control muestra su fecha, tipo y resultado
+- [x] Se puede filtrar el historial por fecha y tipo
+- [x] Los datos mostrados coinciden con los cargados por el administrador
+- [x] Los usuarios no pueden modificar ni eliminar los controles
 
 ## US19 — Registro de prueba de neumáticos
 

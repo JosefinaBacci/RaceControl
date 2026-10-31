@@ -313,3 +313,29 @@ así una transferencia o baja sigue visible para el equipo saliente. Solo FIA ac
 
 La transmisión segura se verifica con TLS real. Se admite TLS directo o proxy confiable con
 acceso de red restringido; producción rechaza HTTP. HSTS complementa TLS y no lo sustituye.
+
+## 11. Resultados oficiales: controles técnicos (000030–000031)
+
+El enunciado pide registrar, para cada escudería, si su auto pasó o no cada control técnico. El
+control (días, tipo, campeonato) ya es un evento del calendario (US7). Lo nuevo es su resultado.
+
+- **`technical_control_results`**: `event_id`, `category_id`, `team_id`, `conducted_on` (día en
+  que se realizó), `passed`, `notes`, `supersedes_id`, `correction_note`, `recorded_by`,
+  `recorded_at`. Dos FK compuestas sobre (`event_id`, `category_id`) y (`team_id`, `category_id`)
+  hacen que la base exija que la escudería corra en el campeonato del control.
+- **Constancia oficial, append-only** (`reject_mutation`). Un error de carga se corrige con una fila
+  nueva que reemplaza a la vigente y lleva su motivo. La cadena de filas es el historial. El esquema
+  garantiza un solo resultado vigente por escudería y control: un original único (índice parcial),
+  cada fila reemplazada a lo sumo una vez (`UNIQUE (supersedes_id)`), solo por una posterior
+  (`supersedes_id < id`) y de la misma escudería (FK compuesta).
+- **Fechas válidas**: el día debe caer dentro de los días del evento, no ser futuro, y el evento tiene
+  que haber empezado y no estar cancelado. Los días se cuentan en UTC, igual en la API y en la app.
+- **Evento congelado (RC020)**: `assert_recorded_event_is_final()` es una única función compartida
+  con las pruebas de neumáticos. Recibe por argumentos la tabla de resultados y las columnas a
+  vigilar. Con resultados, el control no se mueve, no se cancela y no cambia de tipo ni de
+  campeonato. Una escritura que no cambia nada pasa.
+- **Vistas**: `technical_control_revisions` tiene toda la cadena con su autor y es la que lee la
+  FIA. `technical_control_current_results` tiene solo lo vigente y es la que lee el público, que
+  nunca recibe el nombre del administrador.
+- **Filtro por tipo**: el tipo de control es texto libre del calendario. Por eso un tipo desconocido
+  devuelve una lista vacía, mientras que en neumáticos, con catálogo, es un 400.
