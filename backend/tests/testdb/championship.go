@@ -118,6 +118,29 @@ func (c *Championship) AddRaceIn(seasonID int64, startsAt time.Time) int64 {
 	return eventID
 }
 
+// AddTechnicalControl creates a technical control of the championship in the
+// seeded 2026 season.
+func (c *Championship) AddTechnicalControl(controlType string, startsAt, endsAt time.Time) int64 {
+	c.t.Helper()
+
+	var eventID int64
+	err := pgx.BeginFunc(context.Background(), c.pool, func(tx pgx.Tx) error {
+		if err := tx.QueryRow(context.Background(),
+			`INSERT INTO events (kind, starts_at, ends_at) VALUES ('technical_control', $1, $2) RETURNING id`,
+			startsAt, endsAt).Scan(&eventID); err != nil {
+			return err
+		}
+		_, err := tx.Exec(context.Background(),
+			`INSERT INTO technical_controls (event_id, season_id, category_id, control_type) VALUES ($1, $2, $3, $4)`,
+			eventID, seededSeasonID, c.CategoryID, controlType)
+		return err
+	})
+	if err != nil {
+		c.t.Fatalf("create technical control of %s: %v", c.CategoryCode, err)
+	}
+	return eventID
+}
+
 // Score stores a driver's result in a race, the way the FIA loads it.
 func (c *Championship) Score(eventID, driverID int64, points float64) {
 	c.t.Helper()

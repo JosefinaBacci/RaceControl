@@ -25,6 +25,7 @@ import (
 	"github.com/racecontrol/backend/internal/scores"
 	"github.com/racecontrol/backend/internal/sessions"
 	"github.com/racecontrol/backend/internal/teams"
+	"github.com/racecontrol/backend/internal/technicalcontrols"
 	"github.com/racecontrol/backend/internal/transport"
 	"github.com/racecontrol/backend/internal/users"
 	"github.com/racecontrol/backend/tests/testdb"
@@ -56,18 +57,19 @@ func newHarness(t *testing.T) *harness {
 	sessionService := sessions.NewService(queries, sessions.Config{IdleTTL: time.Hour, AbsoluteTTL: 24 * time.Hour})
 	scoreService := scores.NewService(queries, db.NewTransactor(pool))
 	router := transport.NewRouter(transport.Dependencies{
-		Pool:           pool,
-		Authenticator:  auth.NewAuthenticator(queries, hasher, sessionService),
-		Sessions:       sessionService,
-		Users:          users.NewService(queries, db.NewTransactor(pool), hasher),
-		Teams:          teams.NewService(queries),
-		Calendar:       calendar.NewService(queries, db.NewTransactor(pool)),
-		Drivers:        drivers.NewService(queries, db.NewTransactor(pool)),
-		Scores:         scoreService,
-		ScoreNotices:   scoreService,
-		Messenger:      messaging.NewService(queries, db.NewTransactor(pool)),
-		Cookie:         transport.CookieConfig{MaxAge: 24 * time.Hour},
-		AllowedOrigins: []string{"http://localhost:8081"},
+		Pool:              pool,
+		Authenticator:     auth.NewAuthenticator(queries, hasher, sessionService),
+		Sessions:          sessionService,
+		Users:             users.NewService(queries, db.NewTransactor(pool), hasher),
+		Teams:             teams.NewService(queries),
+		Calendar:          calendar.NewService(queries, db.NewTransactor(pool)),
+		Drivers:           drivers.NewService(queries, db.NewTransactor(pool)),
+		Scores:            scoreService,
+		ScoreNotices:      scoreService,
+		Messenger:         messaging.NewService(queries, db.NewTransactor(pool)),
+		TechnicalControls: technicalcontrols.NewService(queries, db.NewTransactor(pool)),
+		Cookie:            transport.CookieConfig{MaxAge: 24 * time.Hour},
+		AllowedOrigins:    []string{"http://localhost:8081"},
 	})
 
 	server := httptest.NewServer(router)
