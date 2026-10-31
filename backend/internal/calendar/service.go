@@ -429,8 +429,9 @@ func updateChild(ctx context.Context, queries dbgen.Querier, current Event, next
 }
 
 // translateWriteError turns what the schema refuses into the domain error the
-// transport maps: the round number is taken, or a finished race is frozen by a
-// guard (RC001). Anything else is a genuine failure and is left to surface as 500.
+// transport maps: the round number is taken, or a guard freezes a finished race
+// (RC001) or an event with recorded results (RC020). Anything else is a genuine
+// failure and is left to surface as 500.
 func translateWriteError(err error) error {
 	if constraint, isViolation := db.UniqueViolation(err); isViolation {
 		if constraint == roundNumberConstraint {
@@ -442,6 +443,8 @@ func translateWriteError(err error) error {
 		switch code {
 		case "RC001":
 			return domain.NewConflictError("", "la carrera ya tiene resultados: no se puede modificar ni cancelar")
+		case "RC020":
+			return domain.NewConflictError("", "el evento ya tiene resultados registrados: no se puede mover, cancelar ni cambiar de tipo")
 		default:
 			return fmt.Errorf("schema guard %s: %w", code, err)
 		}
