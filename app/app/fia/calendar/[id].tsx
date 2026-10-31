@@ -8,6 +8,7 @@ import { useEventForm } from '@/data/calendar';
 import { useFormSubmission } from '@/data/useFormSubmission';
 import { EventFields } from '@/features/calendar/EventFields';
 import { hasStarted } from '@/features/calendar/eventTiming';
+import { recordResultRoutes } from '@/features/calendar/recordResultRoutes';
 import {
   eventFormFields,
   formValuesOf,
@@ -40,6 +41,7 @@ export default function EditEventScreen() {
                 circuits={loaded.circuits}
                 onSaved={(event) => setData({ ...loaded, event })}
               />
+              <RecordResultsCard event={loaded.event} />
               <CancelCard event={loaded.event} />
             </>
           )
@@ -88,6 +90,20 @@ function EventEditForm({ event, seasons, circuits, onSaved }: EventEditFormProps
       <EventFields values={values} onChange={setValues} errors={fieldErrors} seasons={seasons} circuits={circuits} isKindLocked />
       <View style={styles.actions}>
         <Button label="Guardar cambios" icon="save-outline" onPress={save} loading={isSubmitting} />
+      </View>
+    </Card>
+  );
+}
+
+function RecordResultsCard({ event }: { event: CalendarEvent }) {
+  const route = recordResultRoutes[event.kind];
+  if (!route) {
+    return null;
+  }
+  return (
+    <Card title="Resultados oficiales">
+      <View style={styles.actions}>
+        <Button label={route.label} icon="clipboard-outline" variant="secondary" onPress={() => router.push(route.href(event.id))} />
       </View>
     </Card>
   );
