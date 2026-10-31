@@ -1,5 +1,7 @@
 import type { ComponentType } from 'react';
 
+import { TyreTestHistory } from '@/features/tyreTests/TyreTestHistory';
+
 // The public "Técnica" tab: one section per official-results history. A new
 // history adds its line here instead of editing the tab.
 export type TechnicalSection = {
@@ -8,4 +10,6 @@ export type TechnicalSection = {
   Component: ComponentType;
 };
 
-export const technicalSections: readonly TechnicalSection[] = [];
+export const technicalSections: readonly TechnicalSection[] = [
+  { value: 'tyres', label: 'Neumáticos', Component: TyreTestHistory },
+];
