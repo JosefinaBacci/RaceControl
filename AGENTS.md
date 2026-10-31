@@ -182,5 +182,5 @@ make check        # Lint + typecheck + tests de todo el proyecto
 
 ## Estado del sprint
 
-El progreso por user story se lleva en `docs/sprint2/sprint.md`. Leelo antes de empezar a
+El progreso por user story se lleva en `docs/sprint3/sprint.md`. Leelo antes de empezar a
 trabajar y actualizá las casillas al terminar.
