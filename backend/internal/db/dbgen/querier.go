@@ -11,10 +11,18 @@ import (
 )
 
 type Querier interface {
+	// The team comes from the user, and a version the team was not sent (RC013) or
+	// that was replaced (RC014) is refused (000036). Confirming again keeps the
+	// first confirmation.
+	AcknowledgeSanctionVersion(ctx context.Context, arg AcknowledgeSanctionVersionParams) error
 	// The team is derived from the user by a trigger that also refuses a change the
 	// team is not part of (000023, RC005). Acknowledging again keeps the first
 	// confirmation, so the call is idempotent.
 	AcknowledgeScoreChange(ctx context.Context, arg AcknowledgeScoreChangeParams) error
+	ActiveDriverExists(ctx context.Context, id int64) (bool, error)
+	// An event can only frame a sanction of its own championship.
+	ActiveEventInTeamCategory(ctx context.Context, arg ActiveEventInTeamCategoryParams) (bool, error)
+	ActiveTeamExists(ctx context.Context, id int64) (bool, error)
 	// Locking the conversation before the id is drawn makes a thread's ids follow
 	// the commit order, so a cursor never skips a message that commits late.
 	AddMessage(ctx context.Context, arg AddMessageParams) (AddMessageRow, error)
@@ -27,6 +35,10 @@ type Querier interface {
 	CreateEvent(ctx context.Context, arg CreateEventParams) (int64, error)
 	CreateRace(ctx context.Context, arg CreateRaceParams) error
 	CreateRound(ctx context.Context, arg CreateRoundParams) (int64, error)
+	// The accountable team is set by a trigger (000035, RC011 for a teamless driver).
+	CreateSanction(ctx context.Context, arg CreateSanctionParams) (CreateSanctionRow, error)
+	// The recipients of the version are written by a trigger (000036).
+	CreateSanctionVersion(ctx context.Context, arg CreateSanctionVersionParams) (int64, error)
 	CreateScoreChangeLog(ctx context.Context, arg CreateScoreChangeLogParams) (int64, error)
 	CreateScoreChangeLogItem(ctx context.Context, arg CreateScoreChangeLogItemParams) error
 	CreateSession(ctx context.Context, arg CreateSessionParams) (int64, error)
@@ -46,6 +58,8 @@ type Querier interface {
 	GetActiveSessionByTokenHash(ctx context.Context, arg GetActiveSessionByTokenHashParams) (GetActiveSessionByTokenHashRow, error)
 	GetCalendarEvent(ctx context.Context, id int64) (CalendarEvent, error)
 	GetConversation(ctx context.Context, arg GetConversationParams) (GetConversationRow, error)
+	GetCurrentSanctionVersion(ctx context.Context, id int64) (GetCurrentSanctionVersionRow, error)
+	GetPenaltyTypeByCode(ctx context.Context, code string) (GetPenaltyTypeByCodeRow, error)
 	// Scores belong to a race (score_entries_race_fkey, 000016): an event without a
 	// race has no grid. The audit trail (one score_change_log version plus its items)
 	// is written by the service in the same transaction; the schema only demands an
@@ -71,6 +85,13 @@ type Querier interface {
 	// Every conversation the reader takes part in, the latest activity first, with
 	// its last message, how many are unread and whether the reader wrote in it.
 	ListConversations(ctx context.Context, readerID int64) ([]ListConversationsRow, error)
+	// A team filter matches the accountable team, so it also finds the sanctions of
+	// the team's drivers. The days of the range are already resolved to instants.
+	ListCurrentSanctions(ctx context.Context, arg ListCurrentSanctionsParams) ([]SanctionVersionDetail, error)
+	// Sanctions (US15, US25, US26). A sanction is its identity in sanctions plus an
+	// append-only chain of versions (000035); the reads go through the
+	// sanction_version_details and sanction_notices views (000037).
+	ListPenaltyTypes(ctx context.Context) ([]ListPenaltyTypesRow, error)
 	// The grid of a race: every driver whose team on the race date runs in its
 	// championship, with the number they hold in that season and the points already loaded
 	// (NULL when the driver has no entry yet). The service diffs against this.
@@ -84,6 +105,10 @@ type Querier interface {
 	// The history of a race as the FIA audits it: every change with its author and
 	// the before and after of each driver it touched, newest first.
 	ListRaceScoreHistory(ctx context.Context, eventID int64) ([]ListRaceScoreHistoryRow, error)
+	// Every version of every sanction with each recipient team and its confirmation,
+	// for the FIA's follow-up.
+	ListSanctionAcknowledgements(ctx context.Context) ([]ListSanctionAcknowledgementsRow, error)
+	ListSanctionVersions(ctx context.Context, sanctionID int64) ([]SanctionVersionDetail, error)
 	ListScoreChangeAcknowledgements(ctx context.Context) ([]ListScoreChangeAcknowledgementsRow, error)
 	ListSeasons(ctx context.Context) ([]ListSeasonsRow, error)
 	// The lineup of a team: the drivers whose latest assignment points at that team
@@ -92,6 +117,8 @@ type Querier interface {
 	// category for the latest season (000011, 000019); a scalar subquery keeps it
 	// nullable for a driver without a number yet.
 	ListTeamDrivers(ctx context.Context, teamID pgtype.Int8) ([]ListTeamDriversRow, error)
+	// A team sees the version that stands of every sanction it was sent.
+	ListTeamSanctionNotices(ctx context.Context, arg ListTeamSanctionNoticesParams) ([]ListTeamSanctionNoticesRow, error)
 	ListTeamScoreChangeItems(ctx context.Context, arg ListTeamScoreChangeItemsParams) ([]ListTeamScoreChangeItemsRow, error)
 	// Score notices are derived from the change log by the score_notices view
 	// (000025): a team is notified of every change whose items touched it, newest
@@ -101,6 +128,9 @@ type Querier interface {
 	// Two edits of the same race take turns, so each one diffs against the scores
 	// the previous one left and the audit records the real old points.
 	LockRaceScores(ctx context.Context, eventID int64) error
+	// Amendments and revocations of one sanction queue behind this lock, so each one
+	// reads the version it replaces and none is lost.
+	LockSanction(ctx context.Context, id int64) (int64, error)
 	// The cursor only moves forward, so reading an older page again is a no-op.
 	MarkConversationRead(ctx context.Context, arg MarkConversationReadParams) error
 	ReactivateUser(ctx context.Context, id int64) error
