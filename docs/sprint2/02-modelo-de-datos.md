@@ -313,3 +313,29 @@ así una transferencia o baja sigue visible para el equipo saliente. Solo FIA ac
 
 La transmisión segura se verifica con TLS real. Se admite TLS directo o proxy confiable con
 acceso de red restringido; producción rechaza HTTP. HSTS complementa TLS y no lo sustituye.
+
+## Pruebas de neumáticos: resultado por compuesto (000032–000033)
+
+- **La prueba es el evento `tyre_test` del calendario** (fecha, campeonato, circuito, US7). US19 no
+  crea otra entidad: le agrega el **resultado oficial**, uno por compuesto evaluado.
+- **Tipo = compuesto.** `tyre_compounds` es un catálogo de datos (C1 a C6, intermedio y lluvia) que
+  vive en `seeds/reference.sql`; el formulario, el filtro y la API lo leen de ahí, sin listas
+  repetidas en el código. Por ser un catálogo cerrado, filtrar por un tipo desconocido responde
+  `400`; en controles técnicos el tipo es texto libre y el mismo filtro devuelve una lista vacía.
+  La diferencia es deliberada y quedó aceptada.
+- **Resultado = veredicto + observaciones** (`passed`, `notes`), las mismas reglas que controles
+  técnicos (`internal/results`): un "no aprobado" exige observaciones, hasta 2000 caracteres.
+- **Fecha válida:** `conducted_on` es un día (UTC) dentro de los días del evento, que no puede ser
+  futuro y cuyo evento no puede estar cancelado. Así no se carga el resultado de una prueba que
+  todavía no ocurrió.
+- **Constancia oficial, append-only.** `reject_mutation()` impide `UPDATE` y `DELETE`. Un error se
+  corrige con una fila nueva que reemplaza a la vigente (`supersedes_id` + `correction_note`
+  obligatoria). La FK compuesta mantiene la corrección en la misma prueba y compuesto,
+  `UNIQUE (supersedes_id)` impide corregir dos veces la misma fila (también ante dos pedidos
+  simultáneos) y el índice parcial `one_original` admite un solo original por compuesto: la cadena
+  es lineal y su cabeza es el resultado vigente. El público solo ve el vigente, marcado como
+  corrección; la FIA ve la cadena entera con su autor (nunca se publica el usuario de la FIA).
+- **Una prueba con resultados es final:** la guarda compartida `assert_recorded_event_is_final()`
+  (000030, RC020) congela su fecha, su baja, su campeonato y su circuito.
+- La vista `tyre_test_result_entries` arma una sola vez el join (compuesto, circuito, campeonato,
+  autor y si es el vigente) que usan el historial público y el registro de la FIA.
