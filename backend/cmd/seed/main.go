@@ -60,4 +60,9 @@ func main() {
 		log.Fatalf("seed: %v", err)
 	}
 	log.Println("demo messages seeded")
+
+	if err := runner.DemoSanctions(ctx); err != nil {
+		log.Fatalf("seed: %v", err)
+	}
+	log.Println("demo sanctions seeded")
 }

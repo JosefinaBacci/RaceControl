@@ -47,6 +47,15 @@ func (r *Runner) DemoScoreHistory(ctx context.Context) error {
 	return nil
 }
 
+// DemoSanctions applies the sanctions of the demo races, their versions and some
+// acknowledgements. They name the demo accounts, so it runs after DemoAccounts.
+func (r *Runner) DemoSanctions(ctx context.Context) error {
+	if err := applyFile(ctx, r.pool, "demo_sanctions.sql"); err != nil {
+		return fmt.Errorf("apply demo sanctions seed: %w", err)
+	}
+	return nil
+}
+
 // DemoMessages applies the demo conversations. They name the demo accounts, so it
 // runs after DemoAccounts.
 func (r *Runner) DemoMessages(ctx context.Context) error {
