@@ -1,0 +1,7 @@
+DROP VIEW technical_control_current_results;
+DROP VIEW technical_control_revisions;
+DROP TRIGGER technical_controls_keep_controlled_final ON technical_controls;
+DROP TRIGGER events_keep_controlled_event_final ON events;
+DROP TABLE technical_control_results;
+ALTER TABLE technical_controls DROP CONSTRAINT technical_controls_event_category_unique;
+ALTER TABLE teams DROP CONSTRAINT teams_id_category_unique;
