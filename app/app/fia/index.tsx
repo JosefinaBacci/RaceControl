@@ -5,17 +5,16 @@ import { useSession } from '@/auth/SessionProvider';
 import { Button, Card, CardLink, Notice, Screen, StatRow, StatTile } from '@/components';
 import { useActiveAccountCount } from '@/data/accounts';
 import { useUpcomingEvents } from '@/data/calendar';
-import { usePendingSanctions } from '@/data/hooks';
+import { usePendingSanctionConfirmations } from '@/data/sanctions';
 import { usePendingScoreConfirmations, useFinishedRaceScores } from '@/data/scores';
 import { EventList } from '@/features/EventList';
 import { RemoteContent } from '@/features/RemoteContent';
-import { MockNotice } from '@/features/MockNotice';
 import { spacing } from '@/theme';
 
 export default function FiaDashboardScreen() {
   const session = useSession();
   const { state: upcomingState, reload: reloadUpcoming } = useUpcomingEvents(4);
-  const pendingSanctions = usePendingSanctions();
+  const pendingSanctions = usePendingSanctionConfirmations();
   const pendingScores = usePendingScoreConfirmations();
   const finishedRaces = useFinishedRaceScores();
   const missingResults = finishedRaces.state.status === 'ready' ? finishedRaces.state.data.filter((race) => !race.hasResults).length : 0;
@@ -23,7 +22,6 @@ export default function FiaDashboardScreen() {
 
   return (
     <Screen title={`Hola, ${session.user?.username ?? ''}`} subtitle="Administración central de la FIA.">
-      <MockNotice />
       {missingResults > 0 ? <Card title="Puntajes pendientes" action={<CardLink label="Cargar resultados" onPress={() => router.push('/fia/results')} />}>
         <Notice tone="warning" message={`Hay ${missingResults} carreras terminadas sin puntajes publicados.`} />
       </Card> : null}
@@ -39,6 +37,7 @@ export default function FiaDashboardScreen() {
           <Button label="Cargar evento" icon="calendar-outline" variant="secondary" compact onPress={() => router.push('/fia/calendar')} />
           <Button label="Publicar puntajes" icon="trophy-outline" variant="secondary" compact onPress={() => router.push('/fia/results')} />
           <Button label="Acuses de puntajes" icon="checkmark-done-outline" variant="secondary" compact onPress={() => router.push('/fia/notifications')} />
+          <Button label="Registrar sanción" icon="alert-circle-outline" variant="secondary" compact onPress={() => router.push('/fia/sanctions/new', { withAnchor: true })} />
         </View>
       </Card>
       <RemoteContent state={upcomingState} onRetry={reloadUpcoming}>
