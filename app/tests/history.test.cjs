@@ -1,19 +1,8 @@
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
-const { readFileSync } = require('node:fs');
-const { dirname, join, resolve } = require('node:path');
-const ts = require('typescript');
+const { join } = require('node:path');
 
-// Like the loader in forms.test.cjs, but the history helpers import each other
-// (./day), so relative imports are resolved and loaded the same way.
-function loadModule(path) {
-  const source = readFileSync(path, 'utf8');
-  const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } });
-  const exports = {};
-  const requireSibling = (specifier) => loadModule(resolve(dirname(path), `${specifier}.ts`));
-  new Function('exports', 'require', compiled.outputText)(exports, requireSibling);
-  return exports;
-}
+const { loadModule } = require('./loadModule.cjs');
 
 const historyDir = join(__dirname, '../src/features/history');
 const { isDay, formatDay, formatInstantDay, todayDay } = loadModule(join(historyDir, 'day.ts'));

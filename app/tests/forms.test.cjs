@@ -1,16 +1,10 @@
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
-const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
-const ts = require('typescript');
 
-function loadForm(relativePath) {
-  const source = readFileSync(join(__dirname, '../src/features', relativePath), 'utf8');
-  const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } });
-  const exports = {};
-  new Function('exports', compiled.outputText)(exports);
-  return exports;
-}
+const { loadModule } = require('./loadModule.cjs');
+
+const loadForm = (relativePath) => loadModule(join(__dirname, '../src/features', relativePath));
 
 const { timingOf, newFormValues } = loadForm('calendar/eventForm.ts');
 const { initialSheet, lineError, sheetEntries } = loadForm('scores/scoreSheet.ts');
