@@ -62,6 +62,27 @@ func OptionalText(value string) pgtype.Text {
 	return pgtype.Text{String: value, Valid: true}
 }
 
+// Date wraps a day as a non-null date parameter.
+func Date(value time.Time) pgtype.Date {
+	return pgtype.Date{Time: value, Valid: true}
+}
+
+// OptionalDate wraps an open or closed day bound: nil is SQL NULL.
+func OptionalDate(value *time.Time) pgtype.Date {
+	if value == nil {
+		return pgtype.Date{}
+	}
+	return Date(*value)
+}
+
+// OptionalTimestamptz wraps an open or closed instant bound: nil is SQL NULL.
+func OptionalTimestamptz(value *time.Time) pgtype.Timestamptz {
+	if value == nil {
+		return pgtype.Timestamptz{}
+	}
+	return Timestamptz(*value)
+}
+
 // UniqueViolation reports whether err is a unique-constraint violation and on which constraint.
 func UniqueViolation(err error) (constraint string, isViolation bool) {
 	var pgErr *pgconn.PgError
