@@ -12,8 +12,8 @@ en verde y un commit por cambio lógico.
 |----|--------|----|-------|------|------------------------|--------|
 | US21 | Registro de controles técnicos | 3 | 8 | 2.5h | — | ☐ |
 | US22 | Visualización de controles técnicos | 3 | 8 | 1.5h | — | ☐ |
-| US19 | Registro de prueba de neumáticos | 3 | 8 | 2.5h | — | ☐ |
-| US20 | Visualización de prueba de neumáticos | 3 | 8 | 1.5h | — | ☐ |
+| US19 | Registro de prueba de neumáticos | 3 | 8 | 2.5h | — | ☑ |
+| US20 | Visualización de prueba de neumáticos | 3 | 8 | 1.5h | — | ☑ |
 | US15 | Registro de sanciones | 5 | 8 | 4h | — | ☐ |
 | US25 | Visualización de sanciones (público) | 5 | 13 | 2h | — | ☐ |
 | US26 | Visualización y confirmación de sanciones (escudería) | 5 | 13 | 2.5h | — | ☐ |
@@ -81,35 +81,36 @@ US18 va al final porque es la paridad de todo lo anterior en móvil.
 
 *Est. 2.5h · SP 3 · Valor 8*
 
-- [ ] Modelo: tipo y resultado de la prueba sobre `tyre_tests` (hoy solo tiene campeonato y circuito),
-      con autor y fecha, en una migración nueva
-- [ ] Queries `sqlc` y servicio con validaciones
-- [ ] Endpoint restringido a `fia_admin`
-- [ ] Formulario de registro en el panel FIA
-- [ ] Tests de integración (incluido acceso denegado a otros roles)
+- [x] Modelo: tipo y resultado de la prueba sobre `tyre_tests` (hoy solo tiene campeonato y circuito),
+      con autor y fecha, en una migración nueva (`000032` catálogo de compuestos, `000033`
+      `tyre_test_results` append-only con correcciones; ver `docs/sprint2/02-modelo-de-datos.md`)
+- [x] Queries `sqlc` y servicio con validaciones
+- [x] Endpoint restringido a `fia_admin`
+- [ ] Formulario de registro en el panel FIA (hecho: compila, empaqueta y tiene tests unitarios; falta probarlo a mano en el navegador)
+- [x] Tests de integración (incluido acceso denegado a otros roles)
 
 **Criterios de éxito**
 
-- [ ] El administrador puede registrar una prueba de neumático con fecha, tipo y resultado
-- [ ] El sistema valida los campos obligatorios y rechaza fechas inválidas
-- [ ] La prueba registrada queda guardada y disponible para su consulta
-- [ ] Solo el administrador de la FIA puede registrar pruebas de neumáticos
+- [x] El administrador puede registrar una prueba de neumático con fecha, tipo y resultado
+- [x] El sistema valida los campos obligatorios y rechaza fechas inválidas
+- [x] La prueba registrada queda guardada y disponible para su consulta
+- [x] Solo el administrador de la FIA puede registrar pruebas de neumáticos
 
 ## US20 — Visualización de prueba de neumáticos
 
 *Est. 1.5h · SP 3 · Valor 8*
 
-- [ ] Endpoint público de lectura del historial
-- [ ] Listado del historial con filtros por fecha y tipo de prueba
-- [ ] Acceso de solo lectura para escudería y público; verificar que coincida con lo cargado
+- [x] Endpoint público de lectura del historial
+- [x] Listado del historial con filtros por fecha y tipo de prueba
+- [x] Acceso de solo lectura para escudería y público; verificar que coincida con lo cargado
 
 **Criterios de éxito**
 
-- [ ] Los responsables de escudería y el público pueden consultar el historial de pruebas de neumáticos
-- [ ] Cada prueba muestra su fecha, tipo y resultado
-- [ ] Se puede filtrar el historial por fecha y tipo
-- [ ] Los datos mostrados coinciden con los cargados por el administrador
-- [ ] Los usuarios no pueden modificar ni eliminar las pruebas
+- [x] Los responsables de escudería y el público pueden consultar el historial de pruebas de neumáticos
+- [x] Cada prueba muestra su fecha, tipo y resultado
+- [x] Se puede filtrar el historial por fecha y tipo
+- [x] Los datos mostrados coinciden con los cargados por el administrador
+- [x] Los usuarios no pueden modificar ni eliminar las pruebas
 
 ## US15 — Registro de sanciones
 

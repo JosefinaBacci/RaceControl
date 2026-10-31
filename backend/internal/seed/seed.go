@@ -65,6 +65,15 @@ func (r *Runner) DemoTechnicalControls(ctx context.Context) error {
 	return nil
 }
 
+// DemoTyreTests applies the results of the demo tyre test. They name the demo
+// accounts, so it runs after DemoAccounts.
+func (r *Runner) DemoTyreTests(ctx context.Context) error {
+	if err := applyFile(ctx, r.pool, "demo_tyre_tests.sql"); err != nil {
+		return fmt.Errorf("apply demo tyre tests seed: %w", err)
+	}
+	return nil
+}
+
 func applyFile(ctx context.Context, pool *pgxpool.Pool, name string) error {
 	contents, err := fs.ReadFile(seeds.Files, name)
 	if err != nil {

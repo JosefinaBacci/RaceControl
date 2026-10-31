@@ -24,6 +24,7 @@ import (
 	"github.com/racecontrol/backend/internal/teams"
 	"github.com/racecontrol/backend/internal/technicalcontrols"
 	"github.com/racecontrol/backend/internal/transport"
+	"github.com/racecontrol/backend/internal/tyretests"
 	"github.com/racecontrol/backend/internal/users"
 )
 
@@ -86,17 +87,17 @@ func buildRouter(cfg config.Config, pool *pgxpool.Pool) (http.Handler, error) {
 
 	scoreService := scores.NewService(queries, db.NewTransactor(pool))
 	return transport.NewRouter(transport.Dependencies{
-		Pool:          pool,
-		Authenticator: auth.NewAuthenticator(queries, hasher, sessionService),
-		Sessions:      sessionService,
-		Users:         users.NewService(queries, db.NewTransactor(pool), hasher),
-		Teams:         teams.NewService(queries),
-		Calendar:      calendar.NewService(queries, db.NewTransactor(pool)),
-		Drivers:       drivers.NewService(queries, db.NewTransactor(pool)),
-		Scores:        scoreService,
-		ScoreNotices:  scoreService,
-		Messenger:     messaging.NewService(queries, db.NewTransactor(pool)),
-
+		Pool:              pool,
+		Authenticator:     auth.NewAuthenticator(queries, hasher, sessionService),
+		Sessions:          sessionService,
+		Users:             users.NewService(queries, db.NewTransactor(pool), hasher),
+		Teams:             teams.NewService(queries),
+		Calendar:          calendar.NewService(queries, db.NewTransactor(pool)),
+		Drivers:           drivers.NewService(queries, db.NewTransactor(pool)),
+		Scores:            scoreService,
+		ScoreNotices:      scoreService,
+		Messenger:         messaging.NewService(queries, db.NewTransactor(pool)),
+		TyreTests:         tyretests.NewService(queries),
 		TechnicalControls: technicalcontrols.NewService(queries, db.NewTransactor(pool)),
 		Cookie:            transport.CookieConfig{Secure: cfg.IsProduction(), MaxAge: cfg.Sessions.Absolute},
 		AllowedOrigins:    cfg.CORSAllowedOrigins,

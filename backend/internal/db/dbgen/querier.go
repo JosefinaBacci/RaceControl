@@ -57,9 +57,14 @@ type Querier interface {
 	GetTechnicalControl(ctx context.Context, id int64) (GetTechnicalControlRow, error)
 	GetTechnicalControlResultSubject(ctx context.Context, id int64) (GetTechnicalControlResultSubjectRow, error)
 	GetTechnicalControlRevision(ctx context.Context, id int64) (TechnicalControlRevision, error)
+	GetTyreCompoundByCode(ctx context.Context, code string) (GetTyreCompoundByCodeRow, error)
+	GetTyreTestResultEntry(ctx context.Context, id int64) (TyreTestResultEntry, error)
+	GetTyreTestResultSubject(ctx context.Context, id int64) (GetTyreTestResultSubjectRow, error)
+	GetTyreTestWindow(ctx context.Context, id int64) (GetTyreTestWindowRow, error)
 	GetUserByUsername(ctx context.Context, lower string) (User, error)
 	InsertLoginAttempt(ctx context.Context, arg InsertLoginAttemptParams) error
 	InsertTechnicalControlResult(ctx context.Context, arg InsertTechnicalControlResultParams) (int64, error)
+	InsertTyreTestResult(ctx context.Context, arg InsertTyreTestResultParams) (int64, error)
 	LatestSeason(ctx context.Context) (LatestSeasonRow, error)
 	ListAccounts(ctx context.Context, arg ListAccountsParams) ([]ListAccountsRow, error)
 	// The public lineup (US12): every driver whose latest assignment points at a team,
@@ -79,6 +84,7 @@ type Querier interface {
 	// Every conversation the reader takes part in, the latest activity first, with
 	// its last message, how many are unread and whether the reader wrote in it.
 	ListConversations(ctx context.Context, readerID int64) ([]ListConversationsRow, error)
+	ListCurrentTyreTestResults(ctx context.Context, arg ListCurrentTyreTestResultsParams) ([]TyreTestResultEntry, error)
 	// The grid of a race: every driver whose team on the race date runs in its
 	// championship, with the number they hold in that season and the points already loaded
 	// (NULL when the driver has no entry yet). The service diffs against this.
@@ -109,6 +115,9 @@ type Querier interface {
 	ListTechnicalControlHistory(ctx context.Context, arg ListTechnicalControlHistoryParams) ([]TechnicalControlCurrentResult, error)
 	ListTechnicalControlRevisions(ctx context.Context, eventID int64) ([]TechnicalControlRevision, error)
 	ListTechnicalControlTypes(ctx context.Context) ([]string, error)
+	// Tyre test results (US19, US20).
+	ListTyreCompounds(ctx context.Context) ([]ListTyreCompoundsRow, error)
+	ListTyreTestResultChain(ctx context.Context, eventID int64) ([]TyreTestResultEntry, error)
 	// Two edits of the same race take turns, so each one diffs against the scores
 	// the previous one left and the audit records the real old points.
 	LockRaceScores(ctx context.Context, eventID int64) error
