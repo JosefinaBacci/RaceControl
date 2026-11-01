@@ -1487,3 +1487,43 @@ HTTPS real permanece pendiente; localhost usa HTTP.
 **Validación:** `make sqlc` y `make check` aprobados con PostgreSQL de pruebas en migración 000029.
 
 ---
+
+### 2026-10-31 — Organización del Sprint 3 con un equipo de agentes (US15, US19–US22, US25, US26)
+
+**Pedido:** implementar el Sprint 3 repartiendo las US entre agentes de IA que planifican, se coordinan entre sí e implementan, con un agente "manager" que aprueba los planes, integra las ramas y prueba todo.
+
+**Resultado:** tres equipos en worktrees aislados (base de datos, puertos y rangos de migración y de códigos `RC0xx` propios): controles (US21/US22), neumáticos (US19/US20) y sanciones (US15/US25/US26). Cada equipo escribió su plan en `docs/sprint3/plans/` y acordó con los demás las piezas compartidas antes de programar. El manager decidió los puntos abiertos: correcciones append-only con motivo en lugar de resultados inmodificables, fechas por día en UTC con un único `formatDay`, ningún nombre de usuario en las respuestas públicas, notificación de cada sanción a todas las escuderías del campeonato, sanciones revocadas visibles y sin descuento de puntos del campeonato.
+
+**Validación:** integración en `main` con `make check` en verde y pruebas de aceptación propias del manager: 220 verificaciones HTTP adversariales (roles, validaciones, filtros, fechas límite, cuerpos de 5 MB), concurrencia (40 altas simultáneas del mismo resultado → una sola 201; 30 revocaciones simultáneas → una sola 200), carga (~3000 lecturas públicas por segundo, p95 < 40 ms, sin errores), guardas de la base probadas con SQL directo y recorridos completos de la interfaz en Chromium headless a 375 px y 1366 px.
+
+---
+
+### 2026-10-31 — Controles técnicos: registro y visualización (US21, US22)
+
+**Pedido:** registrar fecha, tipo y resultado de cada control técnico y publicar el historial con filtros.
+
+**Resultado:** la IA leyó el enunciado ("registrando en cada caso si pasaron o no cada control") y definió el resultado por escudería: aprobado, observaciones, día, autor y fecha de registro. Diseñó en el esquema una cadena de correcciones append-only con un único resultado vigente garantizado por restricciones, y un guard compartido que congela el evento una vez que tiene resultados (RC020). Acordó con los equipos de neumáticos y sanciones las piezas compartidas (filtro de fechas en UTC, reglas de resultados, forma JSON, componentes de historial y formulario) y las comiteó primero para que pudieran mergearlas. Implementó endpoints con permisos por rol, la pestaña pública "Técnica", la pantalla de la FIA, la semilla de demo y tests de esquema, de integración (roles, fechas inválidas, concurrencia, inmutabilidad, filtros) y de la app.
+
+**Validación:** `make check` en verde; aceptación del manager (ver la entrada de organización del sprint).
+
+---
+
+### 2026-10-31 — Pruebas de neumáticos: registro y visualización (US19, US20)
+
+**Pedido:** registrar fecha, tipo y resultado de cada prueba de neumáticos y publicar el historial con filtros.
+
+**Resultado:** la IA analizó el enunciado y el modelo existente y propuso que el "tipo" de una prueba de neumáticos sea el compuesto, con un catálogo de datos (C1–C6, intermedio y lluvia). Acordó con el equipo de controles las piezas compartidas: reglas de fecha y observaciones, filtros, correcciones encadenadas y componentes de historial. Implementó las migraciones 000032/000033 (append-only, correcciones con `supersedes_id`, prueba congelada una vez que tiene resultados), el servicio, los endpoints con permisos por rol, las pantallas de la FIA y la pública, y la semilla de demo. Escribió tests de esquema, de integración HTTP (validaciones, roles, filtros, concurrencia) y de la app.
+
+**Validación:** `make check` en verde; aceptación del manager (ver la entrada de organización del sprint).
+
+---
+
+### 2026-10-31 — Sanciones: registro, consulta pública y acuse de las escuderías (US15, US25, US26)
+
+**Pedido:** registrar sanciones a pilotos o escuderías, publicarlas sin login y que las escuderías confirmen la notificación.
+
+**Resultado:** la IA propuso y aplicó el modelo de sanciones (piloto o escudería con `num_nonnulls`, escudería responsable guardada por trigger, catálogo `penalty_types` como datos, versiones append-only para registrar, modificar y revocar, y destinatarios fijados por versión para todas las escuderías del campeonato), siguiendo el modelo de acuse por versión de US24. Implementó el servicio en Go con sus validaciones y guardias RC010–RC014, los endpoints públicos, de FIA y de escudería, y las pantallas de Expo (listado público con filtros, detalle con historial, formularios de FIA y bandeja de la escudería) en reemplazo de los mocks. Escribió tests de integración, de concurrencia y de esquema.
+
+**Validación:** `make check` en verde; aceptación del manager (ver la entrada de organización del sprint).
+
+---
