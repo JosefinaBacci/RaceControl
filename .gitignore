@@ -8,3 +8,4 @@ backend/bin/
 *.test
 *.out
 coverage.*
+.claude/
