@@ -66,7 +66,7 @@ pestañas, y a 320–375 px las etiquetas se cortan ("Mi es…", "Sanci…", "No
 | ¿Empaqueta para Android e iOS? | `npx expo export --platform android` y `--platform ios` terminan sin errores (bundles Hermes de 3.3 MB y 3 MB). Se vuelve a correr al final. |
 | APIs solo web (`window`, `document`, `localStorage`) fuera de `.web.tsx` | Ninguna. El único uso de `document` está en `src/theme/webStyles.web.ts`; la versión nativa (`webStyles.ts`) es vacía. `Platform.OS` solo en el login (teclado iOS) y en el corte de la barra lateral. |
 | Descargas del calendario (`.ics`/PDF) | `Linking.openURL` sobre un endpoint público: en el teléfono abre el navegador del sistema, que descarga el archivo (o lo ofrece a Calendario en iOS). No necesita token. |
-| URL de la API desde un dispositivo | `EXPO_PUBLIC_API_URL` (en `src/api/client.ts`), por defecto `http://localhost:8080`, que **no** sirve desde un teléfono: hay que poner la IP de la máquina (`http://192.168.x.x:8080`). Fuera de `__DEV__` el cliente exige HTTPS. Se documenta en el README de la app. |
+| URL de la API desde un dispositivo | `EXPO_PUBLIC_API_URL` (en `src/api/client.ts`), por defecto `http://localhost:8080`, que **no** sirve desde un teléfono: hay que poner la IP de la máquina (`http://192.168.x.x:8080`). Fuera de `__DEV__` el cliente exige HTTPS. Ya está documentado en `app/.env.example` (IP de la red local; `10.0.2.2` en el emulador de Android). La API escucha en todas las interfaces (`HTTP_ADDR=:8080`). |
 | Token de sesión | Nativo: `expo-secure-store` (`tokenStore.ts`), enviado como `Authorization: Bearer`; el backend solo devuelve el token en el cuerpo si llega `X-Client-Platform: native` (cubierto por `tests/transport/auth_integration_test.go`). Web: cookie `HttpOnly` (`tokenStore.web.ts` no guarda nada). Nunca `AsyncStorage`. CORS no aplica en nativo. |
 | Áreas seguras (notch, barra de gestos) | El encabezado y la barra inferior de `Tabs` (react-navigation) ya respetan `react-native-safe-area-context`; las pantallas van dentro del navegador, así que heredan los márgenes. |
 | Teclado tapando formularios | Android ajusta la ventana (modo `resize` por defecto de Expo). En iOS `ScrollView` no se corre solo: se agrega `automaticallyAdjustKeyboardInsets` al `Screen` compartido, así todos los formularios (sanciones, usuarios, pilotos, mensajes) dejan ver el campo enfocado. El login ya usa `KeyboardAvoidingView`. |
@@ -84,6 +84,8 @@ pestañas, y a 320–375 px las etiquetas se cortan ("Mi es…", "Sanci…", "No
   mismo orden y "Más" se oculta.
 - Principales: público Inicio, Carreras, Puntajes, Sanciones · escudería Mi escudería, Pilotos,
   Sanciones, Mensajes · FIA Panel, Calendario, Resultados, Sanciones.
+- Cada etiqueta de la barra del teléfono tiene como máximo 10 caracteres (lo que entra a 320 px):
+  "Mi escudería" se muestra como "Escudería" solo en esa barra (`phoneLabel`).
 - El filtro de rango de fechas que se corta a 375 px lo arregla el equipo controls: no se toca.
 
 ## Verificación
@@ -99,6 +101,24 @@ pestañas, y a 320–375 px las etiquetas se cortan ("Mi es…", "Sanci…", "No
   las pestañas que esconde.
 - Login y permisos por rol en el camino nativo (token Bearer) ya los cubren los tests de integración
   del backend; se repite a mano con `curl` y `X-Client-Platform: native`.
+
+## Resultado de la verificación
+
+- Exportaciones nativas después del cambio: Android (Hermes, 3.3 MB) e iOS (Hermes, 3 MB) sin errores
+  ni advertencias.
+- Recorrido de 44 rutas (11 públicas, 21 FIA, 12 escudería) en 6 tamaños: 0 excepciones, 0 respuestas
+  4xx/5xx de la API, 0 desbordamientos horizontales, 0 etiquetas de pestaña cortadas. Lo único que
+  aparece es el 401 esperado de `/auth/me` cuando no hay sesión.
+- Antes del cambio, a 320 px: 8 etiquetas cortadas en la barra FIA, 8 en la de escudería y
+  "Sanciones" en la pública.
+- "Más" en el teléfono: cada destino oculto se abre tocando, para los tres roles; en escritorio la
+  barra lateral sigue con todas las pestañas y sin "Más".
+- Reflejo de cambios: la FIA abre una conversación por la API mientras la escudería está en el
+  teléfono; al cambiar de pestaña sube la insignia y la conversación aparece en la lista.
+- `app.json` fija la orientación vertical en iOS y Android; el apaisado (740×360) se probó en la web.
+- Pendiente fuera de US18: el filtro de fechas se corta a 375 px (lo arregla el equipo controls) y,
+  a 320 px, la insignia "Corregido" de una tarjeta de control técnico sobresale unos píxeles del
+  borde de la tarjeta.
 
 ## Preguntas abiertas
 

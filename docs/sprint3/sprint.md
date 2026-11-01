@@ -17,7 +17,7 @@ en verde y un commit por cambio lógico.
 | US15 | Registro de sanciones | 5 | 8 | 4h | — | ☐ |
 | US25 | Visualización de sanciones (público) | 5 | 13 | 2h | — | ☐ |
 | US26 | Visualización y confirmación de sanciones (escudería) | 5 | 13 | 2.5h | — | ☐ |
-| US18 | Disponibilidad de funcionalidades en aplicación móvil | 5 | 13 | 16h | — | ☐ |
+| US18 | Disponibilidad de funcionalidades en aplicación móvil | 5 | 13 | 16h | — | ◐ |
 
 **Total estimado:** 32.5h · **Total real registrado:** —
 
@@ -171,18 +171,38 @@ US18 va al final porque es la paridad de todo lo anterior en móvil.
 
 *Est. 16h · SP 5 · Valor 13*
 
-- [ ] Definir el alcance y la paridad de funcionalidades respecto a la web
-- [x] Proyecto móvil y navegación principal (Expo + expo-router desde US1)
-- [x] Autenticación y roles contra el backend (token en `expo-secure-store` desde US5)
-- [ ] Pantallas de consulta: calendario, puntajes y pilotos ya compartidas; faltan sanciones, pruebas de
-      neumáticos y controles técnicos (dependen de US20, US22 y US25)
-- [ ] Funciones propias de cada rol (escudería y administrador) verificadas en móvil
-- [ ] Pruebas en distintos dispositivos y tamaños de pantalla
+La app es una sola base Expo para iOS, Android y web, así que la paridad se verifica en lugar de
+construirse dos veces. Matriz de paridad por rol, riesgos nativos y método de prueba en
+[`plans/mobile.md`](plans/mobile.md). **No hubo dispositivos reales ni emuladores disponibles:** la
+evidencia son las exportaciones nativas (`npx expo export --platform android` y `--platform ios`, sin
+errores) y un recorrido automático con Playwright en modo táctil por todas las rutas de los tres roles
+a 320, 375, 414, 740×360 (apaisado), 768 y 1366 px de ancho.
+
+- [x] Definir el alcance y la paridad de funcionalidades respecto a la web (matriz en `plans/mobile.md`:
+      ninguna funcionalidad web falta en el teléfono; la brecha era la barra de pestañas)
+- [x] Proyecto móvil y navegación principal (Expo + expo-router desde US1); en el teléfono la barra
+      inferior muestra 4 pestañas + **Más** para los tres roles, armada desde una tabla por rol
+      (`src/navigation/tabSpecs.ts`); la barra lateral de escritorio no cambia
+- [x] Autenticación y roles contra el backend (token en `expo-secure-store` desde US5; camino nativo
+      con `Authorization: Bearer` probado con `curl`: 200 en lo propio, 403 en lo de otro rol, 401
+      tras cerrar sesión)
+- [x] Pantallas de consulta: calendario, puntajes, pilotos, sanciones, pruebas de neumáticos y
+      controles técnicos, recorridas en todos los anchos sin errores de consola, sin respuestas 4xx/5xx
+      y sin desbordamiento horizontal
+- [x] Funciones propias de cada rol (escudería y administrador): todas sus pantallas y formularios
+      cargan en el teléfono y cada destino de **Más** se abre tocando (prueba automática); los
+      formularios no se enviaron desde un dispositivo real
+- [x] Pruebas en distintos tamaños de pantalla (los seis anchos de arriba); en dispositivos reales no
 
 **Criterios de éxito**
 
-- [ ] El usuario puede acceder desde la app móvil a las mismas funcionalidades que en la web
-- [ ] El inicio de sesión y los permisos por rol funcionan igual que en la web
-- [ ] Los datos mostrados en la app coinciden con los de la plataforma web
+- [x] El usuario puede acceder desde la app móvil a las mismas funcionalidades que en la web
+- [x] El inicio de sesión y los permisos por rol funcionan igual que en la web
+- [x] Los datos mostrados en la app coinciden con los de la plataforma web (mismo cliente HTTP y
+      mismos endpoints en las tres plataformas; ningún dato se transforma por plataforma)
 - [ ] La app se visualiza y funciona correctamente en distintos dispositivos y tamaños de pantalla
-- [ ] Los cambios hechos en la plataforma se reflejan en la app
+      (todos los anchos pasan, y ninguna etiqueta de pestaña se corta; falta el arreglo del filtro de
+      fechas que se corta a 375 px, a cargo del equipo controls, y no hay prueba en dispositivo real)
+- [x] Los cambios hechos en la plataforma se reflejan en la app (prueba automática: la FIA abre una
+      conversación por la API y el teléfono de la escudería la muestra, con la insignia actualizada,
+      al cambiar de pestaña, sin recargar)
