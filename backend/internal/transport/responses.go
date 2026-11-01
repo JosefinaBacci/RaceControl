@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -86,13 +87,29 @@ func writeDownload(w http.ResponseWriter, r *http.Request, contentType, filename
 	}
 }
 
+const invalidBodyMessage = "el cuerpo de la petición no es un JSON válido"
+
+// decodeJSON reads exactly one JSON object. A value of the wrong type is
+// reported on its field, and anything after the object is refused: a body the
+// API only half read could carry a second request the client meant to send.
 func decodeJSON(w http.ResponseWriter, r *http.Request, destination any) error {
 	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxRequestBodyBytes))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(destination); err != nil {
-		return domain.NewValidationError("body", "el cuerpo de la petición no es un JSON válido")
+		return decodeError(err)
+	}
+	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
+		return domain.NewValidationError("body", "el cuerpo de la petición debe tener un solo objeto JSON")
 	}
 	return nil
+}
+
+func decodeError(err error) error {
+	var typeErr *json.UnmarshalTypeError
+	if errors.As(err, &typeErr) && typeErr.Field != "" {
+		return domain.NewValidationError(typeErr.Field, fmt.Sprintf("el campo %s tiene un tipo inválido", typeErr.Field))
+	}
+	return domain.NewValidationError("body", invalidBodyMessage)
 }
 
 // pathID answers a malformed id as not found: no resource can live at that path.
