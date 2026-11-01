@@ -30,7 +30,13 @@ export function HistoryList<T extends HistoryEntry>({ entries, subjectOf, emptyM
 
 function HistoryEntryCard({ entry, subject }: { entry: HistoryEntry; subject: string }) {
   return (
-    <Card title={subject} action={<ResultBadges passed={entry.passed} isCorrection={entry.isCorrection} />}>
+    <Card>
+      <View style={styles.header}>
+        <AppText variant="heading" style={styles.subject}>
+          {subject}
+        </AppText>
+        <ResultBadges passed={entry.passed} isCorrection={entry.isCorrection} />
+      </View>
       <AppText variant="caption" color="textMuted">
         {`${formatDay(entry.conductedOn)} · ${entry.type.name} · ${entry.categoryCode.toUpperCase()} ${entry.seasonYear}`}
       </AppText>
@@ -44,4 +50,7 @@ function HistoryEntryCard({ entry, subject }: { entry: HistoryEntry; subject: st
 
 const styles = StyleSheet.create({
   list: { gap: spacing.md },
+  // On a narrow phone the badges drop under the subject instead of being clipped.
+  header: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  subject: { flexShrink: 1 },
 });
