@@ -1549,3 +1549,7 @@ Se revisaron las pantallas con cuentas de ambos roles. El panel, la cuenta y el 
 ### 2026-11-01 — Acuse de sanciones bajo carga (US26)
 
 En QA se comprobó que un timeout al leer el comprobante podía devolver un error después de persistir el acuse. Ahora ambas operaciones comparten transacción. Una prueba con PostgreSQL interrumpe la lectura y verifica que la notificación siga pendiente.
+
+### 2026-11-01 — Botones accesibles y verificación general (US18)
+
+Los botones con ícono no exponían su texto como nombre accesible exacto; se corrigió el componente común. Se comprobó «Enviar» desde dos sesiones y se registró la revisión por rol en el cierre del sprint.

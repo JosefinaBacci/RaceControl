@@ -239,3 +239,10 @@ a 320, 375, 414, 740×360 (apaisado), 768 y 1366 px de ancho.
 - [x] Los cambios hechos en la plataforma se reflejan en la app (prueba automática: la FIA abre una
       conversación por la API y el teléfono de la escudería la muestra, con la insignia actualizada,
       al cambiar de pestaña, sin recargar)
+
+## Revisión funcional del 1 de noviembre
+
+- Se recorrieron 47 combinaciones de rol y ruta en Edge: acceso público y FIA a 1280 px y escudería a 375 px. Se verificaron la carga de pantallas y detalles, los destinos, las respuestas de la API y el desbordamiento horizontal. No se detectaron excepciones de la interfaz en el recorrido.
+- En una base de QA separada se probó el login de FIA y escudería, se renombró una escudería y se verificó el dato en el panel y la cuenta. Desde dos sesiones se envió, recibió y respondió un mensaje. La FIA registró una sanción, se comprobó el motivo en el detalle público, la escudería confirmó la notificación y se verificó el acuse desde la API de seguimiento de la FIA. Se descargaron PDF e ICS filtrados por categoría.
+- En Android se abrió la app con Expo Go SDK 57 en un emulador API 36. Se verificó la carga de los filtros del historial de sanciones a 720 × 1280 px. Esta comprobación nativa fue parcial: no se repitieron allí todos los flujos web ni se probó en iOS o en un teléfono físico.
+- Se ejecutó `make check` con PostgreSQL: autenticación, roles y cuentas, calendario y exportaciones, pilotos y asignaciones, resultados y clasificaciones, mensajería, controles técnicos, neumáticos, sanciones y acuses; también TypeScript y las 33 pruebas de la app. Se incluyó la regresión del acuse ante una lectura fallida y su verificación concurrente.
