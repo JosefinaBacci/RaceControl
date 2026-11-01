@@ -1527,3 +1527,13 @@ HTTPS real permanece pendiente; localhost usa HTTP.
 **Validación:** `make check` en verde; aceptación del manager (ver la entrada de organización del sprint).
 
 ---
+
+### 2026-10-31 — Paridad de la aplicación móvil (US18)
+
+**Pedido:** ofrecer en la aplicación móvil las mismas funcionalidades que en la web, para todos los roles.
+
+**Resultado:** la IA armó la matriz de paridad web/teléfono por rol y revisó los riesgos propios de las plataformas nativas: exportó los paquetes de Android e iOS, buscó APIs que solo existen en la web, y revisó las descargas, el token en secure-store y la URL de la API. Rediseñó la barra inferior del teléfono: una tabla por rol, 4 pestañas más "Más", sin cambios en la barra lateral de escritorio, con tests de la división y las rutas. Corrigió que el teclado de iOS tapara los formularios.
+
+**Validación:** `make check` en verde y aceptación del manager sobre `main`: las 44 rutas de los tres roles recorridas en Chromium headless en modo táctil a 320, 375, 414, 768 y 1366 px y en un teléfono apaisado (sin excepciones, sin desbordes, sin etiquetas cortadas), navegación por "Más" probada para cada rol, y paquetes nativos que compilan. No hubo dispositivos reales ni emuladores.
+
+---
