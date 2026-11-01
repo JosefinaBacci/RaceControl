@@ -2,6 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 
 import * as authApi from '@/api/auth';
 import type { SessionUser } from '@/api/auth';
+import type { TeamSummary } from '@/api/teams';
+import { useTeam } from '@/data/teams';
 import { ApiError } from '@/api/client';
 
 type SessionState =
@@ -10,6 +12,7 @@ type SessionState =
   | { status: 'authenticated'; user: SessionUser };
 
 type SessionContextValue = SessionState & {
+  team: TeamSummary | null;
   signIn: (username: string, password: string) => Promise<SessionUser>;
   signOut: () => Promise<void>;
 };
@@ -51,7 +54,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const value = useMemo(() => ({ ...state, signIn, signOut }), [state, signIn, signOut]);
+  const teamId = state.user?.teamId ?? null;
+  const lookup = useTeam(teamId);
+  const team = lookup.state.status === 'ready' && lookup.state.data?.id === teamId ? lookup.state.data : null;
+  const value = useMemo(() => ({ ...state, team, signIn, signOut }), [state, team, signIn, signOut]);
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

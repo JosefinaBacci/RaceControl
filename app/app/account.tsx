@@ -8,7 +8,6 @@ import { useSession } from '@/auth/SessionProvider';
 import { AppText, Button, Card, Notice, Screen, TextField } from '@/components';
 import { useFormSubmission } from '@/data/useFormSubmission';
 import { passwordConfirmationError } from '@/features/accounts/passwordConfirmation';
-import { teamName } from '@/mocks/catalog';
 import { RoleGate } from '@/navigation/RoleGate';
 import { spacing } from '@/theme';
 
@@ -38,10 +37,11 @@ function AccountContent() {
 }
 
 function AccountDetails({ user }: { user: SessionUser }) {
+  const { team } = useSession();
   const rows = [
     { label: 'Usuario', value: user.username },
     { label: 'Rol', value: roleLabel[user.role] },
-    ...(user.teamId === null ? [] : [{ label: 'Escudería', value: teamName(user.teamId) }]),
+    ...(user.teamId === null ? [] : [{ label: 'Escudería', value: team?.name ?? '—' }]),
   ];
 
   return (

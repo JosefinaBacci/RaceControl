@@ -9,7 +9,6 @@ import { useSession } from '@/auth/SessionProvider';
 import { AppText, Avatar } from '@/components';
 import { RoleIcon } from '@/features/accounts/RoleIcon';
 import { avatarImage } from '@/logos';
-import { teamName } from '@/mocks/catalog';
 import { colors, radius, spacing } from '@/theme';
 
 type MenuItem = {
@@ -22,9 +21,9 @@ type MenuItem = {
 const menuWidth = 260;
 
 export function UserMenu({ user }: { user: SessionUser }) {
-  const { signOut } = useSession();
+  const { signOut, team } = useSession();
   const [isOpen, setIsOpen] = useState(false);
-  const subtitle = user.teamId === null ? roleLabel[user.role] : `${roleLabel[user.role]} · ${teamName(user.teamId)}`;
+  const subtitle = team ? `${roleLabel[user.role]} · ${team.name}` : roleLabel[user.role];
 
   const navigate = (href: Href) => {
     setIsOpen(false);

@@ -1,7 +1,5 @@
 import type { ImageSourcePropType } from 'react-native';
 
-import type { CategoryCode } from '@/mocks/catalog';
-
 export type Photo = {
   source: ImageSourcePropType;
   credit: string;
@@ -31,6 +29,6 @@ export function nextRacePhoto(category: string): Photo {
   return nextRacePhotos[category] ?? categoryPhoto(category);
 }
 
-export function teamPhoto(teamId: number, category: CategoryCode): Photo {
+export function teamPhoto(teamId: number, category: string): Photo {
   return teamPhotos[teamId] ?? categoryPhoto(category);
 }

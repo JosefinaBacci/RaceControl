@@ -3,7 +3,7 @@ import { useState } from 'react';
 
 import { getScoreGrid, getScoreHistory, getStandings, listRaceResults, listScoreChanges, type RaceResults, type ScoreChange } from '@/api/scores';
 
-import { findTeam } from './teams';
+import type { TeamSummary } from '@/api/teams';
 import { useReloadOnFocus } from './useReloadOnFocus';
 import { useRemote } from './useRemote';
 
@@ -25,15 +25,14 @@ export function useStandings(category: string) {
   return remote;
 }
 
-export function useTeamPoints(teamId: number | null): number | null {
+export function useTeamPoints(team: TeamSummary | null): number | null {
   const { state, reload } = useRemote(async () => {
-    const team = await findTeam(teamId);
     if (!team) {
-      return 0;
+      return null;
     }
     const standings = await getStandings({ category: team.categoryCode });
-    return standings.teams.find((standing) => standing.teamId === teamId)?.points ?? 0;
-  }, [teamId]);
+    return standings.teams.find((standing) => standing.teamId === team.id)?.points ?? 0;
+  }, [team]);
   useReloadOnFocus(reload);
   return state.status === 'ready' ? state.data : null;
 }

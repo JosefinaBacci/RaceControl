@@ -33,7 +33,3 @@ const unassignedTeam: Team = { id: 0, category: 'f1', name: 'Escudería sin asig
 export function teamById(teamId: number | null): Team {
   return teams.find((team) => team.id === teamId) ?? unassignedTeam;
 }
-
-export function teamName(teamId: number | null): string {
-  return teamById(teamId).name;
-}

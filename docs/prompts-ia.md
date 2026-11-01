@@ -1541,3 +1541,7 @@ HTTPS real permanece pendiente; localhost usa HTTP.
 ### 2026-11-01 — Revisión de las ocho US del Sprint 3 (US25)
 
 Se contrastó el PDF con las rutas, servicios, pruebas y cierre previo. El selector público usaba la alineación vigente; se corrigió para filtrar también sanciones de pilotos desvinculados y escuderías anteriores. Se agregó una prueba para un piloto con sanciones en dos escuderías.
+
+### 2026-11-01 — Identidad de la escudería en cuenta y panel (US18)
+
+Se revisaron las pantallas con cuentas de ambos roles. El panel, la cuenta y el menú usaban nombres de ejemplo. Ahora comparten la escudería del catálogo real de la sesión; los recursos locales solo decoran la interfaz. Se verificó con una escudería renombrada en una base aislada.

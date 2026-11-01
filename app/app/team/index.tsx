@@ -12,15 +12,15 @@ import { DriverCard, DriverGrid } from '@/features/DriverCard';
 import { EventList } from '@/features/EventList';
 import { RemoteContent } from '@/features/RemoteContent';
 import { formatPoints } from '@/format';
-import { categoryLabel, teamById } from '@/mocks/catalog';
+import { teamById } from '@/mocks/catalog';
 import { teamPhoto } from '@/photos';
 import { spacing } from '@/theme';
 
 export default function TeamDashboardScreen() {
-  const teamId = useSession().user?.teamId ?? null;
-  const team = teamById(teamId);
+  const { team, user } = useSession();
+  const teamStyle = teamById(user?.teamId ?? null);
   const drivers = useTeamDrivers();
-  const points = useTeamPoints(teamId);
+  const points = useTeamPoints(team);
   const pendingScores = usePendingScoreNotices();
   const pendingSanctions = usePendingSanctionNotices();
   const upcoming = useUpcomingEvents(3);
@@ -28,11 +28,11 @@ export default function TeamDashboardScreen() {
   return (
     <Screen>
       <HeroCard
-        overline={`${categoryLabel(team.category)} · ${team.country}`}
-        title={team.name}
-        accentColor={team.color}
-        flag={team.flag}
-        photo={teamPhoto(team.id, team.category)}
+        overline={team?.categoryName ?? 'Escudería'}
+        title={team?.name ?? 'Mi escudería'}
+        accentColor={teamStyle.color}
+        flag={teamStyle.id ? teamStyle.flag : undefined}
+        photo={team ? teamPhoto(team.id, team.categoryCode) : undefined}
       >
         {pendingScores > 0 ? (
           <View style={styles.heroAction}>
@@ -58,7 +58,7 @@ export default function TeamDashboardScreen() {
         {(lineup) => (
           <DriverGrid>
             {lineup.map((driver) => (
-              <DriverCard key={driver.id} driver={driver} teamColor={team.color} />
+              <DriverCard key={driver.id} driver={driver} teamColor={teamStyle.color} />
             ))}
           </DriverGrid>
         )}
