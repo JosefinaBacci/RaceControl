@@ -69,4 +69,8 @@ func main() {
 		log.Fatalf("seed: %v", err)
 	}
 	log.Println("demo tyre test results seeded")
+	if err := runner.DemoSanctions(ctx); err != nil {
+		log.Fatalf("seed: %v", err)
+	}
+	log.Println("demo sanctions seeded")
 }

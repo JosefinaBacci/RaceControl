@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 
+import { TeamSanctionNoticesProvider, usePendingSanctionNotices, useTeamSanctionNotices } from '@/data/TeamSanctionNoticesProvider';
 import { TeamScoreNoticesProvider, usePendingScoreNotices, useTeamScoreNotices } from '@/data/TeamScoreNoticesProvider';
 import { UnreadMessagesProvider, useUnreadMessages } from '@/data/UnreadMessagesProvider';
 import { HeaderSessionButton } from '@/navigation/HeaderSessionButton';
@@ -10,9 +11,11 @@ export default function TeamLayout() {
   return (
     <RoleGate roles={['team_admin']}>
       <TeamScoreNoticesProvider>
-        <UnreadMessagesProvider>
-          <TeamTabs />
-        </UnreadMessagesProvider>
+        <TeamSanctionNoticesProvider>
+          <UnreadMessagesProvider>
+            <TeamTabs />
+          </UnreadMessagesProvider>
+        </TeamSanctionNoticesProvider>
       </TeamScoreNoticesProvider>
     </RoleGate>
   );
@@ -22,6 +25,8 @@ function TeamTabs() {
   const screenOptions = useTabScreenOptions();
   const pendingScores = usePendingScoreNotices();
   const { reload: reloadNotices } = useTeamScoreNotices();
+  const pendingSanctions = usePendingSanctionNotices();
+  const { reload: reloadSanctionNotices } = useTeamSanctionNotices();
   const { unreadCount, reload: reloadUnread } = useUnreadMessages();
 
   // Reloading on every tab focus keeps the badges current wherever the team admin
@@ -29,6 +34,7 @@ function TeamTabs() {
   // up on the next tab.
   const reloadBadges = () => {
     void reloadNotices();
+    void reloadSanctionNotices();
     void reloadUnread();
   };
 
@@ -40,7 +46,10 @@ function TeamTabs() {
       <Tabs.Screen name="index" options={{ title: 'Mi escudería', tabBarIcon: tabIcon('speedometer-outline') }} />
       <Tabs.Screen name="drivers" options={{ title: 'Pilotos', tabBarIcon: tabIcon('person-outline') }} />
       <Tabs.Screen name="scores" options={{ title: 'Puntajes', tabBarIcon: tabIcon('trophy-outline') }} />
-      <Tabs.Screen name="inbox" options={{ title: 'Acuses', tabBarIcon: tabIcon('checkmark-done-outline') }} />
+      <Tabs.Screen
+        name="inbox"
+        options={{ title: 'Sanciones', tabBarIcon: tabIcon('alert-circle-outline'), tabBarBadge: tabBadge(pendingSanctions) }}
+      />
       <Tabs.Screen
         name="notifications"
         options={{ title: 'Notificaciones', tabBarIcon: tabIcon('notifications-outline'), tabBarBadge: tabBadge(pendingScores) }}

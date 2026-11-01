@@ -33,6 +33,8 @@ type Dependencies struct {
 	Messenger         Messenger
 	TechnicalControls TechnicalControlBoard
 	TyreTests         TyreTestRecorder
+	Sanctions         SanctionRegistry
+	SanctionNotices   SanctionNoticeManager
 	Cookie            CookieConfig
 	AllowedOrigins    []string
 	TrustProxyHeaders bool
@@ -118,6 +120,27 @@ func NewRouter(deps Dependencies) http.Handler {
 	})
 	router.With(sessionGuard.RequireSession, sessionGuard.RequireRole(domain.RoleFIAAdmin)).
 		Get("/score-changes", noticeRoutes.changes)
+
+	sanctionRoutes := &sanctionHandlers{sanctions: deps.Sanctions}
+	router.Get("/penalty-types", sanctionRoutes.penaltyTypes)
+	router.Route("/sanctions", func(r chi.Router) {
+		r.Get("/", sanctionRoutes.list)
+		r.Get("/{id}", sanctionRoutes.get)
+		r.Group(func(r chi.Router) {
+			r.Use(sessionGuard.RequireSession, sessionGuard.RequireRole(domain.RoleFIAAdmin))
+			r.Post("/", sanctionRoutes.issue)
+			r.Put("/{id}", sanctionRoutes.amend)
+			r.Post("/{id}/revocation", sanctionRoutes.revoke)
+		})
+	})
+	sanctionNoticeRoutes := &sanctionNoticeHandlers{notices: deps.SanctionNotices}
+	router.Route("/team/sanction-notices", func(r chi.Router) {
+		r.Use(sessionGuard.RequireSession, sessionGuard.RequireRole(domain.RoleTeamAdmin))
+		r.Get("/", sanctionNoticeRoutes.teamNotices)
+		r.Post("/{id}/acknowledgement", sanctionNoticeRoutes.acknowledge)
+	})
+	router.With(sessionGuard.RequireSession, sessionGuard.RequireRole(domain.RoleFIAAdmin)).
+		Get("/sanction-acknowledgements", sanctionNoticeRoutes.followUps)
 
 	messagingRoutes := &messagingHandlers{messenger: deps.Messenger}
 	router.Route("/conversations", func(r chi.Router) {

@@ -70,6 +70,23 @@ type ConversationRead struct {
 	UpdatedAt         pgtype.Timestamptz
 }
 
+type CurrentSanction struct {
+	ID                int64
+	DriverID          pgtype.Int8
+	TeamID            pgtype.Int8
+	AccountableTeamID int64
+	IssuedAt          pgtype.Timestamptz
+	VersionID         int64
+	Action            string
+	PenaltyTypeID     int64
+	PenaltyValue      pgtype.Int4
+	Reason            string
+	EventID           pgtype.Int8
+	Note              pgtype.Text
+	ChangedAt         pgtype.Timestamptz
+	IsRevoked         bool
+}
+
 type Driver struct {
 	ID            int64
 	FirstName     string
@@ -127,6 +144,16 @@ type Notification struct {
 	EventID   int64
 }
 
+type PenaltyType struct {
+	ID        int64
+	Code      string
+	Name      string
+	Unit      pgtype.Text
+	MaxValue  pgtype.Int4
+	CreatedAt pgtype.Timestamptz
+	UpdatedAt pgtype.Timestamptz
+}
+
 type Race struct {
 	EventID   int64
 	CreatedAt pgtype.Timestamptz
@@ -165,6 +192,79 @@ type Round struct {
 	DeactivatedAt pgtype.Timestamptz
 	CreatedAt     pgtype.Timestamptz
 	UpdatedAt     pgtype.Timestamptz
+}
+
+type Sanction struct {
+	ID                int64
+	DriverID          pgtype.Int8
+	TeamID            pgtype.Int8
+	AccountableTeamID int64
+	IssuedAt          pgtype.Timestamptz
+}
+
+type SanctionAcknowledgement struct {
+	ID                int64
+	SanctionVersionID int64
+	TeamID            int64
+	AcknowledgedBy    int64
+	AcknowledgedAt    pgtype.Timestamptz
+}
+
+type SanctionNotice struct {
+	VersionID      int64
+	TeamID         int64
+	IsCurrent      bool
+	AcknowledgedAt pgtype.Timestamptz
+	AcknowledgedBy pgtype.Int8
+}
+
+type SanctionRecipient struct {
+	SanctionVersionID int64
+	TeamID            int64
+}
+
+type SanctionVersion struct {
+	ID            int64
+	SanctionID    int64
+	Action        string
+	PenaltyTypeID int64
+	PenaltyValue  pgtype.Int4
+	Reason        string
+	EventID       pgtype.Int8
+	Note          pgtype.Text
+	ActorUserID   int64
+	ChangedAt     pgtype.Timestamptz
+}
+
+type SanctionVersionDetail struct {
+	SanctionID          int64
+	DriverID            pgtype.Int8
+	TeamID              pgtype.Int8
+	AccountableTeamID   int64
+	IssuedAt            pgtype.Timestamptz
+	VersionID           int64
+	Action              string
+	PenaltyValue        pgtype.Int4
+	Reason              string
+	Note                pgtype.Text
+	ChangedAt           pgtype.Timestamptz
+	ActorUserID         int64
+	IsCurrent           bool
+	PenaltyCode         string
+	PenaltyName         string
+	PenaltyUnit         pgtype.Text
+	DriverFirstName     pgtype.Text
+	DriverLastName      pgtype.Text
+	AccountableTeamCode string
+	AccountableTeamName string
+	CategoryCode        string
+	CategoryName        string
+	EventID             pgtype.Int8
+	EventKind           pgtype.Text
+	EventGpName         pgtype.Text
+	EventRoundNumber    pgtype.Int4
+	EventControlType    pgtype.Text
+	EventStartsAt       pgtype.Timestamptz
 }
 
 type ScoreAcknowledgement struct {

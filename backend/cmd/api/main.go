@@ -19,6 +19,7 @@ import (
 	"github.com/racecontrol/backend/internal/db/dbgen"
 	"github.com/racecontrol/backend/internal/drivers"
 	"github.com/racecontrol/backend/internal/messaging"
+	"github.com/racecontrol/backend/internal/sanctions"
 	"github.com/racecontrol/backend/internal/scores"
 	"github.com/racecontrol/backend/internal/sessions"
 	"github.com/racecontrol/backend/internal/teams"
@@ -86,6 +87,7 @@ func buildRouter(cfg config.Config, pool *pgxpool.Pool) (http.Handler, error) {
 	})
 
 	scoreService := scores.NewService(queries, db.NewTransactor(pool))
+	sanctionService := sanctions.NewService(queries, db.NewTransactor(pool))
 	return transport.NewRouter(transport.Dependencies{
 		Pool:              pool,
 		Authenticator:     auth.NewAuthenticator(queries, hasher, sessionService),
@@ -99,6 +101,8 @@ func buildRouter(cfg config.Config, pool *pgxpool.Pool) (http.Handler, error) {
 		Messenger:         messaging.NewService(queries, db.NewTransactor(pool)),
 		TyreTests:         tyretests.NewService(queries),
 		TechnicalControls: technicalcontrols.NewService(queries, db.NewTransactor(pool)),
+		Sanctions:         sanctionService,
+		SanctionNotices:   sanctionService,
 		Cookie:            transport.CookieConfig{Secure: cfg.IsProduction(), MaxAge: cfg.Sessions.Absolute},
 		AllowedOrigins:    cfg.CORSAllowedOrigins,
 		TrustProxyHeaders: cfg.TrustProxyHeaders,

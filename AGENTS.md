@@ -41,6 +41,7 @@ backend/
   internal/teams        Catálogo de escuderías
   internal/drivers      Pilotos de la escudería (US11)
   internal/scores       Resultados, clasificación y acuses de puntajes (US23, US24)
+  internal/sanctions    Sanciones: registro versionado, publicación y acuses (US15, US25, US26)
   internal/transport    Handlers, middlewares, routing (chi)
   internal/seed         Aplica las seeds
   migrations/           Archivos .sql numerados (solo DDL) + embed.go
@@ -59,7 +60,7 @@ app/
   src/api               Cliente HTTP y almacenamiento del token
   src/auth              Sesión, validación del login, roles
   src/components        Componentes reutilizables del design system
-  src/data              Hooks de datos sobre src/api; las sanciones y la bandeja todavía sobre mocks
+  src/data              Hooks de datos sobre src/api
   src/features          Bloques de pantalla compartidos entre roles
   src/illustrations     Ilustraciones SVG (banderas, circuitos, auto)
   src/mocks             Datos de ejemplo de US4

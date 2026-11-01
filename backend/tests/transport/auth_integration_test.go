@@ -22,6 +22,7 @@ import (
 	"github.com/racecontrol/backend/internal/domain"
 	"github.com/racecontrol/backend/internal/drivers"
 	"github.com/racecontrol/backend/internal/messaging"
+	"github.com/racecontrol/backend/internal/sanctions"
 	"github.com/racecontrol/backend/internal/scores"
 	"github.com/racecontrol/backend/internal/sessions"
 	"github.com/racecontrol/backend/internal/teams"
@@ -57,6 +58,7 @@ func newHarness(t *testing.T) *harness {
 	queries := dbgen.New(pool)
 	sessionService := sessions.NewService(queries, sessions.Config{IdleTTL: time.Hour, AbsoluteTTL: 24 * time.Hour})
 	scoreService := scores.NewService(queries, db.NewTransactor(pool))
+	sanctionService := sanctions.NewService(queries, db.NewTransactor(pool))
 	router := transport.NewRouter(transport.Dependencies{
 		Pool:              pool,
 		Authenticator:     auth.NewAuthenticator(queries, hasher, sessionService),
@@ -72,6 +74,8 @@ func newHarness(t *testing.T) *harness {
 		TyreTests:         tyretests.NewService(queries),
 		Cookie:            transport.CookieConfig{MaxAge: 24 * time.Hour},
 		AllowedOrigins:    []string{"http://localhost:8081"},
+		Sanctions:         sanctionService,
+		SanctionNotices:   sanctionService,
 	})
 
 	server := httptest.NewServer(router)

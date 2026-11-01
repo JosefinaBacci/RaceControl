@@ -67,6 +67,23 @@ INSERT INTO tyre_compounds (id, code, name, kind) OVERRIDING SYSTEM VALUE VALUES
     (8, 'wet',          'Lluvia',      'wet')
 ON CONFLICT (code) DO NOTHING;
 
+-- The penalties of the FIA sporting code a sanction can impose (000034). A unit
+-- means the penalty takes a value up to max_value. Deducting championship points
+-- is left out on purpose: a sanction is a record and does not recalculate the
+-- standings (02-modelo-de-datos.md, Sprint 3).
+INSERT INTO penalty_types (id, code, name, unit, max_value) OVERRIDING SYSTEM VALUE VALUES
+    (1,  'warning',          'Advertencia',                  NULL,             NULL),
+    (2,  'reprimand',        'Reprimenda',                   NULL,             NULL),
+    (3,  'time_penalty',     'Penalización de tiempo',       'seconds',        300),
+    (4,  'drive_through',    'Drive-through',                NULL,             NULL),
+    (5,  'stop_and_go',      'Stop and go',                  'seconds',        60),
+    (6,  'grid_penalty',     'Pérdida de puestos en grilla', 'grid_places',    30),
+    (7,  'license_points',   'Puntos en la superlicencia',   'license_points', 12),
+    (8,  'fine',             'Multa',                        'euros',          10000000),
+    (9,  'disqualification', 'Descalificación',              NULL,             NULL),
+    (10, 'suspension',       'Suspensión',                   'races',          10)
+ON CONFLICT (code) DO NOTHING;
+
 -- COALESCE keeps the empty-table case at 0 so the next insert starts at 1, and
 -- taking the live max means a team created through the app is never overwritten.
 SELECT setval(pg_get_serial_sequence('categories', 'id'), COALESCE((SELECT max(id) FROM categories), 0));
@@ -74,3 +91,4 @@ SELECT setval(pg_get_serial_sequence('seasons',    'id'), COALESCE((SELECT max(i
 SELECT setval(pg_get_serial_sequence('teams',      'id'), COALESCE((SELECT max(id) FROM teams),      0));
 SELECT setval(pg_get_serial_sequence('circuits',   'id'), COALESCE((SELECT max(id) FROM circuits),   0));
 SELECT setval(pg_get_serial_sequence('tyre_compounds', 'id'), COALESCE((SELECT max(id) FROM tyre_compounds), 0));
+SELECT setval(pg_get_serial_sequence('penalty_types', 'id'), COALESCE((SELECT max(id) FROM penalty_types), 0));
