@@ -10,13 +10,13 @@ en verde y un commit por cambio lógico.
 
 | US | Nombre | SP | Valor | Est. | Tiempo real registrado | Estado |
 |----|--------|----|-------|------|------------------------|--------|
-| US21 | Registro de controles técnicos | 3 | 8 | 2.5h | — | ☐ |
-| US22 | Visualización de controles técnicos | 3 | 8 | 1.5h | — | ☐ |
+| US21 | Registro de controles técnicos | 3 | 8 | 2.5h | — | ☑ |
+| US22 | Visualización de controles técnicos | 3 | 8 | 1.5h | — | ☑ |
 | US19 | Registro de prueba de neumáticos | 3 | 8 | 2.5h | — | ☑ |
 | US20 | Visualización de prueba de neumáticos | 3 | 8 | 1.5h | — | ☑ |
-| US15 | Registro de sanciones | 5 | 8 | 4h | — | ☐ |
-| US25 | Visualización de sanciones (público) | 5 | 13 | 2h | — | ☐ |
-| US26 | Visualización y confirmación de sanciones (escudería) | 5 | 13 | 2.5h | — | ☐ |
+| US15 | Registro de sanciones | 5 | 8 | 4h | — | ☑ |
+| US25 | Visualización de sanciones (público) | 5 | 13 | 2h | — | ☑ |
+| US26 | Visualización y confirmación de sanciones (escudería) | 5 | 13 | 2.5h | — | ☑ |
 | US18 | Disponibilidad de funcionalidades en aplicación móvil | 5 | 13 | 16h | — | ☐ |
 
 **Total estimado:** 32.5h · **Total real registrado:** —
@@ -29,6 +29,29 @@ Las sanciones necesitan tabla nueva, y US26 reutiliza el patrón de notificació
 US18 va al final porque es la paridad de todo lo anterior en móvil.
 
 ---
+
+## Prueba de aceptación del sprint (manager, 2026-10-31)
+
+Hecha sobre `main` con las tres ramas integradas, por un agente que no escribió el código:
+
+- **API (221 verificaciones):** permisos de cada ruta (401 sin sesión, 403 con otro rol), validaciones
+  campo por campo (tipos equivocados, fechas imposibles, fuera del evento o futuras, eventos cancelados o
+  sin empezar, textos vacíos o de más de 2000 caracteres, cuerpos mal formados o de 5 MB), filtros con
+  bordes inclusivos, ausencia de nombres de usuario en las respuestas públicas y rutas de solo lectura.
+- **Concurrencia:** 40 altas simultáneas del mismo resultado → una sola 201; 40 correcciones simultáneas
+  → una sola 201; 30 revocaciones simultáneas de una sanción → una sola 200; 20 modificaciones
+  simultáneas → 21 versiones; 30 acuses simultáneos → una sola fila.
+- **Carga:** 3000 lecturas públicas por historial con 64 clientes: ~2500–3100 req/s, p95 < 40 ms, sin
+  errores.
+- **Base de datos:** `UPDATE`/`DELETE` directos sobre resultados, versiones y acuses rechazados por las
+  guardas append-only; la seed es idempotente.
+- **Interfaz:** las 36 rutas de los tres roles recorridas en Chromium headless a 375 px y 1366 px sin
+  excepciones ni desbordes, y los flujos completos de registrar/corregir resultados y de registrar,
+  confirmar desde un teléfono y revocar sanciones.
+
+Hallazgos corregidos: horas de las sanciones en UTC como el resto (`27ef8b0`), filtro de fechas apilado
+en teléfonos (`7527501`) y `decodeJSON` que nombra el campo con tipo inválido y rechaza datos sobrantes
+(`b166f2a`).
 
 ## Lo que ya está y se reutiliza
 
@@ -49,8 +72,8 @@ US18 va al final porque es la paridad de todo lo anterior en móvil.
       autor, fecha) en una migración nueva
 - [x] Queries `sqlc` y servicio con validaciones (resultado obligatorio, fecha válida, control existente)
 - [x] Endpoint restringido a `fia_admin`
-- [ ] Formulario de registro en el panel FIA (hecho, compila y empaqueta para web; falta recorrerlo a mano
-      en el navegador)
+- [x] Formulario de registro en el panel FIA (recorrido en Chromium por la prueba de aceptación: errores
+      sin veredicto y sin observaciones, alta y aparición en la pestaña pública)
 - [x] Tests de integración (incluido acceso denegado a otros roles)
 
 **Criterios de éxito**
@@ -65,8 +88,8 @@ US18 va al final porque es la paridad de todo lo anterior en móvil.
 *Est. 1.5h · SP 3 · Valor 8*
 
 - [x] Endpoint público de lectura del historial
-- [ ] Listado del historial con filtros por fecha y tipo de control (pestaña pública "Técnica"; filtros
-      verificados en la API, falta recorrer la pantalla a mano)
+- [x] Listado del historial con filtros por fecha y tipo de control (pestaña pública "Técnica", recorrida
+      en Chromium a 375 px y 1366 px)
 - [x] Acceso de solo lectura para escudería y público; verificar que coincida con lo cargado
 
 **Criterios de éxito**
@@ -86,7 +109,8 @@ US18 va al final porque es la paridad de todo lo anterior en móvil.
       `tyre_test_results` append-only con correcciones; ver `docs/sprint2/02-modelo-de-datos.md`)
 - [x] Queries `sqlc` y servicio con validaciones
 - [x] Endpoint restringido a `fia_admin`
-- [ ] Formulario de registro en el panel FIA (hecho: compila, empaqueta y tiene tests unitarios; falta probarlo a mano en el navegador)
+- [x] Formulario de registro en el panel FIA (recorrido en Chromium por la prueba de aceptación: alta de un
+      compuesto y aparición en el historial público)
 - [x] Tests de integración (incluido acceso denegado a otros roles)
 
 **Criterios de éxito**
