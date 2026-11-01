@@ -1,7 +1,5 @@
 import { StyleSheet, View } from 'react-native';
 
-import type { PublicDriver } from '@/api/drivers';
-import type { TeamSummary } from '@/api/teams';
 import { ChipGroup, FieldGroup, SelectField } from '@/components';
 import { categoryFilterOptions } from '@/features/filters';
 import { DateRangeFilter } from '@/features/history/DateRangeFilter';
@@ -15,8 +13,8 @@ type SanctionFiltersProps = {
   value: SanctionFilterValue;
   onChange: (value: SanctionFilterValue) => void;
   errors: DateRangeErrors;
-  drivers: readonly PublicDriver[];
-  teams: readonly TeamSummary[];
+  drivers: readonly { value: string; label: string }[];
+  teams: readonly { value: string; label: string }[];
 };
 
 const allCategories = 'all';
@@ -24,11 +22,11 @@ const allCategories = 'all';
 export function SanctionFilters({ value, onChange, errors, drivers, teams }: SanctionFiltersProps) {
   const driverOptions = [
     { value: anyChoice, label: 'Todos los pilotos' },
-    ...drivers.map((driver) => ({ value: String(driver.id), label: `${driver.firstName} ${driver.lastName} · ${driver.teamName}` })),
+    ...drivers,
   ];
   const teamOptions = [
     { value: anyChoice, label: 'Todas las escuderías' },
-    ...teams.map((team) => ({ value: String(team.id), label: `${team.name} · ${team.categoryName}` })),
+    ...teams,
   ];
 
   return (

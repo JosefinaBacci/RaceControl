@@ -39,8 +39,6 @@ export type SanctionCatalogs = {
   teams: TeamSummary[];
 };
 
-// The filters and the form pick from the same catalogues, so one load answers
-// both and the screen shows a single loading state.
 export function useSanctionCatalogs() {
   return useRemote(async (): Promise<SanctionCatalogs> => {
     const [penaltyTypes, drivers, teams] = await Promise.all([listPenaltyTypes(), listDrivers(), listTeams()]);

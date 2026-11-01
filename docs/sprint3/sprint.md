@@ -30,8 +30,8 @@ tiempo de calendario fue menor que la suma.
 ☑ cerrada · ◐ en curso · ☐ sin empezar
 
 El orden de la tabla es el de implementación. Los controles técnicos y las pruebas de neumáticos ya
-existen como tipos de evento del calendario (`000012`, `000016`): falta registrar su **resultado**.
-Las sanciones necesitan tabla nueva, y US26 reutiliza el patrón de notificación y acuse de US24.
+existían como tipos de evento del calendario (`000012`, `000016`): el sprint agregó el registro de sus resultados.
+Las sanciones tienen tablas propias, y US26 reutiliza el patrón de notificación y acuse de US24.
 US18 va al final porque es la paridad de todo lo anterior en móvil.
 
 ---
@@ -59,7 +59,7 @@ Hallazgos corregidos: horas de las sanciones en UTC como el resto (`27ef8b0`), f
 en teléfonos (`7527501`) y `decodeJSON` que nombra el campo con tipo inválido y rechaza datos sobrantes
 (`b166f2a`).
 
-## Lo que ya está y se reutiliza
+## Punto de partida antes de implementar el sprint
 
 - Eventos `technical_control` y `tyre_test` con fecha, campeonato y tipo de control
   (`technical_controls.control_type`), alta/edición/baja desde el calendario de US7.
@@ -168,7 +168,8 @@ en teléfonos (`7527501`) y `decodeJSON` que nombra el campo con tipo inválido 
 - [x] Endpoint público de sanciones
 - [x] Listado sobre la API (reemplaza el mock de `useSanctions`)
 - [x] Vista de detalle con motivo, penalización y destinatario
-- [x] Filtros por piloto, escudería y fecha
+- [x] Filtros por piloto, escudería y fecha. Los selectores se arman con los destinatarios del historial,
+      así que también incluyen pilotos desvinculados y escuderías anteriores.
 
 **Criterios de éxito**
 

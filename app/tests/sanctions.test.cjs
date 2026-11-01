@@ -17,7 +17,7 @@ function loadModule(path) {
 const sanctionsDir = join(__dirname, '../src/features/sanctions');
 const form = loadModule(join(sanctionsDir, 'sanctionForm.ts'));
 const text = loadModule(join(sanctionsDir, 'sanctionText.ts'));
-const { sanctionQuery, emptySanctionFilter } = loadModule(join(sanctionsDir, 'sanctionFilter.ts'));
+const { sanctionQuery, emptySanctionFilter, sanctionSubjects } = loadModule(join(sanctionsDir, 'sanctionFilter.ts'));
 
 const penaltyTypes = [
   { code: 'reprimand', name: 'Reprimenda', unit: null, maxValue: null },
@@ -80,4 +80,17 @@ test('the list query leaves out every filter that is not set', () => {
     JSON.parse(JSON.stringify(sanctionQuery({ ...emptySanctionFilter, driverId: '4', status: 'revoked', from: '2026-10-01' }))),
     { from: '2026-10-01', driverId: 4, status: 'revoked' },
   );
+});
+
+test('historical filters retain a released driver and both former teams without duplicating subjects', () => {
+  const subject = { driverId: 7, driverFirstName: 'Ana', driverLastName: 'Pérez' };
+  const oldTeam = { id: 4, name: 'Azul' };
+  const newTeam = { id: 8, name: 'Rojo' };
+  const options = sanctionSubjects([
+    { subject, team: newTeam },
+    { subject, team: oldTeam },
+    { subject: { driverId: null }, team: oldTeam },
+  ]);
+  assert.deepEqual(options.drivers, [{ value: '7', label: 'Ana Pérez' }]);
+  assert.deepEqual(options.teams, [{ value: '4', label: 'Azul' }, { value: '8', label: 'Rojo' }]);
 });

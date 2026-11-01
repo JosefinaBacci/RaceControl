@@ -1537,3 +1537,7 @@ HTTPS real permanece pendiente; localhost usa HTTP.
 **Validación:** `make check` en verde y aceptación del manager sobre `main`: las 44 rutas de los tres roles recorridas en Chromium headless en modo táctil a 320, 375, 414, 768 y 1366 px y en un teléfono apaisado (sin excepciones, sin desbordes, sin etiquetas cortadas), navegación por "Más" probada para cada rol, y paquetes nativos que compilan. No hubo dispositivos reales ni emuladores.
 
 ---
+
+### 2026-11-01 — Revisión de las ocho US del Sprint 3 (US25)
+
+Se contrastó el PDF con las rutas, servicios, pruebas y cierre previo. El selector público usaba la alineación vigente; se corrigió para filtrar también sanciones de pilotos desvinculados y escuderías anteriores. Se agregó una prueba para un piloto con sanciones en dos escuderías.
