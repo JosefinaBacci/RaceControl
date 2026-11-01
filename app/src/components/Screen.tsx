@@ -14,7 +14,14 @@ type ScreenProps = {
 
 export function Screen({ title, subtitle, headerAction, children }: ScreenProps) {
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    // iOS does not resize the window for the keyboard like Android does; without the
+    // insets the keyboard covers the lower fields of every form.
+    <ScrollView
+      style={styles.scroll}
+      contentContainerStyle={styles.content}
+      keyboardShouldPersistTaps="handled"
+      automaticallyAdjustKeyboardInsets
+    >
       <View style={styles.column}>
         {title || subtitle || headerAction ? (
           <View style={styles.header}>
