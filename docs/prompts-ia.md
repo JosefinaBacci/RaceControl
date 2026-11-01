@@ -1545,3 +1545,7 @@ Se contrastó el PDF con las rutas, servicios, pruebas y cierre previo. El selec
 ### 2026-11-01 — Identidad de la escudería en cuenta y panel (US18)
 
 Se revisaron las pantallas con cuentas de ambos roles. El panel, la cuenta y el menú usaban nombres de ejemplo. Ahora comparten la escudería del catálogo real de la sesión; los recursos locales solo decoran la interfaz. Se verificó con una escudería renombrada en una base aislada.
+
+### 2026-11-01 — Acuse de sanciones bajo carga (US26)
+
+En QA se comprobó que un timeout al leer el comprobante podía devolver un error después de persistir el acuse. Ahora ambas operaciones comparten transacción. Una prueba con PostgreSQL interrumpe la lectura y verifica que la notificación siga pendiente.

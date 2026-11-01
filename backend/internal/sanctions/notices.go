@@ -67,7 +67,7 @@ type FollowUp struct {
 
 // TeamNotices lists the sanctions sent to the team, as they stand.
 func (s *Service) TeamNotices(ctx context.Context, teamID int64) (NoticeBoard, error) {
-	notices, err := s.teamNotices(ctx, teamID, pgtype.Int8{})
+	notices, err := teamNotices(ctx, s.queries, dbgen.ListTeamSanctionNoticesParams{TeamID: teamID})
 	if err != nil {
 		return NoticeBoard{}, err
 	}
@@ -82,14 +82,30 @@ func (s *Service) Acknowledge(ctx context.Context, identity domain.Identity, ver
 	if identity.TeamID == nil {
 		return Notice{}, domain.ErrForbidden
 	}
-	err := s.queries.AcknowledgeSanctionVersion(ctx, dbgen.AcknowledgeSanctionVersionParams{
-		VersionID:      versionID,
-		AcknowledgedBy: identity.UserID,
+	var notice Notice
+	err := s.transactor.InTx(ctx, func(q dbgen.Querier) error {
+		err := q.AcknowledgeSanctionVersion(ctx, dbgen.AcknowledgeSanctionVersionParams{
+			VersionID: versionID, AcknowledgedBy: identity.UserID,
+		})
+		if err != nil {
+			return translateAcknowledgeError(err, versionID)
+		}
+		notices, err := teamNotices(ctx, q, dbgen.ListTeamSanctionNoticesParams{
+			TeamID: *identity.TeamID, VersionID: db.Int8(versionID),
+		})
+		if err != nil {
+			return err
+		}
+		if len(notices) == 0 {
+			return domain.ErrNotFound
+		}
+		notice = notices[0]
+		return nil
 	})
 	if err != nil {
-		return Notice{}, translateAcknowledgeError(err, versionID)
+		return Notice{}, err
 	}
-	return s.teamNotice(ctx, *identity.TeamID, versionID)
+	return notice, nil
 }
 
 // translateAcknowledgeError answers a version the team was not sent as not
@@ -105,27 +121,16 @@ func translateAcknowledgeError(err error, versionID int64) error {
 	return fmt.Errorf("acknowledge sanction version %d: %w", versionID, err)
 }
 
-func (s *Service) teamNotice(ctx context.Context, teamID, versionID int64) (Notice, error) {
-	notices, err := s.teamNotices(ctx, teamID, db.Int8(versionID))
+func teamNotices(ctx context.Context, q dbgen.Querier, params dbgen.ListTeamSanctionNoticesParams) ([]Notice, error) {
+	rows, err := q.ListTeamSanctionNotices(ctx, params)
 	if err != nil {
-		return Notice{}, err
-	}
-	if len(notices) == 0 {
-		return Notice{}, domain.ErrNotFound
-	}
-	return notices[0], nil
-}
-
-func (s *Service) teamNotices(ctx context.Context, teamID int64, versionID pgtype.Int8) ([]Notice, error) {
-	rows, err := s.queries.ListTeamSanctionNotices(ctx, dbgen.ListTeamSanctionNoticesParams{TeamID: teamID, VersionID: versionID})
-	if err != nil {
-		return nil, fmt.Errorf("list sanction notices of team %d: %w", teamID, err)
+		return nil, fmt.Errorf("list sanction notices of team %d: %w", params.TeamID, err)
 	}
 	notices := make([]Notice, 0, len(rows))
 	for _, row := range rows {
 		notices = append(notices, Notice{
 			Sanction:        sanctionFromRow(row.SanctionVersionDetail),
-			IsOwnTeam:       row.SanctionVersionDetail.AccountableTeamID == teamID,
+			IsOwnTeam:       row.SanctionVersionDetail.AccountableTeamID == params.TeamID,
 			Acknowledgement: acknowledgementOf(row.AcknowledgedAt, row.AcknowledgedBy),
 		})
 	}
