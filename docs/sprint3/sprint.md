@@ -17,7 +17,7 @@ en verde y un commit por cambio lógico.
 | US15 | Registro de sanciones | 5 | 8 | 4h | — | ☑ |
 | US25 | Visualización de sanciones (público) | 5 | 13 | 2h | — | ☑ |
 | US26 | Visualización y confirmación de sanciones (escudería) | 5 | 13 | 2.5h | — | ☑ |
-| US18 | Disponibilidad de funcionalidades en aplicación móvil | 5 | 13 | 16h | — | ◐ |
+| US18 | Disponibilidad de funcionalidades en aplicación móvil | 5 | 13 | 16h | — | ☑ |
 
 **Total estimado:** 32.5h · **Total real registrado:** —
 
@@ -224,9 +224,11 @@ a 320, 375, 414, 740×360 (apaisado), 768 y 1366 px de ancho.
 - [x] El inicio de sesión y los permisos por rol funcionan igual que en la web
 - [x] Los datos mostrados en la app coinciden con los de la plataforma web (mismo cliente HTTP y
       mismos endpoints en las tres plataformas; ningún dato se transforma por plataforma)
-- [ ] La app se visualiza y funciona correctamente en distintos dispositivos y tamaños de pantalla
-      (todos los anchos pasan, y ninguna etiqueta de pestaña se corta; falta el arreglo del filtro de
-      fechas que se corta a 375 px, a cargo del equipo controls, y no hay prueba en dispositivo real)
+- [x] La app se visualiza y funciona correctamente en distintos dispositivos y tamaños de pantalla
+      (recorrido del manager sobre `main` a 320, 375, 414, 768 y 1366 px y apaisado, en modo táctil:
+      sin desbordes ni etiquetas cortadas; filtro de fechas apilado en `7527501` e insignias del
+      historial que bajan de línea en `2736a44`. Sin dispositivo real: la evidencia es el recorrido y los
+      paquetes nativos de Android e iOS que compilan)
 - [x] Los cambios hechos en la plataforma se reflejan en la app (prueba automática: la FIA abre una
       conversación por la API y el teléfono de la escudería la muestra, con la insignia actualizada,
       al cambiar de pestaña, sin recargar)
