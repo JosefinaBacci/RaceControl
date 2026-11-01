@@ -10,16 +10,22 @@ en verde y un commit por cambio lógico.
 
 | US | Nombre | SP | Valor | Est. | Tiempo real registrado | Estado |
 |----|--------|----|-------|------|------------------------|--------|
-| US21 | Registro de controles técnicos | 3 | 8 | 2.5h | — | ☑ |
-| US22 | Visualización de controles técnicos | 3 | 8 | 1.5h | — | ☑ |
-| US19 | Registro de prueba de neumáticos | 3 | 8 | 2.5h | — | ☑ |
-| US20 | Visualización de prueba de neumáticos | 3 | 8 | 1.5h | — | ☑ |
-| US15 | Registro de sanciones | 5 | 8 | 4h | — | ☑ |
-| US25 | Visualización de sanciones (público) | 5 | 13 | 2h | — | ☑ |
-| US26 | Visualización y confirmación de sanciones (escudería) | 5 | 13 | 2.5h | — | ☑ |
-| US18 | Disponibilidad de funcionalidades en aplicación móvil | 5 | 13 | 16h | — | ☑ |
+| US21 | Registro de controles técnicos | 3 | 8 | 2.5h | 0.6h | ☑ |
+| US22 | Visualización de controles técnicos | 3 | 8 | 1.5h | 0.4h | ☑ |
+| US19 | Registro de prueba de neumáticos | 3 | 8 | 2.5h | 0.5h | ☑ |
+| US20 | Visualización de prueba de neumáticos | 3 | 8 | 1.5h | 0.3h | ☑ |
+| US15 | Registro de sanciones | 5 | 8 | 4h | 0.6h | ☑ |
+| US25 | Visualización de sanciones (público) | 5 | 13 | 2h | 0.3h | ☑ |
+| US26 | Visualización y confirmación de sanciones (escudería) | 5 | 13 | 2.5h | 0.4h | ☑ |
+| US18 | Disponibilidad de funcionalidades en aplicación móvil | 5 | 13 | 16h | 1.5h | ☑ |
 
-**Total estimado:** 32.5h · **Total real registrado:** —
+**Total estimado:** 32.5h · **Total real registrado:** 4.6h
+
+El tiempo real sale de los registros de la sesión de IA (31/10 17:42 – 01/11 00:14, hora
+argentina): el tiempo activo de cada equipo de implementación más la parte proporcional del
+tiempo del manager (coordinación, merges, prueba de aceptación y de estrés), repartidos entre
+las historias de cada equipo según su estimación. Los equipos trabajaron en paralelo, así que el
+tiempo de calendario fue menor que la suma.
 
 ☑ cerrada · ◐ en curso · ☐ sin empezar
 
