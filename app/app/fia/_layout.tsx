@@ -1,9 +1,8 @@
-import { Tabs } from 'expo-router';
-
 import { UnreadMessagesProvider, useUnreadMessages } from '@/data/UnreadMessagesProvider';
-import { HeaderSessionButton } from '@/navigation/HeaderSessionButton';
 import { RoleGate } from '@/navigation/RoleGate';
-import { headerLogo, tabBadge, tabIcon, useTabScreenOptions } from '@/navigation/tabOptions';
+import { RoleTabs } from '@/navigation/RoleTabs';
+import { useFiaTabBadges } from '@/navigation/tabBadges';
+import { fiaTabs } from '@/navigation/tabSpecs';
 
 export default function FiaLayout() {
   return (
@@ -16,28 +15,10 @@ export default function FiaLayout() {
 }
 
 function FiaTabs() {
-  const screenOptions = useTabScreenOptions();
-  const { unreadCount, reload: reloadUnread } = useUnreadMessages();
+  const badges = useFiaTabBadges();
+  const { reload: reloadUnread } = useUnreadMessages();
 
   // Reloading on every tab focus keeps the badge current without polling: a
   // message a team sends shows up on the next tab.
-  return (
-    <Tabs
-      screenOptions={{ ...screenOptions, headerTitle: headerLogo, headerRight: () => <HeaderSessionButton /> }}
-      screenListeners={{ focus: () => void reloadUnread() }}
-    >
-      <Tabs.Screen name="index" options={{ title: 'Panel', tabBarIcon: tabIcon('speedometer-outline') }} />
-      <Tabs.Screen name="users" options={{ title: 'Usuarios', tabBarIcon: tabIcon('people-outline') }} />
-      <Tabs.Screen name="calendar" options={{ title: 'Calendario', tabBarIcon: tabIcon('calendar-outline') }} />
-      <Tabs.Screen name="results" options={{ title: 'Resultados', tabBarIcon: tabIcon('trophy-outline') }} />
-      <Tabs.Screen name="sanctions" options={{ title: 'Sanciones', tabBarIcon: tabIcon('alert-circle-outline') }} />
-      <Tabs.Screen name="notifications" options={{ title: 'Acuses', tabBarIcon: tabIcon('checkmark-done-outline') }} />
-      <Tabs.Screen
-        name="messages"
-        options={{ title: 'Mensajes', tabBarIcon: tabIcon('chatbubbles-outline'), tabBarBadge: tabBadge(unreadCount) }}
-      />
-      <Tabs.Screen name="public" options={{ title: 'Sitio público', tabBarIcon: tabIcon('globe-outline') }} />
-      <Tabs.Screen name="assignments" options={{ title: 'Asignaciones', tabBarIcon: tabIcon('time-outline') }} />
-    </Tabs>
-  );
+  return <RoleTabs tabs={fiaTabs} badges={badges} onTabFocus={() => void reloadUnread()} />;
 }

@@ -1,11 +1,10 @@
-import { Tabs } from 'expo-router';
-
-import { TeamSanctionNoticesProvider, usePendingSanctionNotices, useTeamSanctionNotices } from '@/data/TeamSanctionNoticesProvider';
-import { TeamScoreNoticesProvider, usePendingScoreNotices, useTeamScoreNotices } from '@/data/TeamScoreNoticesProvider';
+import { TeamSanctionNoticesProvider, useTeamSanctionNotices } from '@/data/TeamSanctionNoticesProvider';
+import { TeamScoreNoticesProvider, useTeamScoreNotices } from '@/data/TeamScoreNoticesProvider';
 import { UnreadMessagesProvider, useUnreadMessages } from '@/data/UnreadMessagesProvider';
-import { HeaderSessionButton } from '@/navigation/HeaderSessionButton';
 import { RoleGate } from '@/navigation/RoleGate';
-import { headerLogo, tabBadge, tabIcon, useTabScreenOptions } from '@/navigation/tabOptions';
+import { RoleTabs } from '@/navigation/RoleTabs';
+import { useTeamTabBadges } from '@/navigation/tabBadges';
+import { teamTabs } from '@/navigation/tabSpecs';
 
 export default function TeamLayout() {
   return (
@@ -22,12 +21,10 @@ export default function TeamLayout() {
 }
 
 function TeamTabs() {
-  const screenOptions = useTabScreenOptions();
-  const pendingScores = usePendingScoreNotices();
+  const badges = useTeamTabBadges();
   const { reload: reloadNotices } = useTeamScoreNotices();
-  const pendingSanctions = usePendingSanctionNotices();
   const { reload: reloadSanctionNotices } = useTeamSanctionNotices();
-  const { unreadCount, reload: reloadUnread } = useUnreadMessages();
+  const { reload: reloadUnread } = useUnreadMessages();
 
   // Reloading on every tab focus keeps the badges current wherever the team admin
   // is, without polling: a change the FIA publishes or a message it sends shows
@@ -38,28 +35,5 @@ function TeamTabs() {
     void reloadUnread();
   };
 
-  return (
-    <Tabs
-      screenOptions={{ ...screenOptions, headerTitle: headerLogo, headerRight: () => <HeaderSessionButton /> }}
-      screenListeners={{ focus: reloadBadges }}
-    >
-      <Tabs.Screen name="index" options={{ title: 'Mi escudería', tabBarIcon: tabIcon('speedometer-outline') }} />
-      <Tabs.Screen name="drivers" options={{ title: 'Pilotos', tabBarIcon: tabIcon('person-outline') }} />
-      <Tabs.Screen name="scores" options={{ title: 'Puntajes', tabBarIcon: tabIcon('trophy-outline') }} />
-      <Tabs.Screen
-        name="inbox"
-        options={{ title: 'Sanciones', tabBarIcon: tabIcon('alert-circle-outline'), tabBarBadge: tabBadge(pendingSanctions) }}
-      />
-      <Tabs.Screen
-        name="notifications"
-        options={{ title: 'Notificaciones', tabBarIcon: tabIcon('notifications-outline'), tabBarBadge: tabBadge(pendingScores) }}
-      />
-      <Tabs.Screen
-        name="messages"
-        options={{ title: 'Mensajes', tabBarIcon: tabIcon('chatbubbles-outline'), tabBarBadge: tabBadge(unreadCount) }}
-      />
-      <Tabs.Screen name="public" options={{ title: 'Sitio público', tabBarIcon: tabIcon('globe-outline') }} />
-      <Tabs.Screen name="assignments" options={{ title: 'Asignaciones', tabBarIcon: tabIcon('time-outline') }} />
-    </Tabs>
-  );
+  return <RoleTabs tabs={teamTabs} badges={badges} onTabFocus={reloadBadges} />;
 }

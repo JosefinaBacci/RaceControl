@@ -1,11 +1,10 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import type { ComponentProps } from 'react';
 import { Platform, useWindowDimensions, type ColorValue } from 'react-native';
 
 import { Logo } from '@/components';
 import { colors } from '@/theme';
 
-type IconName = ComponentProps<typeof Ionicons>['name'];
+import type { TabIconName } from './tabSpecs';
 
 const sidebarBreakpoint = 1024;
 
@@ -21,11 +20,13 @@ const baseTabOptions = {
   sceneStyle: { backgroundColor: colors.background },
 };
 
-export function useTabScreenOptions() {
+export function useShowsSidebar(): boolean {
   const { width } = useWindowDimensions();
-  const showsSidebar = Platform.OS === 'web' && width >= sidebarBreakpoint;
+  return Platform.OS === 'web' && width >= sidebarBreakpoint;
+}
 
-  if (showsSidebar) {
+export function useTabScreenOptions() {
+  if (useShowsSidebar()) {
     return {
       ...baseTabOptions,
       tabBarPosition: 'left' as const,
@@ -47,7 +48,7 @@ export function headerLogo() {
   return <Logo size="sm" />;
 }
 
-export function tabIcon(name: IconName) {
+export function tabIcon(name: TabIconName) {
   return function TabIcon({ color, size }: { color: ColorValue; size: number }) {
     return <Ionicons name={name} color={color} size={size} />;
   };
