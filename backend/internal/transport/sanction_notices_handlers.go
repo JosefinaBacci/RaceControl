@@ -152,9 +152,10 @@ func toVersionFollowUpResponse(version sanctions.VersionFollowUp) versionFollowU
 }
 
 func toAcknowledgementFields(acknowledgement sanctions.Acknowledgement) acknowledgementFields {
-	return acknowledgementFields{
-		Status:         string(acknowledgement.Status),
-		AcknowledgedAt: acknowledgement.At,
-		AcknowledgedBy: acknowledgement.By,
+	fields := acknowledgementFields{Status: string(acknowledgement.Status), AcknowledgedBy: acknowledgement.By}
+	if acknowledgement.At != nil {
+		acknowledgedAt := acknowledgement.At.UTC()
+		fields.AcknowledgedAt = &acknowledgedAt
 	}
+	return fields
 }

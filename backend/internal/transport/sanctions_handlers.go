@@ -274,7 +274,7 @@ func toSanctionResponse(sanction sanctions.Sanction) sanctionResponse {
 		Team:         sanctionTeamResponse(sanction.Team),
 		CategoryCode: sanction.CategoryCode,
 		CategoryName: sanction.CategoryName,
-		IssuedAt:     sanction.IssuedAt,
+		IssuedAt:     sanction.IssuedAt.UTC(),
 		Current:      toSanctionVersionResponse(sanction.Current),
 	}
 }
@@ -302,7 +302,7 @@ func toSanctionVersionResponse(version sanctions.Version) sanctionVersionRespons
 		Reason:    version.Reason,
 		Event:     toSanctionEventResponse(version.Event),
 		Note:      version.Note,
-		ChangedAt: version.ChangedAt,
+		ChangedAt: version.ChangedAt.UTC(),
 	}
 }
 
@@ -310,6 +310,5 @@ func toSanctionEventResponse(event *sanctions.EventRef) *sanctionEventResponse {
 	if event == nil {
 		return nil
 	}
-	response := sanctionEventResponse(*event)
-	return &response
+	return &sanctionEventResponse{ID: event.ID, Name: event.Name, StartsAt: event.StartsAt.UTC()}
 }

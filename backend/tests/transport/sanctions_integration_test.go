@@ -184,6 +184,11 @@ func TestFIAIssuesASanctionOnADriverWithDateAndAuthor(t *testing.T) {
 	}
 	expectInstantBetween(t, created.body["issuedAt"], before, time.Now())
 	current := objectOf(t, created.body, "current")
+	for _, instant := range []any{created.body["issuedAt"], current["changedAt"], objectOf(t, current, "event")["startsAt"]} {
+		if text, _ := instant.(string); !strings.HasSuffix(text, "Z") {
+			t.Fatalf("instant %v should be answered in UTC", instant)
+		}
+	}
 	penalty := objectOf(t, current, "penalty")
 	if penalty["code"] != "time_penalty" || penalty["value"] != float64(5) || penalty["unit"] != "seconds" {
 		t.Fatalf("penalty = %v, want 5 seconds", penalty)
@@ -371,6 +376,9 @@ func TestEveryTeamOfTheChampionshipIsNotifiedAndConfirms(t *testing.T) {
 	confirmed := h.do(teamA, http.MethodPost, sanctionAcknowledgementPath(noticeA["id"].(float64)), nil, nil)
 	expectStatus(t, confirmed, http.StatusOK)
 	firstAt := expectAcknowledgedBetween(t, confirmed.body, adminA, before, time.Now())
+	if text, _ := confirmed.body["acknowledgedAt"].(string); !strings.HasSuffix(text, "Z") {
+		t.Fatalf("acknowledgedAt %q should be answered in UTC", text)
+	}
 	again := h.do(teamA, http.MethodPost, sanctionAcknowledgementPath(noticeA["id"].(float64)), nil, nil)
 	expectStatus(t, again, http.StatusOK)
 	if expectAcknowledgedBetween(t, again.body, adminA, before, time.Now()) != firstAt {
