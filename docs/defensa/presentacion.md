@@ -47,7 +47,6 @@ Los siete están cubiertos por lo implementado y **ninguno fue incumplido**.
 Todavía no los damos por cumplidos del todo:
 
 - Varios dependen de lo que falta: la factura ante ARCA y la selección de asientos.
-- Los tiempos (15 y 5 minutos) no los medimos formalmente.
 :::
 ::::
 
@@ -103,7 +102,7 @@ Tardaron un 77,19 % menos. Dividimos de más las tareas simples, fuimos holgados
 
 ::: {.caution title="Error nuestro"}
 ::: {.footnotesize}
-La reserva salió sin selección de asientos porque no lo especificamos. Dejamos la reserva básica y sumamos cinco historias al backlog (US24 a US28).
+La reserva salió sin selección de asientos porque no lo especificamos. Dejamos la reserva básica y sumamos cinco historias al backlog (US25 a US29).
 :::
 :::
 :::
