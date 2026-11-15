@@ -1,0 +1,84 @@
+% Nord theme for metropolis: dark Polar Night background (the same nord0 the notebook plots use),
+% Frost accents for structure and Aurora colors for the boxes.
+\definecolor{nord0}{HTML}{2E3440}
+\definecolor{nord1}{HTML}{3B4252}
+\definecolor{nord2}{HTML}{434C5E}
+\definecolor{nord3}{HTML}{4C566A}
+\definecolor{nord4}{HTML}{D8DEE9}
+\definecolor{nord5}{HTML}{E5E9F0}
+\definecolor{nord6}{HTML}{ECEFF4}
+\definecolor{nord7}{HTML}{8FBCBB}
+\definecolor{nord8}{HTML}{88C0D0}
+\definecolor{nord9}{HTML}{81A1C1}
+\definecolor{nord10}{HTML}{5E81AC}
+\definecolor{nord11}{HTML}{BF616A}
+\definecolor{nord12}{HTML}{D08770}
+\definecolor{nord13}{HTML}{EBCB8B}
+\definecolor{nord14}{HTML}{A3BE8C}
+\definecolor{nord15}{HTML}{B48EAD}
+
+\metroset{progressbar=frametitle, numbering=fraction, sectionpage=progressbar, block=fill}
+
+\setbeamercolor{normal text}{fg=nord4, bg=nord0}
+\setbeamercolor{background canvas}{bg=nord0}
+\setbeamercolor{structure}{fg=nord8}
+\setbeamercolor{alerted text}{fg=nord8}
+\setbeamercolor{example text}{fg=nord14}
+\setbeamercolor{frametitle}{fg=nord6, bg=nord1}
+\setbeamercolor{progress bar}{fg=nord8, bg=nord2}
+\setbeamercolor{title separator}{fg=nord8, bg=nord2}
+\setbeamercolor{progress bar in section page}{fg=nord8, bg=nord2}
+\setbeamercolor{progress bar in head/foot}{fg=nord8, bg=nord2}
+\setbeamercolor{title}{fg=nord6}
+\setbeamercolor{subtitle}{fg=nord8}
+\setbeamercolor{author}{fg=nord4}
+\setbeamercolor{institute}{fg=nord9}
+\setbeamercolor{date}{fg=nord9}
+\setbeamercolor{section title}{fg=nord6}
+\setbeamercolor{frame numbering}{fg=nord3}
+\setbeamercolor{footnote}{fg=nord9}
+\setbeamercolor{itemize item}{fg=nord8}
+\setbeamercolor{itemize subitem}{fg=nord9}
+\setbeamercolor{enumerate item}{fg=nord8}
+\setbeamertemplate{itemize item}{\small\raisebox{0.1ex}{$\blacktriangleright$}}
+\setbeamertemplate{itemize subitem}{\footnotesize\raisebox{0.15ex}{$\triangleright$}}
+
+\usepackage{fontawesome5}
+\usepackage{booktabs}
+\usepackage{colortbl}
+\arrayrulecolor{nord3}
+\renewcommand{\arraystretch}{1.15}
+
+% Bold text in the brightest Snow Storm color, so it stands out from the regular nord4 text
+\let\nordtextbf\textbf
+\renewcommand{\textbf}[1]{\nordtextbf{\textcolor{nord6}{#1}}}
+
+% Values that win a comparison, values that lost, and a muted note
+\newcommand{\best}[1]{\textcolor{nord14}{\nordtextbf{#1}}}
+\newcommand{\worst}[1]{\textcolor{nord11}{#1}}
+\newcommand{\muted}[1]{\textcolor{nord9}{#1}}
+\newcommand{\hl}[1]{\textcolor{nord8}{\nordtextbf{#1}}}
+\newcommand{\gold}[1]{\textcolor{nord13}{\nordtextbf{#1}}}
+
+% Boxes used through the filter (::: {.decision title="..."})
+\usepackage[most]{tcolorbox}
+\tcbset{nordbox/.style={enhanced, colback=nord1, coltext=nord4, boxrule=0pt, leftrule=2.5pt, arc=1.5pt,
+        left=6pt, right=6pt, top=3pt, bottom=4pt, fonttitle=\bfseries\small, colbacktitle=nord1,
+        toptitle=3pt, bottomtitle=-1pt, before skip=4pt, after skip=4pt}}
+\newtcolorbox{decision}[1]{nordbox, colframe=nord8, coltitle=nord8, title={\faGavel\enspace #1}}
+\newtcolorbox{joke}[1]{nordbox, colframe=nord13, coltitle=nord13, title={\faGrinBeam[regular]\enspace #1}}
+\newtcolorbox{result}[1]{nordbox, colframe=nord14, coltitle=nord14, title={\faChartLine\enspace #1}}
+\newtcolorbox{caution}[1]{nordbox, colframe=nord12, coltitle=nord12, title={\faExclamationTriangle\enspace #1}}
+\newtcolorbox{experiment}[1]{nordbox, colframe=nord15, coltitle=nord15, title={\faFlask\enspace #1}}
+
+% Standout frame ("¿Preguntas?") in the dark palette too
+\setbeamercolor{palette primary}{fg=nord8, bg=nord0}
+
+
+\titlegraphic{\vspace*{1.2cm}\hfill\textcolor{nord2}{\fontsize{70}{70}\selectfont\faPlane}\hspace*{0.6cm}}
+
+% Frames that don't count (the closing "¿Preguntas?" is standout, which metropolis doesn't number) show no number
+\makeatletter
+\setbeamertemplate{frame numbering}{%
+  \ifbeamer@noframenumbering\else\insertframenumber/\inserttotalframenumber\fi}
+\makeatother

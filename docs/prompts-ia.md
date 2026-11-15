@@ -1553,3 +1553,11 @@ En QA se comprobó que un timeout al leer el comprobante podía devolver un erro
 ### 2026-11-01 — Botones accesibles y verificación general (US18)
 
 Los botones con ícono no exponían su texto como nombre accesible exacto; se corrigió el componente común. Se comprobó «Enviar» desde dos sesiones y se registró la revisión por rol en el cierre del sprint.
+
+### 2026-11-15 — Diapositivas de la defensa final
+
+**Pedido:** armar la presentación de la defensa (10 minutos) a partir del informe final de Fly Away y de las retrospectivas de los tres sprints, en Markdown y con el mismo formato que usamos en otra materia.
+
+**Resultado:** la IA escribió `docs/defensa/presentacion.md` (Pandoc + Beamer) con el proyecto y sus objetivos, una diapositiva por sprint con las horas de su retrospectiva, la tabla de desvíos y las conclusiones, y generó el PDF y el PowerPoint. El grupo pidió reescribir una primera versión porque el tono no sonaba propio; la redacción final sigue la del informe.
+
+**Validación:** revisamos cada diapositiva renderizada y los números contra el informe y las retrospectivas.
